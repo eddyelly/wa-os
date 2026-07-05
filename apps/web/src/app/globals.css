@@ -1,0 +1,34 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Deep green anchor, WhatsApp-adjacent but not WhatsApp's green */
+  --color-brand-50: #eefaf4;
+  --color-brand-100: #d6f2e4;
+  --color-brand-200: #b0e4cd;
+  --color-brand-300: #7dcfb0;
+  --color-brand-400: #48b38e;
+  --color-brand-500: #269873;
+  --color-brand-600: #187a5d;
+  --color-brand-700: #14624c;
+  --color-brand-800: #124e3e;
+  --color-brand-900: #104034;
+  --color-brand-950: #08241d;
+
+  /* One warm accent, used sparingly for primary actions */
+  --color-accent-400: #f5a623;
+  --color-accent-500: #e8951a;
+  --color-accent-600: #c97a12;
+
+  --font-sans:
+    'Inter', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
