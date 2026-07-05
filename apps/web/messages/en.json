@@ -262,7 +262,10 @@
       "msg1": "Hi! How much is braiding?",
       "msg2": "Karibu Nuru Salon! Braiding is TZS 25,000 and takes about two hours.",
       "msg3": "Great, can I come tomorrow at 10?",
-      "msg4": "Yes! I have noted tomorrow at 10:00 for braiding. The team will confirm your slot shortly."
+      "msg4": "Yes! I have noted tomorrow at 10:00 for braiding. The team will confirm your slot shortly.",
+      "inputPlaceholder": "Message",
+      "bookingChipTitle": "Booking saved",
+      "bookingChipBody": "Tomorrow, 10:00. Braiding"
     },
     "verticals": {
       "v1": "Salons",
@@ -327,6 +330,20 @@
     },
     "finalTitle": "Give your customers an answer today",
     "finalSubtitle": "Sign up, connect your WhatsApp, and let the assistant handle the routine questions while you do the real work.",
-    "footerTagline": "The WhatsApp operating system for appointment-based local businesses in Tanzania."
+    "footerTagline": "The WhatsApp operating system for appointment-based local businesses in Tanzania.",
+    "cards": {
+      "booking": {
+        "title": "Booking confirmed",
+        "body": "Reminder scheduled automatically"
+      },
+      "reminder": {
+        "title": "Reminder sent",
+        "body": "24 hours before the visit"
+      },
+      "ai": {
+        "title": "AI replies",
+        "body": "On, with human handoff"
+      }
+    }
   }
 }

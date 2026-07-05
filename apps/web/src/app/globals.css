@@ -88,19 +88,43 @@
   animation: dot-bounce 1.2s infinite;
 }
 
-/* Two identical halves slide from -50% to 0, so the content flows left to
-   right and the loop point is invisible. */
+/* Two identical halves slide from 0 to -50%, so the content flows right to
+   left and the loop point is invisible. */
 @keyframes marquee {
   from {
-    transform: translateX(-50%);
+    transform: translateX(0);
   }
   to {
-    transform: translateX(0);
+    transform: translateX(-50%);
   }
 }
 
 .animate-marquee {
   animation: marquee 45s linear infinite;
+}
+
+/* A typing indicator that appears, lingers, and dissolves right before the
+   real reply pops into the same spot. */
+@keyframes fade-in-out {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.95);
+  }
+  14% {
+    opacity: 1;
+    transform: none;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.animate-fade-in-out {
+  animation: fade-in-out 1.4s ease-out both;
 }
 
 @keyframes gradient-pan {

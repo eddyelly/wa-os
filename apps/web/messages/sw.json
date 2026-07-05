@@ -262,7 +262,10 @@
       "msg1": "Habari! Kusuka rasta ni bei gani?",
       "msg2": "Karibu Nuru Salon! Kusuka rasta ni TZS 25,000 na huchukua kama saa mbili.",
       "msg3": "Safi, naweza kuja kesho saa nne?",
-      "msg4": "Ndiyo! Nimeweka kesho saa 4:00 kwa kusuka rasta. Timu itathibitisha nafasi yako muda mfupi."
+      "msg4": "Ndiyo! Nimeweka kesho saa 4:00 kwa kusuka rasta. Timu itathibitisha nafasi yako muda mfupi.",
+      "inputPlaceholder": "Andika meseji",
+      "bookingChipTitle": "Miadi imehifadhiwa",
+      "bookingChipBody": "Kesho, saa 4:00. Kusuka rasta"
     },
     "verticals": {
       "v1": "Saluni",
@@ -327,6 +330,20 @@
     },
     "finalTitle": "Wape wateja wako jibu leo",
     "finalSubtitle": "Jisajili, unganisha WhatsApp yako, na umwache msaidizi ashughulikie maswali ya kawaida wakati wewe unafanya kazi halisi.",
-    "footerTagline": "Mfumo wa WhatsApp kwa biashara za huduma zenye miadi Tanzania."
+    "footerTagline": "Mfumo wa WhatsApp kwa biashara za huduma zenye miadi Tanzania.",
+    "cards": {
+      "booking": {
+        "title": "Miadi imethibitishwa",
+        "body": "Kikumbusho kimepangwa kiotomatiki"
+      },
+      "reminder": {
+        "title": "Kikumbusho kimetumwa",
+        "body": "Saa 24 kabla ya ziara"
+      },
+      "ai": {
+        "title": "Majibu ya AI",
+        "body": "Yamewashwa, na msaada wa binadamu"
+      }
+    }
   }
 }

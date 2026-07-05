@@ -9,25 +9,41 @@ import { Reveal } from '@/components/reveal';
 
 const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'WaOS';
 
+function TypingBubble({ delay }: { delay: number }) {
+  return (
+    <div
+      aria-hidden
+      style={{ animationDelay: `${delay}ms` }}
+      className="animate-fade-in-out flex w-fit items-center gap-1 self-end rounded-2xl rounded-br-md bg-brand-100 px-3.5 py-2.5 shadow-sm [grid-area:1/1]"
+    >
+      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-600" />
+      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-600" style={{ animationDelay: '150ms' }} />
+      <span className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-600" style={{ animationDelay: '300ms' }} />
+    </div>
+  );
+}
+
 function Bubble({
   side,
   delay,
   ai,
+  stacked,
   children,
 }: {
   side: 'in' | 'out';
   delay: number;
   ai?: boolean;
+  stacked?: boolean;
   children: ReactNode;
 }) {
   return (
     <div
       style={{ animationDelay: `${delay}ms` }}
-      className={`animate-pop-in max-w-[80%] rounded-2xl px-3.5 py-2 text-[13px] leading-snug shadow-sm ${
+      className={`animate-pop-in max-w-[82%] rounded-2xl px-3.5 py-2 text-[13px] leading-snug shadow-sm ${
         side === 'in'
           ? 'self-start rounded-bl-md bg-white text-brand-950'
           : 'self-end rounded-br-md bg-brand-100 text-brand-950'
-      }`}
+      } ${stacked ? 'w-fit justify-self-end [grid-area:1/1]' : ''}`}
     >
       {ai ? (
         <span className="mb-0.5 block text-[9px] font-bold tracking-widest text-violet-700 uppercase">
@@ -35,6 +51,23 @@ function Bubble({
         </span>
       ) : null}
       {children}
+      {side === 'out' ? (
+        <span className="mt-0.5 flex justify-end text-[9px] text-sky-600" aria-hidden>
+          {'✓✓'}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/** Typing dots dissolve exactly where the AI reply then pops in. */
+function AiTurn({ typingDelay, replyDelay, children }: { typingDelay: number; replyDelay: number; children: ReactNode }) {
+  return (
+    <div className="grid">
+      <TypingBubble delay={typingDelay} />
+      <Bubble side="out" delay={replyDelay} ai stacked>
+        {children}
+      </Bubble>
     </div>
   );
 }
@@ -46,46 +79,177 @@ function PhoneDemo() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCycle((current) => current + 1);
-    }, 11_000);
+    }, 13_000);
     return () => {
       clearInterval(timer);
     };
   }, []);
 
   return (
-    <div className="animate-float mx-auto w-[290px] rounded-[2.4rem] border-[6px] border-brand-950/80 bg-brand-50 shadow-2xl lg:w-[330px]">
-      <div className="flex items-center gap-2.5 rounded-t-[1.9rem] bg-brand-800 px-4 py-3">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-300 text-xs font-bold text-brand-900">
-          NS
-        </span>
+    <div className="relative mx-auto w-[300px] rounded-[3rem] border border-white/20 bg-brand-950 p-2 shadow-2xl lg:w-[340px]">
+      {/* Notch */}
+      <div className="absolute top-4 left-1/2 z-10 h-6 w-28 -translate-x-1/2 rounded-full bg-brand-950" aria-hidden />
+      <div className="overflow-hidden rounded-[2.5rem] bg-brand-50">
+        {/* Status bar + chat header */}
+        <div className="bg-brand-800 px-5 pt-3 pb-2.5">
+          <div className="flex items-center justify-between text-[10px] font-semibold text-white/90">
+            <span>9:41</span>
+            <span className="flex items-center gap-1" aria-hidden>
+              <svg viewBox="0 0 16 12" className="h-2.5 w-3.5 fill-current">
+                <rect x="0" y="8" width="3" height="4" rx="0.5" />
+                <rect x="4.5" y="5" width="3" height="7" rx="0.5" />
+                <rect x="9" y="2" width="3" height="10" rx="0.5" />
+              </svg>
+              <svg viewBox="0 0 24 12" className="h-3 w-6" aria-hidden>
+                <rect x="0.5" y="0.5" width="19" height="11" rx="3" fill="none" stroke="currentColor" />
+                <rect x="2.5" y="2.5" width="13" height="7" rx="1.5" fill="currentColor" />
+                <rect x="21" y="4" width="2.5" height="4" rx="1" fill="currentColor" />
+              </svg>
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-300 text-xs font-bold text-brand-900">
+              NS
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="truncate text-[13px] font-semibold text-white">{t('businessName')}</p>
+              <p className="text-[10px] text-brand-200">{t('online')}</p>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4.5 w-4.5 text-white/80" aria-hidden>
+              <path strokeLinecap="round" d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c1 .3 2 .5 3 .6a2 2 0 0 1 1.6 2Z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Conversation */}
+        <div key={cycle} className="flex min-h-[350px] flex-col gap-2 px-3 py-4">
+          <Bubble side="in" delay={500}>
+            {t('msg1')}
+          </Bubble>
+          <AiTurn typingDelay={1200} replyDelay={2550}>
+            {t('msg2')}
+          </AiTurn>
+          <Bubble side="in" delay={4000}>
+            {t('msg3')}
+          </Bubble>
+          <AiTurn typingDelay={4800} replyDelay={6150}>
+            {t('msg4')}
+          </AiTurn>
+          <div
+            className="animate-pop-in mx-auto mt-1.5 flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-3 py-2 shadow-sm"
+            style={{ animationDelay: '7400ms' }}
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-800">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v3m8-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+              </svg>
+            </span>
+            <div className="leading-tight">
+              <p className="text-[11px] font-bold text-brand-950">{t('bookingChipTitle')}</p>
+              <p className="text-[10px] text-brand-600">{t('bookingChipBody')}</p>
+            </div>
+            <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700" aria-hidden>
+              {'✓'}
+            </span>
+          </div>
+        </div>
+
+        {/* Composer */}
+        <div className="flex items-center gap-2 border-t border-brand-100 bg-white px-3 py-2.5">
+          <span className="flex-1 rounded-full bg-brand-50 px-4 py-2 text-[12px] text-brand-400">
+            {t('inputPlaceholder')}
+          </span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-700 text-white" aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 14-7-4 7 4 7-14-7Z" />
+            </svg>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FloatingCard({
+  className = '',
+  popDelay,
+  floatDuration,
+  children,
+}: {
+  className?: string;
+  popDelay: number;
+  floatDuration: string;
+  children: ReactNode;
+}) {
+  return (
+    <div style={{ animationDelay: `${popDelay}ms` }} className={`animate-pop-in absolute ${className}`}>
+      <div
+        className="animate-float flex items-center gap-3 rounded-2xl bg-white p-3.5 shadow-xl"
+        style={{ animationDuration: floatDuration, animationDelay: `${popDelay}ms` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function CardIcon({ path, tone }: { path: string; tone: 'green' | 'amber' | 'violet' }) {
+  const tones = {
+    green: 'bg-emerald-100 text-emerald-700',
+    amber: 'bg-amber-100 text-amber-700',
+    violet: 'bg-violet-100 text-violet-700',
+  }[tone];
+  return (
+    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tones}`}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden>
+        <path strokeLinecap="round" strokeLinejoin="round" d={path} />
+      </svg>
+    </span>
+  );
+}
+
+/** The phone plus the floating feature cards orbiting it. */
+function HeroShowcase() {
+  const t = useTranslations('landing.cards');
+  return (
+    <div className="relative mx-auto w-fit">
+      <PhoneDemo />
+      <FloatingCard
+        popDelay={1200}
+        floatDuration="7s"
+        className="top-16 -right-6 hidden max-w-56 md:block xl:-right-28"
+      >
+        <CardIcon tone="green" path="M8 3v3m8-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm4 9 2 2 4-4" />
         <div className="leading-tight">
-          <p className="text-[13px] font-semibold text-white">{t('businessName')}</p>
-          <p className="text-[10px] text-brand-200">{t('online')}</p>
+          <p className="text-[13px] font-bold text-brand-950">{t('booking.title')}</p>
+          <p className="mt-0.5 text-[11px] text-brand-600">{t('booking.body')}</p>
         </div>
-      </div>
-      <div key={cycle} className="flex min-h-[330px] flex-col gap-2 px-3 py-4">
-        <Bubble side="in" delay={400}>
-          {t('msg1')}
-        </Bubble>
-        <Bubble side="out" delay={1300} ai>
-          {t('msg2')}
-        </Bubble>
-        <Bubble side="in" delay={2300}>
-          {t('msg3')}
-        </Bubble>
-        <Bubble side="out" delay={3300} ai>
-          {t('msg4')}
-        </Bubble>
-        <div
-          className="animate-pop-in mt-1 flex items-center gap-1 self-end rounded-full bg-brand-100 px-3 py-2"
-          style={{ animationDelay: '4200ms' }}
-          aria-hidden
-        >
-          <span className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-600" />
-          <span className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-600" style={{ animationDelay: '150ms' }} />
-          <span className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-600" style={{ animationDelay: '300ms' }} />
+      </FloatingCard>
+      <FloatingCard
+        popDelay={2000}
+        floatDuration="9s"
+        className="bottom-24 -left-6 hidden max-w-56 md:block xl:-left-24"
+      >
+        <CardIcon tone="amber" path="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9" />
+        <div className="leading-tight">
+          <p className="text-[13px] font-bold text-brand-950">{t('reminder.title')}</p>
+          <p className="mt-0.5 text-[11px] text-brand-600">{t('reminder.body')}</p>
         </div>
-      </div>
+      </FloatingCard>
+      <FloatingCard
+        popDelay={2800}
+        floatDuration="8s"
+        className="-top-7 -left-4 hidden max-w-56 lg:block xl:-left-24"
+      >
+        <CardIcon tone="violet" path="M12 3a7 7 0 0 1 7 7v1.5a3.5 3.5 0 0 1-7 0V10a2 2 0 1 0-4 0v6a7 7 0 0 0 11 5.7M5 10v1.5a3.5 3.5 0 0 0 .8 2.2" />
+        <div className="leading-tight">
+          <p className="text-[13px] font-bold text-brand-950">{t('ai.title')}</p>
+          <p className="mt-0.5 text-[11px] text-brand-600">{t('ai.body')}</p>
+        </div>
+        <span className="relative ml-1 inline-flex h-6 w-10 shrink-0 items-center rounded-full bg-brand-600" aria-hidden>
+          <span className="absolute right-0.5 h-5 w-5 rounded-full bg-white shadow" />
+        </span>
+      </FloatingCard>
     </div>
   );
 }
@@ -204,7 +368,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="animate-fade-up" style={{ animationDelay: '300ms' }}>
-            <PhoneDemo />
+            <HeroShowcase />
           </div>
         </section>
 
