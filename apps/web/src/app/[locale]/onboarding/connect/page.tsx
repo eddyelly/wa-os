@@ -1,0 +1,136 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { connectChannelResponseSchema, type ChannelDto } from '@waos/shared';
+import { useRouter } from '@/i18n/navigation';
+import { apiFetch, ApiError, getTokens } from '@/lib/api';
+import { getSocket } from '@/lib/socket';
+import { Badge, Button, Card, ErrorBox, Spinner } from '@/components/ui';
+
+interface ChannelListResponse {
+  channels: ChannelDto[];
+}
+
+interface StatusEvent {
+  channelId: string;
+  status: ChannelDto['status'];
+  qr?: { code: string; base64?: string };
+}
+
+export default function OnboardingConnectPage() {
+  const t = useTranslations('connect');
+  const router = useRouter();
+  const [channel, setChannel] = useState<ChannelDto | null>(null);
+  const [qr, setQr] = useState<{ code: string; base64?: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const channelIdRef = useRef<string | null>(null);
+
+  const start = useCallback(async (): Promise<void> => {
+    setBusy(true);
+    setError(null);
+    try {
+      const existing = await apiFetch<ChannelListResponse>('/api/v1/channels');
+      const current = existing.channels.find((c) => c.status !== 'DISCONNECTED');
+      const raw = current
+        ? await apiFetch<unknown>(`/api/v1/channels/${current.id}/connect`, { method: 'POST' })
+        : await apiFetch<unknown>('/api/v1/channels', { method: 'POST' });
+      const result = connectChannelResponseSchema.parse(raw);
+      channelIdRef.current = result.channel.id;
+      setChannel(result.channel);
+      setQr(result.qr ?? null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('startError'));
+    } finally {
+      setBusy(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    if (!getTokens()) {
+      router.replace('/login');
+      return;
+    }
+    void start();
+  }, [router, start]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) {
+      return;
+    }
+    const onStatus = (event: StatusEvent): void => {
+      if (channelIdRef.current && event.channelId !== channelIdRef.current) {
+        return;
+      }
+      setChannel((prev) => (prev ? { ...prev, status: event.status } : prev));
+      if (event.qr) {
+        setQr(event.qr);
+      }
+      if (event.status === 'CONNECTED') {
+        setQr(null);
+      }
+    };
+    socket.on('channel.status_changed', onStatus);
+    return () => {
+      socket.off('channel.status_changed', onStatus);
+    };
+  }, []);
+
+  const connected = channel?.status === 'CONNECTED';
+
+  return (
+    <main className="flex min-h-dvh items-center justify-center bg-brand-50 px-4 py-8">
+      <Card className="w-full max-w-md">
+        <div className="mb-4 flex items-center gap-1.5" aria-hidden>
+          <span className="h-2 w-2 rounded-full bg-brand-200" />
+          <span className="h-2 w-6 rounded-full bg-brand-700" />
+        </div>
+        <h1 className="text-2xl font-bold text-brand-900">{t('title')}</h1>
+        <p className="mt-1 text-sm text-brand-600">{t('subtitle')}</p>
+
+        {error ? (
+          <div className="mt-6">
+            <ErrorBox message={error} onRetry={() => void start()} retryLabel={t('retry')} />
+          </div>
+        ) : connected ? (
+          <div className="mt-6 space-y-4 text-center">
+            <Badge tone="success">{t('statusConnected')}</Badge>
+            <p className="text-sm text-brand-700">{t('connectedHint')}</p>
+            <Button onClick={() => { router.push('/onboarding/knowledge'); }} className="w-full">
+              {t('continue')}
+            </Button>
+          </div>
+        ) : qr ? (
+          <div className="mt-6 space-y-4">
+            <div className="flex justify-center rounded-2xl bg-white p-2">
+              {qr.base64 ? (
+                <img src={qr.base64} alt={t('qrAlt')} className="h-64 w-64" />
+              ) : (
+                <p className="text-xs break-all text-brand-700">{qr.code}</p>
+              )}
+            </div>
+            <ol className="list-decimal space-y-1 pl-5 text-sm text-brand-800">
+              <li>{t('step1')}</li>
+              <li>{t('step2')}</li>
+              <li>{t('step3')}</li>
+            </ol>
+            <div className="flex items-center justify-center gap-2">
+              <Badge tone="warning">{t('statusWaiting')}</Badge>
+              <Button variant="ghost" onClick={() => void start()} disabled={busy}>
+                {t('refreshQr')}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Spinner label={t('preparing')} />
+        )}
+
+        <p className="mt-6 rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
+          {t('banRiskDisclosure')}
+        </p>
+      </Card>
+    </main>
+  );
+}
