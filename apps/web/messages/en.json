@@ -234,5 +234,15 @@
     "addMoreInfo": "Add more info",
     "finish": "Finish setup",
     "genericError": "The test failed. Check your connection and try again."
+  },
+  "common": {
+    "languageSwitcherLabel": "Choose language"
+  },
+  "wizard": {
+    "progressLabel": "Setup progress",
+    "stepProfile": "Business",
+    "stepConnect": "Connect",
+    "stepKnowledge": "Info",
+    "stepTest": "Test"
   }
 }

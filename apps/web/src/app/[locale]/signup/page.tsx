@@ -6,6 +6,7 @@ import { authResponseSchema } from '@waos/shared';
 import { Link, useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, setSession } from '@/lib/api';
 import { Button, Card, ErrorBox, Field, Input } from '@/components/ui';
+import { OnboardingShell } from '@/components/onboarding-shell';
 
 export default function SignupPage() {
   const t = useTranslations('auth');
@@ -37,8 +38,8 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-brand-50 px-4 py-8">
-      <Card className="w-full max-w-md">
+    <OnboardingShell>
+      <Card className="w-full p-8 shadow-2xl">
         <h1 className="text-2xl font-bold text-brand-900">{t('signupTitle')}</h1>
         <p className="mt-1 text-sm text-brand-600">{t('signupSubtitle')}</p>
         <form onSubmit={(e) => void submit(e)} className="mt-6 space-y-4">
@@ -84,6 +85,6 @@ export default function SignupPage() {
           </Link>
         </p>
       </Card>
-    </main>
+    </OnboardingShell>
   );
 }

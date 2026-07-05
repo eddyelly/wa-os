@@ -6,6 +6,7 @@ import type { KnowledgeDocDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, apiUpload, getTokens } from '@/lib/api';
 import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
+import { OnboardingShell } from '@/components/onboarding-shell';
 
 interface DocsResponse {
   docs: KnowledgeDocDto[];
@@ -84,13 +85,8 @@ export default function KnowledgePage() {
   };
 
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-2xl bg-brand-50 px-4 py-8">
-      <Card>
-        <div className="mb-4 flex items-center gap-1.5" aria-hidden>
-          <span className="h-2 w-2 rounded-full bg-brand-200" />
-          <span className="h-2 w-2 rounded-full bg-brand-200" />
-          <span className="h-2 w-6 rounded-full bg-brand-700" />
-        </div>
+    <OnboardingShell step={2} wide>
+      <Card className="p-8 shadow-2xl">
         <h1 className="text-2xl font-bold text-brand-900">{t('title')}</h1>
         <p className="mt-1 text-sm text-brand-600">{t('subtitle')}</p>
 
@@ -149,7 +145,7 @@ export default function KnowledgePage() {
       </Card>
 
       <section className="mt-6">
-        <h2 className="mb-2 text-sm font-semibold text-brand-800">{t('yourDocs')}</h2>
+        <h2 className="mb-2 text-sm font-semibold text-brand-100">{t('yourDocs')}</h2>
         {docs === null ? (
           <div className="space-y-2">
             <Skeleton className="h-16" />
@@ -191,6 +187,6 @@ export default function KnowledgePage() {
           {t('continue')}
         </Button>
       </div>
-    </main>
+    </OnboardingShell>
   );
 }

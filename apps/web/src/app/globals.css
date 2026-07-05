@@ -23,6 +23,25 @@
     'Inter', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
 }
 
+@theme {
+  --color-accent-200: #fbd38d;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.45s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

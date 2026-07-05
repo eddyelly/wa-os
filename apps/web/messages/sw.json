@@ -234,5 +234,15 @@
     "addMoreInfo": "Ongeza taarifa zaidi",
     "finish": "Maliza usajili",
     "genericError": "Jaribio limeshindikana. Angalia mtandao wako kisha ujaribu tena."
+  },
+  "common": {
+    "languageSwitcherLabel": "Chagua lugha"
+  },
+  "wizard": {
+    "progressLabel": "Hatua za usajili",
+    "stepProfile": "Biashara",
+    "stepConnect": "Unganisha",
+    "stepKnowledge": "Taarifa",
+    "stepTest": "Jaribu"
   }
 }

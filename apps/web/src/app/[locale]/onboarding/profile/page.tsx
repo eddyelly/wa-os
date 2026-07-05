@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, getTokens } from '@/lib/api';
 import { Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
+import { OnboardingShell } from '@/components/onboarding-shell';
 
 interface OrganizationResponse {
   organization: {
@@ -63,12 +64,8 @@ export default function OnboardingProfilePage() {
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-brand-50 px-4 py-8">
-      <Card className="w-full max-w-md">
-        <div className="mb-4 flex items-center gap-1.5" aria-hidden>
-          <span className="h-2 w-6 rounded-full bg-brand-700" />
-          <span className="h-2 w-2 rounded-full bg-brand-200" />
-        </div>
+    <OnboardingShell step={0}>
+      <Card className="w-full p-8 shadow-2xl">
         <h1 className="text-2xl font-bold text-brand-900">{t('profileTitle')}</h1>
         <p className="mt-1 text-sm text-brand-600">{t('profileSubtitle')}</p>
         {loading ? (
@@ -105,6 +102,6 @@ export default function OnboardingProfilePage() {
           </form>
         )}
       </Card>
-    </main>
+    </OnboardingShell>
   );
 }

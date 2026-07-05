@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { clearSession, getStoredUser, getTokens, type StoredUser } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
+import { LanguageSwitcher } from './language-switcher';
 
 /**
  * Client shell for authenticated screens: token guard plus the bottom nav
@@ -50,10 +51,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Link href="/home" className="text-lg font-bold text-brand-900">
           {process.env.NEXT_PUBLIC_APP_NAME ?? 'WaOS'}
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <span className="hidden text-sm text-brand-700 sm:block">
             {user?.organization.name}
           </span>
+          <LanguageSwitcher />
           <button
             onClick={logout}
             className="rounded-lg px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100"

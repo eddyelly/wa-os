@@ -7,6 +7,7 @@ import { useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, getTokens } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { Badge, Button, Card, ErrorBox, Spinner } from '@/components/ui';
+import { OnboardingShell } from '@/components/onboarding-shell';
 
 interface ChannelListResponse {
   channels: ChannelDto[];
@@ -81,12 +82,8 @@ export default function OnboardingConnectPage() {
   const connected = channel?.status === 'CONNECTED';
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-brand-50 px-4 py-8">
-      <Card className="w-full max-w-md">
-        <div className="mb-4 flex items-center gap-1.5" aria-hidden>
-          <span className="h-2 w-2 rounded-full bg-brand-200" />
-          <span className="h-2 w-6 rounded-full bg-brand-700" />
-        </div>
+    <OnboardingShell step={1}>
+      <Card className="w-full p-8 shadow-2xl">
         <h1 className="text-2xl font-bold text-brand-900">{t('title')}</h1>
         <p className="mt-1 text-sm text-brand-600">{t('subtitle')}</p>
 
@@ -104,7 +101,7 @@ export default function OnboardingConnectPage() {
           </div>
         ) : qr ? (
           <div className="mt-6 space-y-4">
-            <div className="flex justify-center rounded-2xl bg-white p-2">
+            <div className="flex justify-center rounded-2xl border-2 border-brand-100 bg-white p-3 shadow-inner">
               {qr.base64 ? (
                 <img src={qr.base64} alt={t('qrAlt')} className="h-64 w-64" />
               ) : (
@@ -131,6 +128,6 @@ export default function OnboardingConnectPage() {
           {t('banRiskDisclosure')}
         </p>
       </Card>
-    </main>
+    </OnboardingShell>
   );
 }
