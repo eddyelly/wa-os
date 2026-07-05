@@ -100,7 +100,9 @@
     "emptyThread": "Hakuna meseji hapa bado.",
     "blocked": "Imezuiwa",
     "failed": "Imeshindikana",
-    "retry": "Jaribu tena"
+    "retry": "Jaribu tena",
+    "optIn": "Mteja amekubali kupokea vikumbusho",
+    "bookAppointment": "Weka miadi"
   },
   "knowledge": {
     "title": "Ongeza taarifa za biashara yako",
@@ -122,5 +124,35 @@
     "continue": "Endelea kwenye Meseji",
     "loadError": "Imeshindwa kupakia taarifa zako. Angalia mtandao wako.",
     "saveError": "Imeshindwa kuhifadhi. Angalia mtandao wako kisha ujaribu tena."
+  },
+  "appointments": {
+    "title": "Miadi",
+    "newAppointment": "Miadi mpya",
+    "hideForm": "Ficha fomu",
+    "customer": "Mteja",
+    "chooseCustomer": "Chagua mteja",
+    "service": "Huduma",
+    "servicePlaceholder": "Mfano: kusuka rasta",
+    "when": "Tarehe na saa",
+    "durationMinutes": "Muda (dakika)",
+    "save": "Hifadhi miadi",
+    "saving": "Inahifadhi...",
+    "reminderNote": "Vikumbusho hutumwa kiotomatiki kabla ya miadi, endapo mteja amekubali kuvipokea.",
+    "statusBOOKED": "Imepangwa",
+    "statusREMINDED": "Amekumbushwa",
+    "statusCOMPLETED": "Imekamilika",
+    "statusNO_SHOW": "Hakufika",
+    "statusCANCELLED": "Imefutwa",
+    "markCompleted": "Weka imekamilika",
+    "markNoShow": "Weka hakufika",
+    "cancel": "Futa miadi",
+    "noOptIn": "hajakubali vikumbusho bado",
+    "remindersSentWeek": "Vikumbusho vilivyotumwa wiki hii: {count}",
+    "noShowsWeek": "Waliokosa kufika wiki hii: {count}",
+    "emptyTitle": "Hakuna miadi wiki hii.",
+    "emptyHint": "Weka miadi kutoka kwenye mazungumzo au kwa kitufe hapo juu.",
+    "loadError": "Imeshindwa kupakia miadi. Angalia mtandao wako.",
+    "saveError": "Imeshindwa kuhifadhi miadi. Angalia taarifa kisha ujaribu tena.",
+    "retry": "Jaribu tena"
   }
 }

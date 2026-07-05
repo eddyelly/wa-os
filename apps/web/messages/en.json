@@ -100,7 +100,9 @@
     "emptyThread": "No messages here yet.",
     "blocked": "Blocked",
     "failed": "Failed",
-    "retry": "Try again"
+    "retry": "Try again",
+    "optIn": "Customer agreed to receive reminders",
+    "bookAppointment": "Book appointment"
   },
   "knowledge": {
     "title": "Add your business info",
@@ -122,5 +124,35 @@
     "continue": "Continue to Inbox",
     "loadError": "Could not load your business info. Check your connection.",
     "saveError": "Could not save. Check your connection and try again."
+  },
+  "appointments": {
+    "title": "Bookings",
+    "newAppointment": "New booking",
+    "hideForm": "Hide form",
+    "customer": "Customer",
+    "chooseCustomer": "Choose a customer",
+    "service": "Service",
+    "servicePlaceholder": "For example: braiding",
+    "when": "Date and time",
+    "durationMinutes": "Length (minutes)",
+    "save": "Save booking",
+    "saving": "Saving...",
+    "reminderNote": "Reminders go out automatically before the appointment, once the customer has agreed to receive them.",
+    "statusBOOKED": "Booked",
+    "statusREMINDED": "Reminded",
+    "statusCOMPLETED": "Completed",
+    "statusNO_SHOW": "No-show",
+    "statusCANCELLED": "Cancelled",
+    "markCompleted": "Mark completed",
+    "markNoShow": "Mark no-show",
+    "cancel": "Cancel booking",
+    "noOptIn": "no reminder consent yet",
+    "remindersSentWeek": "Reminders sent this week: {count}",
+    "noShowsWeek": "No-shows this week: {count}",
+    "emptyTitle": "No bookings this week.",
+    "emptyHint": "Create a booking from a conversation or with the button above.",
+    "loadError": "Could not load bookings. Check your connection.",
+    "saveError": "Could not save the booking. Check the details and try again.",
+    "retry": "Try again"
   }
 }

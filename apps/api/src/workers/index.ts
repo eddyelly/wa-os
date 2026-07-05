@@ -3,11 +3,17 @@ import { logger } from '../lib/logger.js';
 import { startAiReplyWorker } from './ai-reply-worker.js';
 import { startEmbeddingsWorker } from './embeddings-worker.js';
 import { startOutboundWorker } from './outbound-worker.js';
+import { startRemindersWorker } from './reminders-worker.js';
 
 const workers: Worker[] = [];
 
 export function startWorkers(): void {
-  workers.push(startOutboundWorker(), startAiReplyWorker(), startEmbeddingsWorker());
+  workers.push(
+    startOutboundWorker(),
+    startAiReplyWorker(),
+    startEmbeddingsWorker(),
+    startRemindersWorker(),
+  );
   logger.info({ count: workers.length }, 'workers started');
 }
 

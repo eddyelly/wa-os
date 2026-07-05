@@ -130,6 +130,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     await load();
   };
 
+  const optIn = async (): Promise<void> => {
+    if (!conversation) {
+      return;
+    }
+    await apiFetch(`/api/v1/contacts/${conversation.contact.id}/opt-in`, { method: 'POST' });
+    await load();
+  };
+
   const bubbleFor = (message: MessageDto): string => {
     if (message.direction === 'IN') {
       return 'self-start bg-white text-brand-950';
@@ -208,6 +216,20 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 {t('reopenConversation')}
               </button>
             )}
+            {conversation.contact.optedInAt === null ? (
+              <button
+                onClick={() => void optIn()}
+                className="rounded-lg bg-brand-100 px-2 py-1 text-xs font-semibold text-brand-900 hover:bg-brand-200"
+              >
+                {t('optIn')}
+              </button>
+            ) : null}
+            <Link
+              href={`/appointments?contactId=${conversation.contact.id}`}
+              className="rounded-lg px-2 py-1 text-xs font-medium text-brand-700 underline underline-offset-2 hover:bg-brand-100"
+            >
+              {t('bookAppointment')}
+            </Link>
             {conversation.status === 'PENDING' ? (
               <button
                 onClick={() => {

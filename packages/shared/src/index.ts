@@ -7,3 +7,4 @@ export * from './schemas/channel.js';
 export * from './schemas/conversation.js';
 export * from './schemas/organization.js';
 export * from './schemas/knowledge.js';
+export * from './schemas/appointment.js';

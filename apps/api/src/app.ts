@@ -3,7 +3,9 @@ import express, { type Express } from 'express';
 import { config } from './lib/config.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { requestLogger } from './middleware/request-logger.js';
+import { appointmentRoutes } from './routes/appointments.js';
 import { authRoutes } from './routes/auth.js';
+import { contactRoutes } from './routes/contacts.js';
 import { channelRoutes } from './routes/channels.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { healthRoutes } from './routes/health.js';
@@ -24,6 +26,8 @@ export function createApp(): Express {
   app.use('/api/v1/conversations', conversationRoutes);
   app.use('/api/v1/organization', organizationRoutes);
   app.use('/api/v1/knowledge', knowledgeRoutes);
+  app.use('/api/v1/appointments', appointmentRoutes);
+  app.use('/api/v1/contacts', contactRoutes);
   app.use('/api/v1/webhooks', webhookRoutes);
 
   app.use(notFoundHandler);

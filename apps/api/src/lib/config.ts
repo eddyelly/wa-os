@@ -46,6 +46,14 @@ const envSchema = z.object({
 
   AI_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.7),
 
+  // Reminder lead times before an appointment, in minutes (24h and 2h by
+  // default). Override in dev to test quickly, e.g. "5".
+  REMINDER_OFFSETS_MINUTES: z
+    .string()
+    .default('1440,120')
+    .transform((value) => value.split(',').map((part) => Number(part.trim())))
+    .pipe(z.array(z.number().int().positive()).min(1).max(2)),
+
   SEND_RATE_PER_MINUTE: z.coerce.number().int().positive().default(6),
   WARMUP_DAILY_CAPS: warmupCapsSchema.default('20,40,60,80,120,160,200,250,300,350,400,450,500,600'),
 
