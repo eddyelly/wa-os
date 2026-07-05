@@ -48,6 +48,11 @@ const envSchema = z.object({
 
   SEND_RATE_PER_MINUTE: z.coerce.number().int().positive().default(6),
   WARMUP_DAILY_CAPS: warmupCapsSchema.default('20,40,60,80,120,160,200,250,300,350,400,450,500,600'),
+
+  // Dashboard origin allowed by CORS and used to build absolute links.
+  WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
+  // Public base URL of this API, used for provider webhook registration.
+  API_PUBLIC_URL: z.string().url().default('http://localhost:4000'),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;

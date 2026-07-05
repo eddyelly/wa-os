@@ -48,6 +48,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class NotImplementedError extends AppError {
+  constructor(message = 'This capability is not available yet.') {
+    super(message, { statusCode: 501, code: 'NOT_IMPLEMENTED' });
+  }
+}
+
 /**
  * Thrown when a tenant-scoped query runs outside an authenticated request
  * context. This failing closed is what makes cross-tenant access impossible.

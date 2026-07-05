@@ -25,4 +25,12 @@ export const userRepository = {
   ): Promise<User> {
     return tx.user.create({ data: { ...data, role: 'OWNER' } });
   },
+
+  /** Tenant-scoped team list, e.g. for the assignment dropdown. */
+  listForOrg(): Promise<Pick<User, 'id' | 'name' | 'email' | 'role'>[]> {
+    return prisma.user.findMany({
+      select: { id: true, name: true, email: true, role: true },
+      orderBy: { createdAt: 'asc' },
+    });
+  },
 };
