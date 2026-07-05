@@ -41,8 +41,19 @@ function Bubble({
 
 function PhoneDemo() {
   const t = useTranslations('landing.demo');
+  // Replay the conversation every few seconds so the demo keeps living.
+  const [cycle, setCycle] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCycle((current) => current + 1);
+    }, 11_000);
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
   return (
-    <div className="animate-float mx-auto w-[290px] rounded-[2.4rem] border-[6px] border-brand-950/80 bg-brand-50 shadow-2xl">
+    <div className="animate-float mx-auto w-[290px] rounded-[2.4rem] border-[6px] border-brand-950/80 bg-brand-50 shadow-2xl lg:w-[330px]">
       <div className="flex items-center gap-2.5 rounded-t-[1.9rem] bg-brand-800 px-4 py-3">
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-300 text-xs font-bold text-brand-900">
           NS
@@ -52,7 +63,7 @@ function PhoneDemo() {
           <p className="text-[10px] text-brand-200">{t('online')}</p>
         </div>
       </div>
-      <div className="flex min-h-[330px] flex-col gap-2 px-3 py-4">
+      <div key={cycle} className="flex min-h-[330px] flex-col gap-2 px-3 py-4">
         <Bubble side="in" delay={400}>
           {t('msg1')}
         </Bubble>
@@ -111,12 +122,24 @@ export default function LandingPage() {
 
   return (
     <main className="bg-white">
-      {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-brand-950 via-brand-800 to-brand-600">
-        <div aria-hidden className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-brand-400/25 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute -right-24 top-40 h-96 w-96 rounded-full bg-accent-400/15 blur-3xl" />
+      {/* Hero: fills the first viewport on any screen, marquee pinned at its foot */}
+      <div className="animate-gradient-pan relative flex min-h-dvh flex-col overflow-hidden bg-gradient-to-br from-brand-950 via-brand-800 to-brand-600">
+        <div
+          aria-hidden
+          className="animate-float pointer-events-none absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-brand-400/25 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="animate-float pointer-events-none absolute top-1/3 -right-32 h-[30rem] w-[30rem] rounded-full bg-accent-400/15 blur-3xl"
+          style={{ animationDelay: '2s', animationDuration: '9s' }}
+        />
+        <div
+          aria-hidden
+          className="animate-float pointer-events-none absolute -bottom-40 left-1/3 h-[26rem] w-[26rem] rounded-full bg-brand-300/15 blur-3xl"
+          style={{ animationDelay: '4s', animationDuration: '11s' }}
+        />
 
-        <header className="relative mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+        <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5">
           <span className="text-xl font-extrabold tracking-tight text-white">
             {appName}
             <span className="text-accent-400">.</span>
@@ -140,29 +163,35 @@ export default function LandingPage() {
           </div>
         </header>
 
-        <section className="relative mx-auto grid max-w-5xl items-center gap-10 px-5 pt-10 pb-16 sm:pt-16 md:grid-cols-2">
+        <section className="relative mx-auto grid w-full max-w-6xl flex-1 items-center gap-10 px-5 py-10 md:grid-cols-2 lg:gap-16">
           <div>
             <p className="animate-fade-up inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-accent-200" style={{ animationDelay: '0ms' }}>
               {t('kicker')}
             </p>
-            <h1 className="animate-fade-up mt-4 text-4xl leading-tight font-extrabold text-white sm:text-5xl" style={{ animationDelay: '120ms' }}>
+            <h1 className="animate-fade-up mt-4 text-4xl leading-tight font-extrabold text-white sm:text-5xl lg:text-6xl" style={{ animationDelay: '120ms' }}>
               {t('heroTitle1')}{' '}
-              <span className="text-accent-400">{t('heroTitleAccent')}</span>{' '}
+              <span className="relative inline-block text-accent-400">
+                {t('heroTitleAccent')}
+                <span
+                  aria-hidden
+                  className="animate-underline absolute -bottom-1.5 left-0 h-1.5 w-full rounded-full bg-accent-400/50"
+                />
+              </span>{' '}
               {t('heroTitle2')}
             </h1>
-            <p className="animate-fade-up mt-4 max-w-md text-base leading-relaxed text-brand-100" style={{ animationDelay: '240ms' }}>
+            <p className="animate-fade-up mt-5 max-w-md text-base leading-relaxed text-brand-100 lg:max-w-lg lg:text-lg" style={{ animationDelay: '240ms' }}>
               {t('heroSubtitle')}
             </p>
-            <div className="animate-fade-up mt-7 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: '360ms' }}>
+            <div className="animate-fade-up mt-8 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: '360ms' }}>
               <Link
                 href={primaryHref}
-                className="rounded-2xl bg-accent-400 px-6 py-3.5 text-center text-base font-bold text-brand-950 shadow-lg transition-transform hover:scale-[1.03]"
+                className="animate-glow rounded-2xl bg-accent-400 px-7 py-3.5 text-center text-base font-bold text-brand-950 transition-transform hover:scale-[1.03]"
               >
                 {primaryLabel}
               </Link>
               <a
                 href="#how"
-                className="rounded-2xl border border-white/25 bg-white/5 px-6 py-3.5 text-center text-base font-semibold text-white transition-colors hover:bg-white/10"
+                className="rounded-2xl border border-white/25 bg-white/5 px-7 py-3.5 text-center text-base font-semibold text-white transition-colors hover:bg-white/10"
               >
                 {t('ctaSecondary')}
               </a>
@@ -176,7 +205,17 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Verticals marquee */}
+        <a
+          href="#how"
+          aria-label={t('ctaSecondary')}
+          className="animate-bounce-soft relative mx-auto mb-4 hidden text-white/70 transition-colors hover:text-white md:block"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-7 w-7" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+          </svg>
+        </a>
+
+        {/* Verticals marquee pinned to the bottom edge of the hero */}
         <div className="relative border-t border-white/10 bg-brand-950/40 py-3 overflow-hidden">
           <div className="animate-marquee flex w-max items-center gap-8 whitespace-nowrap">
             {marqueeItems.map((key, index) => (
@@ -192,7 +231,7 @@ export default function LandingPage() {
       </div>
 
       {/* Features */}
-      <section className="mx-auto max-w-5xl px-5 py-14">
+      <section className="mx-auto max-w-6xl px-5 py-16 lg:py-24">
         <Reveal>
           <h2 className="text-center text-2xl font-extrabold text-brand-950 sm:text-3xl">
             {t('featuresTitle')}
@@ -201,7 +240,7 @@ export default function LandingPage() {
             {t('featuresSubtitle')}
           </p>
         </Reveal>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature, index) => (
             <Reveal key={feature.key} delay={index * 100}>
               <div className="h-full rounded-2xl border border-brand-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
@@ -219,8 +258,8 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section id="how" className="bg-brand-50 py-14">
-        <div className="mx-auto max-w-5xl px-5">
+      <section id="how" className="bg-brand-50 py-16 lg:py-24">
+        <div className="mx-auto max-w-6xl px-5">
           <Reveal>
             <h2 className="text-center text-2xl font-extrabold text-brand-950 sm:text-3xl">
               {t('howTitle')}
@@ -243,7 +282,7 @@ export default function LandingPage() {
       </section>
 
       {/* Stats band */}
-      <section className="mx-auto max-w-5xl px-5 py-14">
+      <section className="mx-auto max-w-6xl px-5 py-16 lg:py-24">
         <Reveal>
           <div className="grid grid-cols-2 gap-6 rounded-3xl bg-gradient-to-br from-brand-900 to-brand-700 p-8 text-center sm:grid-cols-4">
             {(['stat1', 'stat2', 'stat3', 'stat4'] as const).map((stat) => (
@@ -257,7 +296,7 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="mx-auto max-w-5xl px-5 pb-16">
+      <section className="mx-auto max-w-6xl px-5 pb-20">
         <Reveal>
           <div className="rounded-3xl border border-brand-100 bg-brand-50 p-8 text-center sm:p-10">
             <h2 className="text-2xl font-extrabold text-brand-950 sm:text-3xl">{t('finalTitle')}</h2>
@@ -273,7 +312,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-brand-100 py-8">
-        <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-5 text-center">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-5 text-center">
           <span className="text-lg font-extrabold tracking-tight text-brand-900">
             {appName}
             <span className="text-accent-500">.</span>

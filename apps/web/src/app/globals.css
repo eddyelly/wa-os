@@ -101,6 +101,63 @@
   animation: marquee 24s linear infinite;
 }
 
+@keyframes gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-pan {
+  background-size: 180% 180%;
+  animation: gradient-pan 16s ease-in-out infinite;
+}
+
+@keyframes bounce-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(7px);
+  }
+}
+
+.animate-bounce-soft {
+  animation: bounce-soft 1.8s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 10px 28px -8px rgba(245, 166, 35, 0.5);
+  }
+  50% {
+    box-shadow: 0 12px 42px -4px rgba(245, 166, 35, 0.85);
+  }
+}
+
+.animate-glow {
+  animation: glow-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes underline-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-underline {
+  transform-origin: left;
+  animation: underline-grow 0.7s 0.9s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
