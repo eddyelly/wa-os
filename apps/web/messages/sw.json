@@ -244,5 +244,89 @@
     "stepConnect": "Unganisha",
     "stepKnowledge": "Taarifa",
     "stepTest": "Jaribu"
+  },
+  "landing": {
+    "kicker": "Kwa saluni, kliniki, spa, walimu, na gereji",
+    "heroTitle1": "Biashara yako",
+    "heroTitleAccent": "inajibu WhatsApp",
+    "heroTitle2": "hata ukiwa kazini.",
+    "heroSubtitle": "Msaidizi wa AI anayejibu wateja wako kwa Kiswahili au Kiingereza, anapanga miadi, anatuma vikumbusho, na kukuita pale mtu anapohitajika.",
+    "ctaPrimary": "Anza bure",
+    "ctaSecondary": "Ona jinsi inavyofanya kazi",
+    "openInbox": "Fungua Meseji zako",
+    "login": "Ingia",
+    "freeNote": "Ni bure kutumia katika awamu hii. Dakika tano za usajili, hakuna kadi inayohitajika.",
+    "demo": {
+      "businessName": "Nuru Salon",
+      "online": "yupo mtandaoni",
+      "msg1": "Habari! Kusuka rasta ni bei gani?",
+      "msg2": "Karibu Nuru Salon! Kusuka rasta ni TZS 25,000 na huchukua kama saa mbili.",
+      "msg3": "Safi, naweza kuja kesho saa nne?",
+      "msg4": "Ndiyo! Nimeweka kesho saa 4:00 kwa kusuka rasta. Timu itathibitisha nafasi yako muda mfupi."
+    },
+    "verticals": {
+      "v1": "Saluni",
+      "v2": "Kliniki",
+      "v3": "Spa",
+      "v4": "Walimu",
+      "v5": "Gereji",
+      "v6": "Vinyozi"
+    },
+    "featuresTitle": "Kila kitu anachohitaji mmiliki mwenye shughuli",
+    "featuresSubtitle": "Imetengenezwa kwa watu wanaoendesha biashara kwa simu, katikati ya wateja.",
+    "features": {
+      "answers": {
+        "title": "Inajibu saa zote",
+        "body": "AI hujibu kutoka kwenye bei, huduma, na saa zako mwenyewe. Haibuni jibu kamwe."
+      },
+      "bookings": {
+        "title": "Miadi na vikumbusho",
+        "body": "Miadi hupata vikumbusho vya kiotomatiki kabla ya ziara, hivyo wateja wachache husahau kufika."
+      },
+      "handoff": {
+        "title": "Wewe ndiye msimamizi",
+        "body": "Chochote AI isichokuwa na uhakika nacho huingia kwenye Meseji zako mtu ajibu. Gusa mara moja kuchukua."
+      },
+      "language": {
+        "title": "Kiswahili na Kiingereza",
+        "body": "Msaidizi hutambua lugha ya mteja na kujibu kwa lugha hiyo hiyo, kwa adabu na kwa ufupi."
+      }
+    },
+    "howTitle": "Inafanya kazi kwa hatua tatu",
+    "how": {
+      "step1": {
+        "title": "Ieleze kuhusu biashara yako",
+        "body": "Bandika huduma, bei, na saa zako za kazi, au pakia faili. Hiyo ndiyo chanzo pekee cha ukweli cha AI."
+      },
+      "step2": {
+        "title": "Unganisha WhatsApp yako",
+        "body": "Skani msimbo mmoja wa QR kwa simu ya biashara yako. Namba yako inabaki yako."
+      },
+      "step3": {
+        "title": "Iangalie ikifanya kazi",
+        "body": "Wateja hupata majibu papo hapo, miadi hupata vikumbusho, na maswali magumu huja kwako."
+      }
+    },
+    "stats": {
+      "stat1": {
+        "value": "24/7",
+        "label": "Inajibu kila wakati"
+      },
+      "stat2": {
+        "value": "2",
+        "label": "Lugha, sw na en"
+      },
+      "stat3": {
+        "value": "Dak 5",
+        "label": "Za kusajili"
+      },
+      "stat4": {
+        "value": "0",
+        "label": "Gharama awamu hii"
+      }
+    },
+    "finalTitle": "Wape wateja wako jibu leo",
+    "finalSubtitle": "Jisajili, unganisha WhatsApp yako, na umwache msaidizi ashughulikie maswali ya kawaida wakati wewe unafanya kazi halisi.",
+    "footerTagline": "Mfumo wa WhatsApp kwa biashara za huduma zenye miadi Tanzania."
   }
 }

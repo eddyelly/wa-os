@@ -244,5 +244,89 @@
     "stepConnect": "Connect",
     "stepKnowledge": "Info",
     "stepTest": "Test"
+  },
+  "landing": {
+    "kicker": "For salons, clinics, spas, tutors, and garages",
+    "heroTitle1": "Your business",
+    "heroTitleAccent": "answers on WhatsApp",
+    "heroTitle2": "even while you work.",
+    "heroSubtitle": "An AI assistant that replies to your customers in Swahili or English, books appointments, sends reminders, and calls you in when a human touch is needed.",
+    "ctaPrimary": "Get started free",
+    "ctaSecondary": "See how it works",
+    "openInbox": "Open your Inbox",
+    "login": "Log in",
+    "freeNote": "Free to use in this phase. Five minutes of setup, no card needed.",
+    "demo": {
+      "businessName": "Nuru Salon",
+      "online": "online",
+      "msg1": "Hi! How much is braiding?",
+      "msg2": "Karibu Nuru Salon! Braiding is TZS 25,000 and takes about two hours.",
+      "msg3": "Great, can I come tomorrow at 10?",
+      "msg4": "Yes! I have noted tomorrow at 10:00 for braiding. The team will confirm your slot shortly."
+    },
+    "verticals": {
+      "v1": "Salons",
+      "v2": "Clinics",
+      "v3": "Spas",
+      "v4": "Tutors",
+      "v5": "Garages",
+      "v6": "Barbershops"
+    },
+    "featuresTitle": "Everything a busy owner needs",
+    "featuresSubtitle": "Built for people who run their business from a phone, between customers.",
+    "features": {
+      "answers": {
+        "title": "Answers around the clock",
+        "body": "The AI replies from your own prices, services, and hours. It never invents an answer."
+      },
+      "bookings": {
+        "title": "Bookings and reminders",
+        "body": "Appointments get automatic reminders before the visit, so fewer customers forget to show up."
+      },
+      "handoff": {
+        "title": "You stay in control",
+        "body": "Anything the AI is unsure about lands in your Inbox for a person to answer. One tap takes over."
+      },
+      "language": {
+        "title": "Swahili and English",
+        "body": "The assistant detects the customer's language and replies in it, politely and briefly."
+      }
+    },
+    "howTitle": "Working in three steps",
+    "how": {
+      "step1": {
+        "title": "Tell it about your business",
+        "body": "Paste your services, prices, and opening hours, or upload a file. That becomes the AI's only source of truth."
+      },
+      "step2": {
+        "title": "Connect your WhatsApp",
+        "body": "Scan one QR code with your business phone. Your number stays yours."
+      },
+      "step3": {
+        "title": "Watch it work",
+        "body": "Customers get instant answers, bookings get reminders, and tricky questions come to you."
+      }
+    },
+    "stats": {
+      "stat1": {
+        "value": "24/7",
+        "label": "Always answering"
+      },
+      "stat2": {
+        "value": "2",
+        "label": "Languages, sw and en"
+      },
+      "stat3": {
+        "value": "5 min",
+        "label": "To set up"
+      },
+      "stat4": {
+        "value": "0",
+        "label": "Cost in this phase"
+      }
+    },
+    "finalTitle": "Give your customers an answer today",
+    "finalSubtitle": "Sign up, connect your WhatsApp, and let the assistant handle the routine questions while you do the real work.",
+    "footerTagline": "The WhatsApp operating system for appointment-based local businesses in Tanzania."
   }
 }
