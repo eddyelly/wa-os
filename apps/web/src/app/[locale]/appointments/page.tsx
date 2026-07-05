@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type SyntheticEvent } from 'react';
+import { Suspense, useCallback, useEffect, useState, type SyntheticEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import type { AppointmentDto, WeeklyStats } from '@waos/shared';
@@ -32,7 +32,7 @@ function statusTone(status: AppointmentDto['status']): 'neutral' | 'success' | '
   }
 }
 
-export default function AppointmentsPage() {
+function AppointmentsPageInner() {
   const t = useTranslations('appointments');
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -259,5 +259,14 @@ export default function AppointmentsPage() {
         ))
       )}
     </AppShell>
+  );
+}
+
+export default function AppointmentsPage() {
+  // useSearchParams requires a Suspense boundary for prerendering.
+  return (
+    <Suspense fallback={null}>
+      <AppointmentsPageInner />
+    </Suspense>
   );
 }

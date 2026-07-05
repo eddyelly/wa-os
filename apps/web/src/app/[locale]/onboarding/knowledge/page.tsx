@@ -187,7 +187,7 @@ export default function KnowledgePage() {
       </section>
 
       <div className="mt-6">
-        <Button onClick={() => { router.push('/inbox'); }} className="w-full">
+        <Button onClick={() => { router.push('/onboarding/test'); }} className="w-full">
           {t('continue')}
         </Button>
       </div>

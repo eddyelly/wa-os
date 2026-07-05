@@ -37,6 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   const navItems = [
+    { href: '/home', label: t('home') },
     { href: '/inbox', label: t('inbox') },
     { href: '/appointments', label: t('appointments') },
     { href: '/contacts', label: t('contacts') },
@@ -46,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-brand-50">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-brand-100 bg-white px-4 py-3">
-        <Link href="/inbox" className="text-lg font-bold text-brand-900">
+        <Link href="/home" className="text-lg font-bold text-brand-900">
           {process.env.NEXT_PUBLIC_APP_NAME ?? 'WaOS'}
         </Link>
         <div className="flex items-center gap-3">
