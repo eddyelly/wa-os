@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+.next/
+out/
+
+# env and secrets
+.env
+.env.*
+!.env.example
+
+# test and tooling output
+coverage/
+*.tsbuildinfo
+
+# logs
+*.log
+
+# editor and os
+.DS_Store
+.idea/
+.vscode/
