@@ -1,0 +1,112 @@
+# WaOS infra services for local dev and the single-VPS deployment.
+# Start from the repo root with: pnpm infra:up
+# Values fall back to dev defaults; set real secrets in infra/.env for the VPS.
+# The api and web services run via pnpm in dev; containerizing them is part of
+# the Milestone 4 deploy runbook.
+
+name: waos
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-waos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-waos}
+      POSTGRES_DB: ${POSTGRES_DB:-waos_dev}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-waos} -d ${POSTGRES_DB:-waos_dev}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-waos}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-waos-secret}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set waos http://minio:9000 ${MINIO_ACCESS_KEY:-waos} ${MINIO_SECRET_KEY:-waos-secret} &&
+      mc mb --ignore-existing waos/${MINIO_BUCKET:-waos-media}
+      "
+
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-http://localhost:8080}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-change-me-evolution-key}
+      DATABASE_ENABLED: 'true'
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-waos}:${POSTGRES_PASSWORD:-waos}@postgres:5432/evolution
+      DATABASE_CONNECTION_CLIENT_NAME: waos
+      # Session persistence: instances must survive restarts (CLAUDE.md 3.4).
+      DATABASE_SAVE_DATA_INSTANCE: 'true'
+      DATABASE_SAVE_DATA_NEW_MESSAGE: 'false'
+      DATABASE_SAVE_MESSAGE_UPDATE: 'false'
+      DATABASE_SAVE_DATA_CONTACTS: 'false'
+      DATABASE_SAVE_DATA_CHATS: 'false'
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_URI: redis://redis:6379/6
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_LOCAL_ENABLED: 'false'
+      LOG_LEVEL: ERROR,WARN,INFO
+      DEL_INSTANCE: 'false'
+    ports:
+      - '8080:8080'
+    volumes:
+      - evolution-instances:/evolution/instances
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8080/ >/dev/null 2>&1 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  evolution-instances:
