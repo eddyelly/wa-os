@@ -123,3 +123,33 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 
   return (await response.json()) as T;
 }
+
+/** Multipart upload with the same auth and refresh behavior as apiFetch. */
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  const doFetch = (): Promise<Response> => {
+    const tokens = getTokens();
+    return fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: tokens ? { Authorization: `Bearer ${tokens.accessToken}` } : {},
+      body: formData,
+    });
+  };
+  let response = await doFetch();
+  if (response.status === 401) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      response = await doFetch();
+    }
+  }
+  if (!response.ok) {
+    let message = 'Upload failed. Try again.';
+    try {
+      const body = (await response.json()) as { error?: { message?: string } };
+      message = body.error?.message ?? message;
+    } catch {
+      // keep default
+    }
+    throw new ApiError(response.status, 'UPLOAD_FAILED', message);
+  }
+  return (await response.json()) as T;
+}

@@ -101,5 +101,26 @@
     "blocked": "Imezuiwa",
     "failed": "Imeshindikana",
     "retry": "Jaribu tena"
+  },
+  "knowledge": {
+    "title": "Ongeza taarifa za biashara yako",
+    "subtitle": "Bandika au pakia yale wateja wanayouliza: huduma, bei, saa za kazi, mahali. AI hujibu kutoka kwenye taarifa hizi tu.",
+    "docTitle": "Ipe jina taarifa hii",
+    "docTitleHint": "Mfano: Huduma na bei.",
+    "docContent": "Taarifa yenyewe",
+    "docContentHint": "Andika kama vile ungemweleza mteja.",
+    "docContentPlaceholder": "Tunafungua Jumatatu mpaka Jumamosi, saa 3 asubuhi mpaka saa 1 jioni. Kusuka rasta ni TZS 25,000...",
+    "addInfo": "Hifadhi taarifa hii",
+    "uploadFile": "Pakia faili (.txt, .md, .pdf)",
+    "saving": "Inahifadhi...",
+    "yourDocs": "Taarifa zilizohifadhiwa",
+    "ready": "Tayari",
+    "processing": "Inachakatwa...",
+    "delete": "Futa",
+    "emptyTitle": "Hakuna kilichohifadhiwa bado.",
+    "emptyHint": "Ongeza huduma na bei zako ili AI iweze kujibu wateja.",
+    "continue": "Endelea kwenye Meseji",
+    "loadError": "Imeshindwa kupakia taarifa zako. Angalia mtandao wako.",
+    "saveError": "Imeshindwa kuhifadhi. Angalia mtandao wako kisha ujaribu tena."
   }
 }

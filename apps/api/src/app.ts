@@ -7,6 +7,7 @@ import { authRoutes } from './routes/auth.js';
 import { channelRoutes } from './routes/channels.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { healthRoutes } from './routes/health.js';
+import { knowledgeRoutes } from './routes/knowledge.js';
 import { organizationRoutes } from './routes/organization.js';
 import { webhookRoutes } from './routes/webhooks.js';
 
@@ -22,6 +23,7 @@ export function createApp(): Express {
   app.use('/api/v1/channels', channelRoutes);
   app.use('/api/v1/conversations', conversationRoutes);
   app.use('/api/v1/organization', organizationRoutes);
+  app.use('/api/v1/knowledge', knowledgeRoutes);
   app.use('/api/v1/webhooks', webhookRoutes);
 
   app.use(notFoundHandler);

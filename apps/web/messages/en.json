@@ -101,5 +101,26 @@
     "blocked": "Blocked",
     "failed": "Failed",
     "retry": "Try again"
+  },
+  "knowledge": {
+    "title": "Add your business info",
+    "subtitle": "Paste or upload what customers ask about: services, prices, opening hours, location. The AI answers only from this.",
+    "docTitle": "Name this info",
+    "docTitleHint": "For example: Services and prices.",
+    "docContent": "The info itself",
+    "docContentHint": "Write it like you would tell a customer.",
+    "docContentPlaceholder": "We open Monday to Saturday, 9:00 to 19:00. Braiding costs TZS 25,000...",
+    "addInfo": "Save this info",
+    "uploadFile": "Upload a file (.txt, .md, .pdf)",
+    "saving": "Saving...",
+    "yourDocs": "Saved business info",
+    "ready": "Ready",
+    "processing": "Processing...",
+    "delete": "Delete",
+    "emptyTitle": "Nothing saved yet.",
+    "emptyHint": "Add your services and prices so the AI can answer customers.",
+    "continue": "Continue to Inbox",
+    "loadError": "Could not load your business info. Check your connection.",
+    "saveError": "Could not save. Check your connection and try again."
   }
 }

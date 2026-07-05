@@ -1,11 +1,13 @@
 import type { Worker } from 'bullmq';
 import { logger } from '../lib/logger.js';
+import { startAiReplyWorker } from './ai-reply-worker.js';
+import { startEmbeddingsWorker } from './embeddings-worker.js';
 import { startOutboundWorker } from './outbound-worker.js';
 
 const workers: Worker[] = [];
 
 export function startWorkers(): void {
-  workers.push(startOutboundWorker());
+  workers.push(startOutboundWorker(), startAiReplyWorker(), startEmbeddingsWorker());
   logger.info({ count: workers.length }, 'workers started');
 }
 

@@ -6,3 +6,4 @@ export * from './schemas/jobs.js';
 export * from './schemas/channel.js';
 export * from './schemas/conversation.js';
 export * from './schemas/organization.js';
+export * from './schemas/knowledge.js';
