@@ -118,7 +118,10 @@ export default function LandingPage() {
   ] as const;
 
   const verticals = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'] as const;
-  const marqueeItems = [...verticals, ...verticals];
+  // One half must always be wider than the viewport so the loop never shows
+  // a gap, even on very wide monitors. The track renders two halves.
+  const marqueeHalf = Array.from({ length: 4 }, () => verticals).flat();
+  const marqueeItems = [...marqueeHalf, ...marqueeHalf];
 
   return (
     <main className="bg-white">
@@ -216,10 +219,13 @@ export default function LandingPage() {
         </a>
 
         {/* Verticals marquee pinned to the bottom edge of the hero */}
-        <div className="relative border-t border-white/10 bg-brand-950/40 py-3 overflow-hidden">
-          <div className="animate-marquee flex w-max items-center gap-8 whitespace-nowrap">
+        <div className="relative border-t border-white/10 bg-brand-950/40 py-4 overflow-hidden lg:py-5">
+          <div className="animate-marquee flex w-max items-center gap-10 whitespace-nowrap">
             {marqueeItems.map((key, index) => (
-              <span key={`${key}-${index}`} className="flex items-center gap-8 text-sm font-medium text-brand-200">
+              <span
+                key={`${key}-${index}`}
+                className="flex items-center gap-10 text-base font-semibold tracking-wide text-brand-100 lg:text-lg"
+              >
                 {t(`verticals.${key}`)}
                 <span aria-hidden className="text-accent-400">
                   {'•'}

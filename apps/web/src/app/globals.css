@@ -88,17 +88,19 @@
   animation: dot-bounce 1.2s infinite;
 }
 
+/* Two identical halves slide from -50% to 0, so the content flows left to
+   right and the loop point is invisible. */
 @keyframes marquee {
   from {
-    transform: translateX(0);
+    transform: translateX(-50%);
   }
   to {
-    transform: translateX(-50%);
+    transform: translateX(0);
   }
 }
 
 .animate-marquee {
-  animation: marquee 24s linear infinite;
+  animation: marquee 45s linear infinite;
 }
 
 @keyframes gradient-pan {
