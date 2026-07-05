@@ -19,9 +19,11 @@ import { ForbiddenError } from './errors.js';
  *   tenant client (signup owns that, pre-auth, in a transaction)
  *
  * If no request context is present the resolver throws, so unscoped access
- * fails closed. Repositories must not use nested writes that create rows for
- * a different model (create the rows directly instead) because nested create
- * data is not rewritten by this extension.
+ * fails closed. Nested relation writes (connect, nested create, and friends)
+ * are rejected outright because this extension cannot rewrite their data:
+ * repositories create related rows directly. Scalar foreign keys are not
+ * verifiable here, so repositories must resolve any id they are about to
+ * reference through the tenant client first.
  */
 
 export const TENANT_MODELS = new Set<string>([
@@ -36,6 +38,21 @@ export const TENANT_MODELS = new Set<string>([
   'AiReplyLog',
 ]);
 
+// Relation fields per domain model, derived from schema.prisma. Their
+// presence in write data means a nested relation write, which is forbidden
+// through the tenant client. Keep in sync when the schema changes.
+export const TENANT_RELATION_FIELDS: Record<string, readonly string[]> = {
+  User: ['organization', 'assignedConversations'],
+  Channel: ['organization', 'conversations'],
+  Contact: ['organization', 'conversations', 'appointments'],
+  Conversation: ['organization', 'channel', 'contact', 'assignee', 'messages', 'aiReplyLogs'],
+  Message: ['organization', 'conversation'],
+  KnowledgeDoc: ['organization', 'chunks'],
+  KnowledgeChunk: ['organization', 'doc'],
+  Appointment: ['organization', 'contact'],
+  AiReplyLog: ['organization', 'conversation'],
+};
+
 type QueryArgs = Record<string, unknown>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -49,14 +66,29 @@ function mergeWhere(args: QueryArgs, filter: Record<string, unknown>): QueryArgs
   return { ...args, where: { ...where, ...filter } };
 }
 
+function assertNoRelationWrites(model: string, data: unknown): void {
+  const relationFields = TENANT_RELATION_FIELDS[model] ?? [];
+  const rows: readonly unknown[] = Array.isArray(data) ? data : [data];
+  for (const row of rows) {
+    if (!isRecord(row)) {
+      continue;
+    }
+    for (const field of relationFields) {
+      if (field in row) {
+        throw new ForbiddenError(
+          `Nested relation writes are not allowed through the tenant client (${model}.${field}). Create related rows directly.`,
+        );
+      }
+    }
+  }
+}
+
 function forceData(data: unknown, organizationId: string): unknown {
   if (Array.isArray(data)) {
     const items: readonly unknown[] = data;
     return items.map((item) => (isRecord(item) ? { ...item, organizationId } : item));
   }
   if (isRecord(data)) {
-    // A relation-style `organization: { connect: ... }` would conflict with
-    // the scalar we set here and make Prisma reject the query: failing closed.
     return { ...data, organizationId };
   }
   return data;
@@ -93,19 +125,28 @@ const WHERE_OPERATIONS = new Set([
  * Pure argument rewrite for a tenant-scoped operation; exported so unit tests
  * can prove cross-tenant access fails without a database.
  */
-export function scopeArgs(operation: string, args: QueryArgs, organizationId: string): QueryArgs {
+export function scopeArgs(
+  model: string,
+  operation: string,
+  args: QueryArgs,
+  organizationId: string,
+): QueryArgs {
   let scoped: QueryArgs = { ...args };
 
   if (WHERE_OPERATIONS.has(operation)) {
     scoped = mergeWhere(scoped, { organizationId });
   }
   if (CREATE_OPERATIONS.has(operation) && 'data' in scoped) {
+    assertNoRelationWrites(model, scoped.data);
     scoped = { ...scoped, data: forceData(scoped.data, organizationId) };
   }
   if (UPDATE_OPERATIONS.has(operation) && 'data' in scoped) {
+    assertNoRelationWrites(model, scoped.data);
     scoped = { ...scoped, data: stripOrganizationFromUpdate(scoped.data) };
   }
   if (operation === 'upsert') {
+    assertNoRelationWrites(model, scoped.create);
+    assertNoRelationWrites(model, scoped.update);
     scoped = {
       ...scoped,
       create: forceData(scoped.create, organizationId),
@@ -155,7 +196,7 @@ export function createTenantExtension(resolveOrganizationId: () => string) {
           if (!TENANT_MODELS.has(model)) {
             return query(args);
           }
-          return query(scopeArgs(operation, args, organizationId));
+          return query(scopeArgs(model, operation, args, organizationId));
         },
       },
     },

@@ -37,6 +37,31 @@ export default tseslint.config(
     },
   },
   {
+    // Layering (CLAUDE.md section 5): only repositories and services may
+    // touch the Prisma clients. Everything closer to HTTP goes through them.
+    files: [
+      'apps/api/src/controllers/**',
+      'apps/api/src/routes/**',
+      'apps/api/src/middleware/**',
+      'apps/api/src/sockets/**',
+      'apps/api/src/workers/**',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/lib/prisma.js', '@prisma/client'],
+              message:
+                'Data access belongs in the repository layer; this layer must not touch Prisma.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.{js,mjs,cjs}'],
     ...tseslint.configs.disableTypeChecked,
   },

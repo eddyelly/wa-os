@@ -95,6 +95,22 @@ describe.skipIf(!databaseUrl)('tenant isolation (live database)', () => {
     expect(created.organizationId).toBe(orgAId);
   });
 
+  it('rejects a relation connect that references a foreign row', async () => {
+    await expect(
+      asOrgA(() =>
+        tenantClient.appointment.create({
+          data: {
+            serviceName: 'Braiding',
+            startsAt: new Date('2026-08-01T09:00:00Z'),
+            endsAt: new Date('2026-08-01T10:00:00Z'),
+            organization: { connect: { id: orgAId } },
+            contact: { connect: { id: contactBId } },
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
   it('organization reads are pinned to the tenant own id', async () => {
     const org = await asOrgA(() =>
       tenantClient.organization.findUnique({ where: { id: orgBId } }),
