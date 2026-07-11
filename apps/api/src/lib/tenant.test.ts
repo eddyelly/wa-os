@@ -122,6 +122,11 @@ describe('scopeArgs (tenant query rewriting)', () => {
       'KnowledgeChunk',
       'KnowledgeDoc',
       'Message',
+      'Notification',
+      'Order',
+      'OrderItem',
+      'Product',
+      'ProductImage',
       'User',
     ];
     expect([...TENANT_MODELS].sort()).toEqual(expected);

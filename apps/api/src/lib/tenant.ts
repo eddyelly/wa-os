@@ -36,6 +36,11 @@ export const TENANT_MODELS = new Set<string>([
   'KnowledgeChunk',
   'Appointment',
   'AiReplyLog',
+  'Product',
+  'ProductImage',
+  'Order',
+  'OrderItem',
+  'Notification',
 ]);
 
 // Relation fields per domain model, derived from schema.prisma. Their
@@ -44,13 +49,26 @@ export const TENANT_MODELS = new Set<string>([
 export const TENANT_RELATION_FIELDS: Record<string, readonly string[]> = {
   User: ['organization', 'assignedConversations'],
   Channel: ['organization', 'conversations'],
-  Contact: ['organization', 'conversations', 'appointments'],
-  Conversation: ['organization', 'channel', 'contact', 'assignee', 'messages', 'aiReplyLogs'],
+  Contact: ['organization', 'conversations', 'appointments', 'orders'],
+  Conversation: [
+    'organization',
+    'channel',
+    'contact',
+    'assignee',
+    'messages',
+    'aiReplyLogs',
+    'orders',
+  ],
   Message: ['organization', 'conversation'],
   KnowledgeDoc: ['organization', 'chunks'],
   KnowledgeChunk: ['organization', 'doc'],
   Appointment: ['organization', 'contact'],
   AiReplyLog: ['organization', 'conversation'],
+  Product: ['organization', 'images', 'orderItems'],
+  ProductImage: ['organization', 'product'],
+  Order: ['organization', 'conversation', 'contact', 'items'],
+  OrderItem: ['organization', 'order', 'product'],
+  Notification: ['organization'],
 };
 
 type QueryArgs = Record<string, unknown>;

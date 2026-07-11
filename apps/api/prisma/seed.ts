@@ -19,6 +19,27 @@ const DOC_CONTENT = [
   'Tunapokea miadi kwa WhatsApp. Karibu sana!',
 ].join('\n');
 
+// No embeddings at seed time; they arrive when products are edited via the
+// API or re-embedded through the embeddings queue.
+const demoProducts = [
+  {
+    name: 'Mafuta ya nywele (hair oil)',
+    description: 'Natural coconut hair oil, 250ml bottle.',
+    price: 12000,
+    minPrice: 9000,
+    stockQty: 20,
+    lowStockThreshold: 5,
+  },
+  {
+    name: 'Wig ya braids (braided wig)',
+    description: 'Hand-braided wig, medium length, black.',
+    price: 85000,
+    minPrice: 70000,
+    stockQty: 3,
+    lowStockThreshold: 2,
+  },
+];
+
 async function main(): Promise<void> {
   const existingUser = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
 
@@ -64,6 +85,15 @@ async function main(): Promise<void> {
         content,
       })),
     });
+  }
+
+  for (const product of demoProducts) {
+    const existingProduct = await prisma.product.findFirst({
+      where: { organizationId, name: product.name },
+    });
+    if (!existingProduct) {
+      await prisma.product.create({ data: { organizationId, ...product } });
+    }
   }
 
   console.log('Seed complete.');

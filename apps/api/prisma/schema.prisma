@@ -81,6 +81,20 @@ enum AiReplyAction {
   HANDED_OFF
 }
 
+enum OrderStatus {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  PAID
+  FULFILLED
+  CANCELLED
+}
+
+enum NotificationType {
+  NEW_ORDER
+  LOW_STOCK
+  HANDOFF
+}
+
 model Organization {
   id       String   @id @default(cuid())
   name     String
@@ -105,6 +119,11 @@ model Organization {
   knowledgeChunks KnowledgeChunk[]
   appointments    Appointment[]
   aiReplyLogs     AiReplyLog[]
+  products        Product[]
+  productImages   ProductImage[]
+  orders          Order[]
+  orderItems      OrderItem[]
+  notifications   Notification[]
 }
 
 model User {
@@ -162,6 +181,7 @@ model Contact {
 
   conversations Conversation[]
   appointments  Appointment[]
+  orders        Order[]
 
   @@unique([organizationId, phone])
   @@index([organizationId])
@@ -188,6 +208,7 @@ model Conversation {
 
   messages    Message[]
   aiReplyLogs AiReplyLog[]
+  orders      Order[]
 
   @@unique([channelId, contactId])
   @@index([organizationId])
@@ -293,10 +314,119 @@ model AiReplyLog {
   confidence        Float
   action            AiReplyAction
   latencyMs         Int
+  // Names of agent tools invoked for this decision.
+  toolsUsed         String[]      @default([])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
   @@index([conversationId])
+}
+
+model Product {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name              String
+  description       String?
+  // Whole TZS. The platform never processes payments.
+  price             Int
+  // Bargaining floor; null means fixed price. NEVER exposed to the model.
+  minPrice          Int?
+  stockQty          Int                          @default(0)
+  lowStockThreshold Int                          @default(5)
+  isActive          Boolean                      @default(true)
+  tags              String[]                     @default([])
+  // Built from name + description + image descriptions; null until embedded.
+  embedding         Unsupported("vector(1536)")?
+
+  images     ProductImage[]
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model ProductImage {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  mediaKey    String
+  // Gemini vision writes this at upload; feeds the product embedding.
+  description String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([productId])
+}
+
+model Order {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  contactId      String
+  contact        Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  status      OrderStatus @default(PENDING_CONFIRMATION)
+  totalAgreed Int
+  note        String?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
+
+model OrderItem {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  // Snapshot fields survive product deletion or edits.
+  productName String
+  quantity    Int
+  listPrice   Int
+  agreedPrice Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([orderId])
+}
+
+model Notification {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  payload Json             @default("{}")
+  readAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, readAt])
 }
