@@ -53,6 +53,19 @@ describe('GeminiEmbeddingAdapter', () => {
     expect(call.config.taskType).toBe('RETRIEVAL_QUERY');
   });
 
+  it('throws EMBEDDING_FAILED when the provider returns a different count of vectors than texts', async () => {
+    embedContent.mockResolvedValue({
+      embeddings: [
+        { values: fakeVector(config.EMBEDDING_DIM) },
+        { values: fakeVector(config.EMBEDDING_DIM) },
+      ],
+    });
+    const adapter = new GeminiEmbeddingAdapter();
+    await expect(adapter.embed(['only one text'])).rejects.toMatchObject({
+      code: 'EMBEDDING_FAILED',
+    });
+  });
+
   it('throws EMBEDDING_DIM_MISMATCH when the provider returns a wrong width', async () => {
     embedContent.mockResolvedValue({ embeddings: [{ values: fakeVector(3) }] });
     const adapter = new GeminiEmbeddingAdapter();
