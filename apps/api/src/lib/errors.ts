@@ -54,6 +54,15 @@ export class NotImplementedError extends AppError {
   }
 }
 
+export class ModuleDisabledError extends AppError {
+  constructor(module: string) {
+    super(`The ${module} module is not enabled for this business.`, {
+      statusCode: 403,
+      code: 'MODULE_DISABLED',
+    });
+  }
+}
+
 /**
  * Thrown when a tenant-scoped query runs outside an authenticated request
  * context. This failing closed is what makes cross-tenant access impossible.
