@@ -73,6 +73,11 @@ services:
   evolution-api:
     image: evoapicloud/evolution-api:v2.3.7
     restart: unless-stopped
+    # Webhooks must reach the API running on the HOST during local dev, so
+    # give the container a name for the host gateway and set
+    # API_PUBLIC_URL=http://host.docker.internal:4000 in the root .env.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     depends_on:
       postgres:
         condition: service_healthy
