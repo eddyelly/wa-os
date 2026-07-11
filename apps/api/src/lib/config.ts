@@ -36,7 +36,7 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32, 'must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'must be at least 32 characters'),
 
-  ANTHROPIC_API_KEY: z.string().min(1),
+  GEMINI_API_KEY: z.string().min(1),
   LLM_MODEL_ID: z.string().min(1),
 
   EMBEDDING_PROVIDER: z.string().min(1),

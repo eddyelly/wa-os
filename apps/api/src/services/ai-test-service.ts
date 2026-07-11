@@ -1,6 +1,6 @@
 import type { EmbeddingPort, LLMPort } from '@waos/ports';
 import { embeddingPort } from '../adapters/embeddings/embedding-adapter.js';
-import { llmPort } from '../adapters/llm/anthropic-adapter.js';
+import { llmPort } from '../adapters/llm/gemini-adapter.js';
 import { config } from '../lib/config.js';
 import { requireRequestContext } from '../lib/context.js';
 import { NotFoundError } from '../lib/errors.js';

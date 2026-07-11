@@ -2,7 +2,7 @@ import { Worker } from 'bullmq';
 import type { EmbeddingPort, LLMPort } from '@waos/ports';
 import { aiReplyJobSchema, type AiReplyJob } from '@waos/shared';
 import { embeddingPort } from '../adapters/embeddings/embedding-adapter.js';
-import { llmPort } from '../adapters/llm/anthropic-adapter.js';
+import { llmPort } from '../adapters/llm/gemini-adapter.js';
 import { config } from '../lib/config.js';
 import { requireRequestContext, runWithRequestContext } from '../lib/context.js';
 import { logger } from '../lib/logger.js';
