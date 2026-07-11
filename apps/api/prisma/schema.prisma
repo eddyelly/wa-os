@@ -82,14 +82,16 @@ enum AiReplyAction {
 }
 
 model Organization {
-  id       String @id @default(cuid())
+  id       String   @id @default(cuid())
   name     String
-  vertical String @default("local-services")
-  language String @default("sw")
-  timezone String @default("Africa/Dar_es_Salaam")
+  vertical String   @default("local-services")
+  language String   @default("sw")
+  timezone String   @default("Africa/Dar_es_Salaam")
   // Reserved so pricing can arrive later as a migration. Never read for gating.
-  plan     String @default("free")
-  settings Json   @default("{}")
+  plan     String   @default("free")
+  // Enabled feature modules; gates API routes, AI tools, and dashboard nav.
+  modules  String[] @default(["appointments"])
+  settings Json     @default("{}")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

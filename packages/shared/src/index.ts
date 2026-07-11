@@ -1,4 +1,5 @@
 export * from './schemas/auth.js';
+export * from './schemas/modules.js';
 export * from './schemas/api-error.js';
 export * from './schemas/transport.js';
 export * from './schemas/policy.js';

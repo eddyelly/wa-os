@@ -1,6 +1,12 @@
 import { Prisma, type Organization, type User } from '@prisma/client';
 import argon2 from 'argon2';
-import type { AuthResponse, LoginRequest, RefreshRequest, SignupRequest } from '@waos/shared';
+import type {
+  AuthResponse,
+  BusinessModule,
+  LoginRequest,
+  RefreshRequest,
+  SignupRequest,
+} from '@waos/shared';
 import { requireRequestContext } from '../lib/context.js';
 import { ConflictError, NotFoundError, UnauthorizedError } from '../lib/errors.js';
 import { signAccessToken, signRefreshToken, verifyToken, type TokenSubject } from '../lib/jwt.js';
@@ -28,6 +34,7 @@ function toAuthResponse(user: User, organization: Organization): AuthResponse {
       vertical: organization.vertical,
       language: organization.language,
       timezone: organization.timezone,
+      modules: organization.modules as BusinessModule[],
     },
     tokens: {
       accessToken: signAccessToken(subject),
@@ -127,6 +134,7 @@ export const authService = {
         vertical: organization.vertical,
         language: organization.language,
         timezone: organization.timezone,
+        modules: organization.modules as BusinessModule[],
       },
     };
   },

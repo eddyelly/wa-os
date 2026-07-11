@@ -24,7 +24,14 @@ export const organizationRepository = {
   /** Tenant-scoped update; the extension pins the where to the caller's org. */
   update(
     id: string,
-    data: Partial<{ name: string; vertical: string; language: string; timezone: string; settings: Prisma.InputJsonValue }>,
+    data: Partial<{
+      name: string;
+      vertical: string;
+      language: string;
+      timezone: string;
+      modules: string[];
+      settings: Prisma.InputJsonValue;
+    }>,
   ): Promise<Organization> {
     return prisma.organization.update({ where: { id }, data });
   },

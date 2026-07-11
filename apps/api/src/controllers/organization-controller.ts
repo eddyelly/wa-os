@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { updateOrganizationRequestSchema } from '@waos/shared';
 import { requireRequestContext } from '../lib/context.js';
-import { NotFoundError } from '../lib/errors.js';
+import { ForbiddenError, NotFoundError } from '../lib/errors.js';
 import { organizationRepository } from '../repositories/organization-repository.js';
 import { userRepository } from '../repositories/user-repository.js';
 
@@ -18,6 +18,7 @@ export const get = async (_req: Request, res: Response): Promise<void> => {
       vertical: organization.vertical,
       language: organization.language,
       timezone: organization.timezone,
+      modules: organization.modules,
       settings: organization.settings,
     },
   });
@@ -25,7 +26,10 @@ export const get = async (_req: Request, res: Response): Promise<void> => {
 
 export const update = async (req: Request, res: Response): Promise<void> => {
   const input = updateOrganizationRequestSchema.parse(req.body);
-  const { organizationId } = requireRequestContext();
+  const { organizationId, role } = requireRequestContext();
+  if (input.modules && role !== 'OWNER') {
+    throw new ForbiddenError('Only the owner can change enabled modules.');
+  }
   const organization = await organizationRepository.update(organizationId, input);
   res.json({
     organization: {
@@ -34,6 +38,7 @@ export const update = async (req: Request, res: Response): Promise<void> => {
       vertical: organization.vertical,
       language: organization.language,
       timezone: organization.timezone,
+      modules: organization.modules,
       settings: organization.settings,
     },
   });

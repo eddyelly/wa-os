@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { businessModuleSchema } from './modules.js';
 
 export const supportedLanguageSchema = z.enum(['sw', 'en']);
 export type SupportedLanguage = z.infer<typeof supportedLanguageSchema>;
@@ -50,6 +51,7 @@ export const authOrganizationSchema = z.object({
   vertical: z.string(),
   language: z.string(),
   timezone: z.string(),
+  modules: z.array(businessModuleSchema),
 });
 export type AuthOrganization = z.infer<typeof authOrganizationSchema>;
 
