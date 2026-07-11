@@ -35,8 +35,11 @@ We are in Phase 1 (MVP). These rules are non-negotiable:
    modals asking for money. `Organization.plan` exists (default `"free"`) only
    so pricing can be added later as a migration. Do not read `plan` for
    feature gating anywhere.
-2. **No commerce layer.** No catalog, cart, orders, or payments (PRD Layer 3
-   is out of scope).
+2. **Commerce is module-scoped, payments stay out.** The `shop` module
+   (catalog, orders, AI selling) is being built per
+   docs/superpowers/specs/2026-07-11-waos-revamp-master-design.md. The
+   platform NEVER processes payments: no gateways, no checkout, no billing.
+   The AI may only relay the owner's payment instructions as text.
 3. **Broadcasts are gated for ban risk, not money.** Bulk/marketing sends are
    blocked by the policy engine with the reason `COMING_SOON`, surfaced in the
    UI as "Broadcasts are coming soon", never as an upsell.
@@ -71,7 +74,12 @@ messaging goes through this interface, defined in `packages/ports`:
 interface MessagingPort {
   sendText(channelId: string, to: string, text: string): Promise<SendResult>;
   sendMedia(channelId: string, to: string, media: MediaRef, caption?: string): Promise<SendResult>;
-  sendTemplate(channelId: string, to: string, templateId: string, vars: Record<string, string>): Promise<SendResult>; // Cloud API only
+  sendTemplate(
+    channelId: string,
+    to: string,
+    templateId: string,
+    vars: Record<string, string>,
+  ): Promise<SendResult>; // Cloud API only
   getSessionStatus(channelId: string): Promise<SessionStatus>;
   connect(channelId: string): Promise<ConnectResult>; // returns QR payload for entry tier
   disconnect(channelId: string): Promise<void>;
@@ -122,18 +130,18 @@ live connection state. Losing a session on deploy is a P1 bug.
 
 ## 4. Tech stack
 
-| Concern        | Choice                                                       |
-| -------------- | ------------------------------------------------------------ |
-| API            | Node.js 20+, Express, TypeScript (strict)                    |
-| ORM / DB       | Prisma + PostgreSQL 16 with the `pgvector` extension         |
-| Queues         | BullMQ on Redis                                              |
-| Media storage  | MinIO (S3-compatible)                                        |
-| WA transport   | Evolution API (Baileys) as a separate Docker service, REST + webhooks |
-| Realtime       | Socket.IO (Redis adapter ready, single instance for now)     |
-| LLM            | `LLMPort` interface; Anthropic SDK default, model from env   |
-| Embeddings     | `EmbeddingPort` interface; provider and model from env       |
-| Dashboard      | Next.js (App Router), Tailwind, shadcn/ui, next-intl         |
-| Infra          | Docker Compose on a single Ubuntu VPS behind Nginx           |
+| Concern       | Choice                                                                    |
+| ------------- | ------------------------------------------------------------------------- |
+| API           | Node.js 20+, Express, TypeScript (strict)                                 |
+| ORM / DB      | Prisma + PostgreSQL 16 with the `pgvector` extension                      |
+| Queues        | BullMQ on Redis                                                           |
+| Media storage | MinIO (S3-compatible)                                                     |
+| WA transport  | Evolution API (Baileys) as a separate Docker service, REST + webhooks     |
+| Realtime      | Socket.IO (Redis adapter ready, single instance for now)                  |
+| LLM           | `LLMPort` interface; Gemini SDK (`@google/genai`) default, model from env |
+| Embeddings    | `EmbeddingPort` interface; Gemini default provider, model from env        |
+| Dashboard     | Next.js (App Router), Tailwind, shadcn/ui, next-intl                      |
+| Infra         | Docker Compose on a single Ubuntu VPS behind Nginx                        |
 
 Do not add new infrastructure (no second database, no Kafka, no k8s). Every
 extra moving part is a tax on a solo founder.
@@ -202,7 +210,9 @@ All domain tables include `organizationId` and are indexed on it.
 
 - **Organization**: the tenant (the business). `name`, `vertical`, `language`
   (default `sw`), `timezone` (default `Africa/Dar_es_Salaam`), `plan`
-  (default `"free"`, unused for gating), `settings Json`.
+  (default `"free"`, unused for gating), `modules String[]` (enabled feature
+  modules, e.g. `appointments`, `shop`; gates routes, nav, and AI tools),
+  `settings Json`.
 - **User**: owner or staff. `role: OWNER | STAFF`, belongs to Organization.
   Auth is email + password (argon2) with JWT access/refresh tokens.
 - **Channel**: a connected WhatsApp number.
@@ -210,7 +220,7 @@ All domain tables include `organizationId` and are indexed on it.
   name), `status: PENDING | QR_READY | CONNECTED | DISCONNECTED | BANNED`,
   `warmupStartedAt`. This field pair is the heart of transport agnosticism.
 - **Contact**: end customer. `phone` (E.164), `name`, `language`, `tags
-  String[]`, `optedInAt DateTime?`, `customFields Json`.
+String[]`, `optedInAt DateTime?`, `customFields Json`.
 - **Conversation**: Channel x Contact thread. `status: OPEN | PENDING | CLOSED`,
   `assigneeId?`, `aiEnabled Boolean @default(true)`, `lastMessageAt`.
 - **Message**: normalized regardless of provider. `direction: IN | OUT`,
@@ -257,12 +267,12 @@ policy + send pipeline and require `optedInAt`.
 
 ## 9. Queues (BullMQ)
 
-| Queue        | Purpose                              | Notes                          |
-| ------------ | ------------------------------------ | ------------------------------ |
-| `outbound`   | all provider sends                   | per-channel limiter + jitter   |
-| `ai-reply`   | RAG completion per inbound message   | concurrency small, LLM-bound   |
-| `embeddings` | chunk + embed KnowledgeDocs          | batch, retry with backoff      |
-| `reminders`  | delayed appointment reminders        | delayed jobs, idempotent       |
+| Queue        | Purpose                            | Notes                        |
+| ------------ | ---------------------------------- | ---------------------------- |
+| `outbound`   | all provider sends                 | per-channel limiter + jitter |
+| `ai-reply`   | RAG completion per inbound message | concurrency small, LLM-bound |
+| `embeddings` | chunk + embed KnowledgeDocs        | batch, retry with backoff    |
+| `reminders`  | delayed appointment reminders      | delayed jobs, idempotent     |
 
 All job payloads have Zod schemas in `packages/shared`. Jobs are idempotent:
 re-running one must not double-send (guard on `providerMessageId` / job key).
@@ -272,16 +282,19 @@ re-running one must not double-send (guard on `providerMessageId` / job key).
 ## 10. Environment variables (parsed in config.ts, fail fast)
 
 ```
+NODE_ENV=development PORT=4000
 DATABASE_URL=
 REDIS_URL=
 MINIO_ENDPOINT= MINIO_ACCESS_KEY= MINIO_SECRET_KEY= MINIO_BUCKET=waos-media
 EVOLUTION_API_URL= EVOLUTION_API_KEY= EVOLUTION_WEBHOOK_SECRET=
 JWT_ACCESS_SECRET= JWT_REFRESH_SECRET=
-ANTHROPIC_API_KEY= LLM_MODEL_ID=
-EMBEDDING_PROVIDER= EMBEDDING_API_KEY= EMBEDDING_MODEL_ID= EMBEDDING_DIM=1536
+GEMINI_API_KEY= LLM_MODEL_ID=gemini-2.5-flash
+EMBEDDING_PROVIDER=gemini EMBEDDING_API_KEY= EMBEDDING_MODEL_ID=gemini-embedding-001 EMBEDDING_DIM=1536
 AI_CONFIDENCE_THRESHOLD=0.7
+REMINDER_OFFSETS_MINUTES=1440,120
 SEND_RATE_PER_MINUTE=6
 WARMUP_DAILY_CAPS=20,40,60,80,120,160,200,250,300,350,400,450,500,600
+WEB_ORIGIN= API_PUBLIC_URL=
 NEXT_PUBLIC_APP_NAME=WaOS
 NEXT_PUBLIC_API_URL=
 ```

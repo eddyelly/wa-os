@@ -15,6 +15,11 @@ MinIO for media, Evolution API for the WhatsApp entry tier transport, Next.js
 dashboard with Swahili and English via next-intl. Everything runs from one
 pnpm monorepo, deployed with Docker Compose on a single VPS.
 
+AI replies and embeddings run on Gemini (`@google/genai`); a `GEMINI_API_KEY`
+is required for AI replies to work. If you switch `EMBEDDING_PROVIDER` or
+`EMBEDDING_MODEL_ID` after documents already have embeddings, re-embed the
+existing knowledge base with `pnpm -F @waos/api re-embed`.
+
 ## Prerequisites
 
 - Node.js 20 or newer

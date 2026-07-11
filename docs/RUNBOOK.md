@@ -22,7 +22,7 @@ for the apps.
    git clone <repo-url> /opt/waos && cd /opt/waos
    cp .env.example .env
    # Set REAL values: strong JWT secrets, EVOLUTION_API_KEY,
-   # EVOLUTION_WEBHOOK_SECRET, ANTHROPIC_API_KEY, EMBEDDING_API_KEY,
+   # EVOLUTION_WEBHOOK_SECRET, GEMINI_API_KEY, EMBEDDING_API_KEY,
    # API_PUBLIC_URL=https://api.yourdomain, WEB_ORIGIN=https://app.yourdomain,
    # NEXT_PUBLIC_API_URL=https://api.yourdomain
    ```
@@ -73,13 +73,13 @@ for the apps.
 
 ## 2. Rotate keys
 
-| Key | How |
-| --- | --- |
-| JWT secrets | Set new `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` in `.env`, restart the api. Everyone logs in again (access tokens die within 15 minutes anyway). |
-| Evolution API key | Set the new value in `infra/.env` (compose) AND `.env` (api), then `pnpm infra:up` to recreate the evolution container and restart the api. |
-| Webhook secret | Set new `EVOLUTION_WEBHOOK_SECRET` in `.env`, restart the api, then reconnect each channel from the dashboard so the instance webhook URL is re-registered with the new secret. |
-| Anthropic / embedding keys | Update `.env`, restart the api. In-flight AI jobs retry with the new key. |
-| MinIO credentials | Update compose env and `.env` together, `pnpm infra:up`, restart the api. |
+| Key                     | How                                                                                                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| JWT secrets             | Set new `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` in `.env`, restart the api. Everyone logs in again (access tokens die within 15 minutes anyway).                               |
+| Evolution API key       | Set the new value in `infra/.env` (compose) AND `.env` (api), then `pnpm infra:up` to recreate the evolution container and restart the api.                                     |
+| Webhook secret          | Set new `EVOLUTION_WEBHOOK_SECRET` in `.env`, restart the api, then reconnect each channel from the dashboard so the instance webhook URL is re-registered with the new secret. |
+| Gemini / embedding keys | Update `GEMINI_API_KEY` (and `EMBEDDING_API_KEY` if using a non-Gemini embedding provider) in `.env`, restart the api. In-flight AI jobs retry with the new key.                |
+| MinIO credentials       | Update compose env and `.env` together, `pnpm infra:up`, restart the api.                                                                                                       |
 
 After any rotation: `pm2 restart waos-api` and watch `pm2 logs waos-api`
 for a clean boot (config parse fails fast and names the missing variable).
