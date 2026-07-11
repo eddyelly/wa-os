@@ -78,6 +78,12 @@ services:
     # API_PUBLIC_URL=http://host.docker.internal:4000 in the root .env.
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+    # Node's happy-eyeballs hangs when the network advertises IPv6 routes
+    # that silently black-hole, which kills the Baileys WebSocket to
+    # WhatsApp (no QR, endless reconnect). With IPv6 off inside the
+    # container the IPv4 fallback is instant.
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
     depends_on:
       postgres:
         condition: service_healthy
