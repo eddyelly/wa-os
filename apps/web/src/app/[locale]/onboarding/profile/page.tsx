@@ -103,8 +103,11 @@ export default function OnboardingProfilePage() {
             <Field label={t('vertical')} hint={t('verticalHint')}>
               <Input required value={vertical} onChange={(e) => { setVertical(e.target.value); }} />
             </Field>
-            <Field label={t('modulesLabel')} hint={t('modulesHint')}>
-              <div className="flex flex-col gap-2" role="radiogroup" aria-label={t('modulesLabel')}>
+            <fieldset className="m-0 border-0 p-0">
+              <legend className="mb-1.5 block text-sm font-medium text-brand-900">
+                {t('modulesLabel')}
+              </legend>
+              <div className="flex flex-col gap-2">
                 {(['appointments', 'shop', 'both'] as const).map((choice) => (
                   <label
                     key={choice}
@@ -117,6 +120,7 @@ export default function OnboardingProfilePage() {
                     <input
                       type="radio"
                       name="modules"
+                      value={choice}
                       checked={moduleChoice === choice}
                       onChange={() => { setModuleChoice(choice); }}
                     />
@@ -127,7 +131,8 @@ export default function OnboardingProfilePage() {
                   </label>
                 ))}
               </div>
-            </Field>
+              <span className="mt-1 block text-xs text-brand-600">{t('modulesHint')}</span>
+            </fieldset>
             <Field label={t('language')}>
               <select
                 value={language}
