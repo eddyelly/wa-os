@@ -7,6 +7,12 @@ import { clearSession, getStoredUser, getTokens, type StoredUser } from '@/lib/a
 import { resetSocket } from '@/lib/socket';
 import { LanguageSwitcher } from './language-switcher';
 
+interface NavItem {
+  href: string;
+  label: string;
+  requiredModule?: 'appointments' | 'shop';
+}
+
 /**
  * Client shell for authenticated screens: token guard plus the bottom nav
  * (primary actions stay thumb-reach on mobile).
@@ -37,13 +43,17 @@ export function AppShell({ children }: { children: ReactNode }) {
     router.replace('/login');
   };
 
-  const navItems = [
+  const modules = user?.organization.modules ?? ['appointments'];
+  const allNavItems: NavItem[] = [
     { href: '/home', label: t('home') },
     { href: '/inbox', label: t('inbox') },
-    { href: '/appointments', label: t('appointments') },
+    { href: '/appointments', label: t('appointments'), requiredModule: 'appointments' },
     { href: '/contacts', label: t('contacts') },
     { href: '/settings', label: t('settings') },
   ];
+  const navItems = allNavItems.filter(
+    (item) => !item.requiredModule || modules.includes(item.requiredModule),
+  );
 
   return (
     <div className="flex min-h-dvh flex-col bg-brand-50">

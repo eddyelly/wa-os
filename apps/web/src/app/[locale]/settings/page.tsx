@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import { apiFetch, ApiError, getStoredUser } from '@/lib/api';
+import { apiFetch, ApiError, getStoredUser, updateStoredOrganization } from '@/lib/api';
 import { AppShell } from '@/components/app-shell';
 import { Badge, Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
+
+type BusinessModule = 'appointments' | 'shop';
 
 interface OrganizationResponse {
   organization: {
@@ -13,6 +15,7 @@ interface OrganizationResponse {
     vertical: string;
     language: string;
     timezone: string;
+    modules?: BusinessModule[];
     settings: { aiConfidenceThreshold?: number; toneNotes?: string } | null;
   };
 }
@@ -42,6 +45,9 @@ export default function SettingsPage() {
   const [threshold, setThreshold] = useState(0.7);
   const [toneNotes, setToneNotes] = useState('');
 
+  const [modules, setModules] = useState<BusinessModule[]>(['appointments']);
+  const [savingModules, setSavingModules] = useState(false);
+
   const load = useCallback(async (): Promise<void> => {
     try {
       const [org, users] = await Promise.all([
@@ -54,6 +60,7 @@ export default function SettingsPage() {
       setTimezone(org.organization.timezone);
       setThreshold(org.organization.settings?.aiConfidenceThreshold ?? 0.7);
       setToneNotes(org.organization.settings?.toneNotes ?? '');
+      setModules(org.organization.modules ?? ['appointments']);
       setTeam(users.users);
       setError(null);
     } catch {
@@ -118,6 +125,29 @@ export default function SettingsPage() {
       setError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const toggleModule = (module: BusinessModule): void => {
+    setModules((current) =>
+      current.includes(module) ? current.filter((m) => m !== module) : [...current, module],
+    );
+  };
+
+  const saveModules = async (): Promise<void> => {
+    setSavingModules(true);
+    setNotice(null);
+    try {
+      const response = await apiFetch<{ organization: { modules: BusinessModule[] } }>(
+        '/api/v1/organization',
+        { method: 'PATCH', body: { modules } },
+      );
+      updateStoredOrganization({ modules: response.organization.modules });
+      setNotice(t('saved'));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('saveError'));
+    } finally {
+      setSavingModules(false);
     }
   };
 
@@ -188,6 +218,36 @@ export default function SettingsPage() {
               </Button>
             </form>
           </Card>
+
+          {isOwner ? (
+            <Card>
+              <h2 className="text-base font-semibold text-brand-900">{t('modulesSection')}</h2>
+              <p className="mt-1 text-sm text-brand-700">{t('modulesHint')}</p>
+              <div className="mt-3 flex flex-col gap-2">
+                {(['appointments', 'shop'] as const).map((module) => (
+                  <label key={module} className="flex items-center gap-2 text-sm text-brand-900">
+                    <input
+                      type="checkbox"
+                      checked={modules.includes(module)}
+                      onChange={() => {
+                        toggleModule(module);
+                      }}
+                      disabled={modules.length === 1 && modules.includes(module)}
+                    />
+                    {module === 'appointments' ? t('moduleAppointments') : t('moduleShop')}
+                  </label>
+                ))}
+              </div>
+              <Button
+                type="button"
+                className="mt-3"
+                onClick={() => void saveModules()}
+                disabled={savingModules}
+              >
+                {savingModules ? t('saving') : t('save')}
+              </Button>
+            </Card>
+          ) : null}
 
           {isOwner ? (
             <Card>

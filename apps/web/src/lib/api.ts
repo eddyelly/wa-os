@@ -44,6 +44,18 @@ export function clearSession(): void {
   window.localStorage.removeItem(USER_KEY);
 }
 
+/** Patches the stored organization (e.g. after a settings save) without a full re-login. */
+export function updateStoredOrganization(patch: Partial<StoredUser['organization']>): void {
+  const user = getStoredUser();
+  if (!user) {
+    return;
+  }
+  window.localStorage.setItem(
+    USER_KEY,
+    JSON.stringify({ ...user, organization: { ...user.organization, ...patch } }),
+  );
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
