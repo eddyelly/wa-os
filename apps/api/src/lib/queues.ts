@@ -59,7 +59,14 @@ export async function enqueueAiReply(payload: AiReplyJob): Promise<void> {
 
 export async function enqueueEmbeddings(payload: EmbeddingsJob): Promise<void> {
   const data = embeddingsJobSchema.parse(payload);
-  await embeddingsQueue.add('embed', data, { jobId: `embed-${data.docId}-${Date.now()}` });
+  const jobId = `embed-${data.docId}`;
+  // A finished job with the same id would make BullMQ silently ignore the
+  // re-add; drop it first. A pending/active job stays and dedupes the add.
+  const existing = await embeddingsQueue.getJob(jobId);
+  if (existing && ((await existing.isCompleted()) || (await existing.isFailed()))) {
+    await existing.remove();
+  }
+  await embeddingsQueue.add('embed', data, { jobId });
 }
 
 export async function enqueueReminder(payload: ReminderJob, delayMs: number): Promise<string> {
