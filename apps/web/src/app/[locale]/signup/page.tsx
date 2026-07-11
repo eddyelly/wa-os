@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { authResponseSchema } from '@waos/shared';
 import { Link, useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, setSession } from '@/lib/api';
+import { resetSocket } from '@/lib/socket';
 import { Button, Card, ErrorBox, Field, Input } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
@@ -30,6 +31,9 @@ export default function SignupPage() {
         auth: false,
       });
       setSession(authResponseSchema.parse(raw));
+      // Drop any socket from a previous identity so realtime events arrive
+      // for the organization that just signed up.
+      resetSocket();
       router.replace('/onboarding/profile');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('genericError'));
