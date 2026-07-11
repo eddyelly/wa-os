@@ -11,7 +11,8 @@ import { config } from '../../lib/config.js';
 type GeminiPart =
   | { text: string }
   | { inlineData: { mimeType: string; data: string } }
-  | { functionResponse: { name: string; response: { output: unknown } } };
+  | { functionResponse: { name: string; response: { output: unknown } } }
+  | { functionCall: { name: string; args: Record<string, unknown> } };
 
 function toParts(message: LlmMessage): GeminiPart[] {
   if (typeof message.content === 'string') {
@@ -25,6 +26,8 @@ function toParts(message: LlmMessage): GeminiPart[] {
         return { inlineData: { mimeType: part.mimeType, data: part.data } };
       case 'tool_result':
         return { functionResponse: { name: part.name, response: { output: part.response } } };
+      case 'tool_call':
+        return { functionCall: { name: part.name, args: part.args } };
     }
   });
 }

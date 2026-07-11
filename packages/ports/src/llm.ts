@@ -6,7 +6,9 @@
 export type LlmContentPart =
   | { type: 'text'; text: string }
   | { type: 'image'; mimeType: string; data: string }
-  | { type: 'tool_result'; name: string; response: unknown };
+  | { type: 'tool_result'; name: string; response: unknown }
+  /** Echoes a prior model tool call back into history (assistant message part). */
+  | { type: 'tool_call'; name: string; args: Record<string, unknown> };
 
 export interface LlmMessage {
   role: 'user' | 'assistant';

@@ -86,6 +86,40 @@ describe('GeminiLlmAdapter', () => {
     expect(call.config.tools?.[0]?.functionDeclarations[0]?.name).toBe('negotiate');
   });
 
+  it('maps a prior tool_call part followed by its tool_result into model/user turns', async () => {
+    const adapter = new GeminiLlmAdapter();
+    await adapter.complete({
+      system: 'sys',
+      messages: [
+        {
+          role: 'assistant',
+          content: [
+            { type: 'tool_call', name: 'searchProducts', args: { query: 'shoes' } },
+          ],
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'tool_result', name: 'searchProducts', response: { hits: 1 } },
+          ],
+        },
+      ],
+    });
+    const call = generateContent.mock.calls[0]?.[0] as {
+      contents: Array<{ role: string; parts: unknown[] }>;
+    };
+    expect(call.contents).toEqual([
+      {
+        role: 'model',
+        parts: [{ functionCall: { name: 'searchProducts', args: { query: 'shoes' } } }],
+      },
+      {
+        role: 'user',
+        parts: [{ functionResponse: { name: 'searchProducts', response: { output: { hits: 1 } } } }],
+      },
+    ]);
+  });
+
   it('returns plain text with no toolCalls when the model just answers', async () => {
     const adapter = new GeminiLlmAdapter();
     const result = await adapter.complete({
