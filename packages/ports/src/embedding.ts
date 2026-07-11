@@ -3,7 +3,13 @@
  * EMBEDDING_MODEL_ID, EMBEDDING_DIM). Vectors are stored in pgvector.
  */
 
+/** Retrieval role of the texts being embedded; providers may optimize. */
+export type EmbeddingIntent = 'document' | 'query';
+
 export interface EmbeddingPort {
-  /** Embeds each input text; the result array is index-aligned with the input. */
-  embed(texts: string[]): Promise<number[][]>;
+  /**
+   * Embed each text; result is index-aligned with the input.
+   * `intent` defaults to 'document'.
+   */
+  embed(texts: string[], intent?: EmbeddingIntent): Promise<number[][]>;
 }

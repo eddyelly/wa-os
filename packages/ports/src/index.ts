@@ -8,5 +8,13 @@ export type {
   SendResult,
   SessionStatus,
 } from './messaging.js';
-export type { LLMPort, LlmCompletion, LlmCompletionParams, LlmMessage } from './llm.js';
-export type { EmbeddingPort } from './embedding.js';
+export type {
+  LLMPort,
+  LlmCompletion,
+  LlmCompletionParams,
+  LlmMessage,
+  LlmContentPart,
+  LlmToolDefinition,
+  LlmToolCall,
+} from './llm.js';
+export type { EmbeddingPort, EmbeddingIntent } from './embedding.js';
