@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  DATABASE_URL: postgresql://waos:waos@localhost:5432/waos_test
+  REDIS_URL: redis://localhost:6379
+  MINIO_ENDPOINT: localhost:9000
+  MINIO_ACCESS_KEY: ci-access-key
+  MINIO_SECRET_KEY: ci-secret-key
+  EVOLUTION_API_URL: http://localhost:8080
+  EVOLUTION_API_KEY: ci-evolution-key
+  EVOLUTION_WEBHOOK_SECRET: ci-webhook-secret
+  JWT_ACCESS_SECRET: ci-access-secret-0123456789-0123456789
+  JWT_REFRESH_SECRET: ci-refresh-secret-0123456789-0123456789
+  GEMINI_API_KEY: ci-gemini-key
+  LLM_MODEL_ID: gemini-2.5-flash
+  EMBEDDING_PROVIDER: gemini
+  EMBEDDING_API_KEY: ci-embedding-key
+  EMBEDDING_MODEL_ID: gemini-embedding-001
+  NEXT_PUBLIC_APP_NAME: WaOS
+  NEXT_PUBLIC_API_URL: http://localhost:4000
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: waos
+          POSTGRES_PASSWORD: waos
+          POSTGRES_DB: waos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U waos -d waos_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @waos/api db:generate
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - name: migrate test database
+        run: pnpm -F @waos/api exec prisma migrate deploy
+      - name: unit and integration tests
+        run: pnpm test
+        env:
+          INTEGRATION_DATABASE_URL: postgresql://waos:waos@localhost:5432/waos_test
+      - name: web build
+        run: pnpm -F @waos/web build
