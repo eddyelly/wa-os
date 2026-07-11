@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
+import type { BusinessModule } from '@waos/shared';
 import { apiFetch, ApiError, getStoredUser, updateStoredOrganization } from '@/lib/api';
 import { AppShell } from '@/components/app-shell';
 import { Badge, Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
-
-type BusinessModule = 'appointments' | 'shop';
 
 interface OrganizationResponse {
   organization: {

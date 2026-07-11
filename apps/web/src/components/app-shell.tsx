@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import type { BusinessModule } from '@waos/shared';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { clearSession, getStoredUser, getTokens, type StoredUser } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
@@ -10,7 +11,7 @@ import { LanguageSwitcher } from './language-switcher';
 interface NavItem {
   href: string;
   label: string;
-  requiredModule?: 'appointments' | 'shop';
+  requiredModule?: BusinessModule;
 }
 
 /**

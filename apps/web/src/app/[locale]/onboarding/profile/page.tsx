@@ -2,12 +2,12 @@
 
 import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
+import type { BusinessModule } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, getTokens, updateStoredOrganization } from '@/lib/api';
 import { Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
-type BusinessModule = 'appointments' | 'shop';
 type ModuleChoice = 'appointments' | 'shop' | 'both';
 
 const choiceToModules: Record<ModuleChoice, BusinessModule[]> = {
