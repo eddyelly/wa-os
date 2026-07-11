@@ -3,9 +3,18 @@
 import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch, ApiError, getTokens } from '@/lib/api';
+import { apiFetch, ApiError, getTokens, updateStoredOrganization } from '@/lib/api';
 import { Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
+
+type BusinessModule = 'appointments' | 'shop';
+type ModuleChoice = 'appointments' | 'shop' | 'both';
+
+const choiceToModules: Record<ModuleChoice, BusinessModule[]> = {
+  appointments: ['appointments'],
+  shop: ['shop'],
+  both: ['appointments', 'shop'],
+};
 
 interface OrganizationResponse {
   organization: {
@@ -14,6 +23,7 @@ interface OrganizationResponse {
     vertical: string;
     language: string;
     timezone: string;
+    modules?: BusinessModule[];
   };
 }
 
@@ -25,6 +35,7 @@ export default function OnboardingProfilePage() {
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState('');
   const [vertical, setVertical] = useState('');
+  const [moduleChoice, setModuleChoice] = useState<ModuleChoice>('appointments');
   const [language, setLanguage] = useState('sw');
   const [timezone, setTimezone] = useState('Africa/Dar_es_Salaam');
 
@@ -37,6 +48,14 @@ export default function OnboardingProfilePage() {
       .then(({ organization }) => {
         setName(organization.name);
         setVertical(organization.vertical);
+        const loadedModules = organization.modules ?? ['appointments'];
+        setModuleChoice(
+          loadedModules.includes('shop') && loadedModules.includes('appointments')
+            ? 'both'
+            : loadedModules.includes('shop')
+              ? 'shop'
+              : 'appointments',
+        );
         setLanguage(organization.language);
         setTimezone(organization.timezone);
         setLoading(false);
@@ -52,10 +71,12 @@ export default function OnboardingProfilePage() {
     setBusy(true);
     setError(null);
     try {
+      const modules = choiceToModules[moduleChoice];
       await apiFetch('/api/v1/organization', {
         method: 'PATCH',
-        body: { name, vertical, language, timezone },
+        body: { name, vertical, language, timezone, modules },
       });
+      updateStoredOrganization({ modules });
       router.push('/onboarding/connect');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('saveError'));
@@ -81,6 +102,31 @@ export default function OnboardingProfilePage() {
             </Field>
             <Field label={t('vertical')} hint={t('verticalHint')}>
               <Input required value={vertical} onChange={(e) => { setVertical(e.target.value); }} />
+            </Field>
+            <Field label={t('modulesLabel')} hint={t('modulesHint')}>
+              <div className="flex flex-col gap-2" role="radiogroup" aria-label={t('modulesLabel')}>
+                {(['appointments', 'shop', 'both'] as const).map((choice) => (
+                  <label
+                    key={choice}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm ${
+                      moduleChoice === choice
+                        ? 'border-brand-600 bg-brand-50 text-brand-900'
+                        : 'border-brand-100 bg-white text-brand-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="modules"
+                      checked={moduleChoice === choice}
+                      onChange={() => { setModuleChoice(choice); }}
+                    />
+                    <span>
+                      <span className="block font-medium">{t(`modules_${choice}`)}</span>
+                      <span className="block text-xs text-brand-600">{t(`modules_${choice}Hint`)}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </Field>
             <Field label={t('language')}>
               <select
