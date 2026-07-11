@@ -144,6 +144,10 @@ describe('conversation transcript', () => {
     ];
     const transcript = buildConversationMessages(history);
     expect(transcript.length).toBeLessThanOrEqual(10);
-    expect(transcript.every((m) => m.content.trim().length > 0)).toBe(true);
+    expect(
+      transcript.every(
+        (m) => typeof m.content === 'string' && m.content.trim().length > 0
+      )
+    ).toBe(true);
   });
 });

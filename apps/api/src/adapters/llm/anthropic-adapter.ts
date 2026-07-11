@@ -1,5 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { LLMPort, LlmCompletion, LlmCompletionParams } from '@waos/ports';
+import type {
+  LLMPort,
+  LlmCompletion,
+  LlmCompletionParams,
+  LlmContentPart,
+} from '@waos/ports';
 import { config } from '../../lib/config.js';
 
 /**
@@ -9,6 +14,43 @@ import { config } from '../../lib/config.js';
 export class AnthropicAdapter implements LLMPort {
   private readonly client = new Anthropic({ apiKey: config.ANTHROPIC_API_KEY });
 
+  private transformContent(
+    content: string | LlmContentPart[]
+  ): string | Anthropic.ContentBlockParam[] {
+    if (typeof content === 'string') {
+      return content;
+    }
+
+    return content.map((part): Anthropic.ContentBlockParam => {
+      switch (part.type) {
+        case 'text':
+          return {
+            type: 'text',
+            text: part.text,
+          };
+        case 'image':
+          return {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: part.mimeType as
+                | 'image/jpeg'
+                | 'image/png'
+                | 'image/gif'
+                | 'image/webp',
+              data: part.data,
+            },
+          };
+        case 'tool_result':
+          return {
+            type: 'tool_result',
+            tool_use_id: part.name,
+            content: JSON.stringify(part.response),
+          };
+      }
+    });
+  }
+
   async complete(params: LlmCompletionParams): Promise<LlmCompletion> {
     const response = await this.client.messages.create({
       model: config.LLM_MODEL_ID,
@@ -17,7 +59,7 @@ export class AnthropicAdapter implements LLMPort {
       system: params.system,
       messages: params.messages.map((message) => ({
         role: message.role,
-        content: message.content,
+        content: this.transformContent(message.content),
       })),
     });
     const text = response.content
