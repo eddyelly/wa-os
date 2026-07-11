@@ -111,3 +111,30 @@ export function decideAiAction(output: AiReplyOutput | null, threshold: number):
   }
   return output.confidence >= threshold ? 'REPLY' : 'HANDOFF';
 }
+
+export interface OrgAiSettings {
+  aiEnabled: boolean;
+  aiConfidenceThreshold?: number;
+  toneNotes?: string;
+}
+
+/**
+ * Parse the org's untyped settings Json into the AI knobs. aiEnabled is the
+ * global kill switch: only an explicit false turns the AI off, so existing
+ * orgs (no key stored) keep answering.
+ */
+export function parseOrgAiSettings(settings: unknown): OrgAiSettings {
+  if (typeof settings !== 'object' || settings === null) {
+    return { aiEnabled: true };
+  }
+  const record = settings as Record<string, unknown>;
+  return {
+    aiEnabled: record.aiEnabled !== false,
+    ...(typeof record.aiConfidenceThreshold === 'number'
+      ? { aiConfidenceThreshold: record.aiConfidenceThreshold }
+      : {}),
+    ...(typeof record.toneNotes === 'string' && record.toneNotes.trim().length > 0
+      ? { toneNotes: record.toneNotes }
+      : {}),
+  };
+}

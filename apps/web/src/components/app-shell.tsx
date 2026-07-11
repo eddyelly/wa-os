@@ -18,7 +18,7 @@ interface NavItem {
  * Client shell for authenticated screens: token guard plus the bottom nav
  * (primary actions stay thumb-reach on mobile).
  */
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
@@ -75,7 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-4 pb-24">{children}</main>
+      <main className={`mx-auto w-full flex-1 px-4 pt-4 pb-24 ${wide ? 'max-w-7xl' : 'max-w-3xl'}`}>{children}</main>
       <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-brand-100 bg-white">
         <div className="mx-auto flex max-w-3xl">
           {navItems.map((item) => {

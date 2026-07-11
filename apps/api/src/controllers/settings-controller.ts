@@ -13,6 +13,7 @@ const inviteStaffRequestSchema = z.object({
 });
 
 const aiSettingsRequestSchema = z.object({
+  aiEnabled: z.boolean().optional(),
   aiConfidenceThreshold: z.number().min(0.1).max(0.95).optional(),
   toneNotes: z.string().trim().max(1000).optional(),
 });
@@ -41,6 +42,7 @@ export const updateAiSettings = async (req: Request, res: Response): Promise<voi
   const updated = await organizationRepository.update(organizationId, {
     settings: {
       ...settings,
+      ...(input.aiEnabled !== undefined ? { aiEnabled: input.aiEnabled } : {}),
       ...(input.aiConfidenceThreshold !== undefined
         ? { aiConfidenceThreshold: input.aiConfidenceThreshold }
         : {}),

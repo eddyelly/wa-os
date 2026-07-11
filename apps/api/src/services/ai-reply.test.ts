@@ -7,6 +7,7 @@ import {
   completeWithRepair,
   decideAiAction,
   parseAiOutput,
+  parseOrgAiSettings,
 } from './ai-reply.js';
 
 const goodJson = '{"reply": "Tunafungua saa tatu asubuhi.", "confidence": 0.9, "intent": "question"}';
@@ -149,5 +150,33 @@ describe('conversation transcript', () => {
         (m) => typeof m.content === 'string' && m.content.trim().length > 0
       )
     ).toBe(true);
+  });
+});
+
+describe('parseOrgAiSettings', () => {
+  it('defaults to enabled for missing or malformed settings', () => {
+    expect(parseOrgAiSettings(null).aiEnabled).toBe(true);
+    expect(parseOrgAiSettings(undefined).aiEnabled).toBe(true);
+    expect(parseOrgAiSettings('junk').aiEnabled).toBe(true);
+    expect(parseOrgAiSettings({}).aiEnabled).toBe(true);
+  });
+
+  it('only an explicit false disables the AI', () => {
+    expect(parseOrgAiSettings({ aiEnabled: false }).aiEnabled).toBe(false);
+    expect(parseOrgAiSettings({ aiEnabled: true }).aiEnabled).toBe(true);
+    expect(parseOrgAiSettings({ aiEnabled: 'no' }).aiEnabled).toBe(true);
+  });
+
+  it('carries threshold and tone notes through', () => {
+    const parsed = parseOrgAiSettings({
+      aiEnabled: false,
+      aiConfidenceThreshold: 0.5,
+      toneNotes: 'warm and brief',
+    });
+    expect(parsed).toEqual({
+      aiEnabled: false,
+      aiConfidenceThreshold: 0.5,
+      toneNotes: 'warm and brief',
+    });
   });
 });

@@ -18,6 +18,7 @@ import {
   buildSystemPrompt,
   completeWithRepair,
   decideAiAction,
+  parseOrgAiSettings,
 } from '../services/ai-reply.js';
 import { outboundService } from '../services/outbound-service.js';
 import { emitToOrg } from '../sockets/gateway.js';
@@ -25,21 +26,6 @@ import { emitToOrg } from '../sockets/gateway.js';
 interface AiPorts {
   llm: LLMPort;
   embeddings: EmbeddingPort;
-}
-
-function orgSettings(settings: unknown): { aiConfidenceThreshold?: number; toneNotes?: string } {
-  if (typeof settings !== 'object' || settings === null) {
-    return {};
-  }
-  const record = settings as Record<string, unknown>;
-  return {
-    ...(typeof record.aiConfidenceThreshold === 'number'
-      ? { aiConfidenceThreshold: record.aiConfidenceThreshold }
-      : {}),
-    ...(typeof record.toneNotes === 'string' && record.toneNotes.trim().length > 0
-      ? { toneNotes: record.toneNotes }
-      : {}),
-  };
 }
 
 export async function processAiReplyJob(
@@ -66,7 +52,12 @@ export async function processAiReplyJob(
       if (!organization) {
         return;
       }
-      const settings = orgSettings(organization.settings);
+      const settings = parseOrgAiSettings(organization.settings);
+      if (!settings.aiEnabled) {
+        // The owner turned the AI off globally: leave the message for a
+        // human, no reply and no PENDING flip.
+        return;
+      }
       const threshold = settings.aiConfidenceThreshold ?? config.AI_CONFIDENCE_THRESHOLD;
 
       const [queryEmbedding] = await ports.embeddings.embed([question], 'query');

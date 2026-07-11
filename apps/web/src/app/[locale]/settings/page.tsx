@@ -15,7 +15,7 @@ interface OrganizationResponse {
     language: string;
     timezone: string;
     modules?: BusinessModule[];
-    settings: { aiConfidenceThreshold?: number; toneNotes?: string } | null;
+    settings: { aiEnabled?: boolean; aiConfidenceThreshold?: number; toneNotes?: string } | null;
   };
 }
 
@@ -41,6 +41,7 @@ export default function SettingsPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [tempPassword, setTempPassword] = useState<string | null>(null);
 
+  const [aiOn, setAiOn] = useState(true);
   const [threshold, setThreshold] = useState(0.7);
   const [toneNotes, setToneNotes] = useState('');
 
@@ -57,6 +58,7 @@ export default function SettingsPage() {
       setVertical(org.organization.vertical);
       setLanguage(org.organization.language);
       setTimezone(org.organization.timezone);
+      setAiOn(org.organization.settings?.aiEnabled !== false);
       setThreshold(org.organization.settings?.aiConfidenceThreshold ?? 0.7);
       setToneNotes(org.organization.settings?.toneNotes ?? '');
       setModules(org.organization.modules ?? ['appointments']);
@@ -117,7 +119,7 @@ export default function SettingsPage() {
     try {
       await apiFetch('/api/v1/organization/ai-settings', {
         method: 'PATCH',
-        body: { aiConfidenceThreshold: threshold, toneNotes },
+        body: { aiEnabled: aiOn, aiConfidenceThreshold: threshold, toneNotes },
       });
       setNotice(t('saved'));
     } catch (err) {
@@ -302,6 +304,22 @@ export default function SettingsPage() {
             <Card>
               <h2 className="text-base font-semibold text-brand-900">{t('aiSection')}</h2>
               <form onSubmit={(e) => void saveAi(e)} className="mt-4 space-y-4">
+                <label className="flex items-start gap-3 rounded-xl border border-brand-100 bg-brand-50 p-3">
+                  <input
+                    type="checkbox"
+                    checked={aiOn}
+                    onChange={(e) => {
+                      setAiOn(e.target.checked);
+                    }}
+                    className="mt-0.5 h-5 w-5 accent-brand-700"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-brand-900">
+                      {t('aiEnabledLabel')}
+                    </span>
+                    <span className="block text-xs text-brand-600">{t('aiEnabledHint')}</span>
+                  </span>
+                </label>
                 <Field label={t('threshold')} hint={t('thresholdHint')}>
                   <div className="flex items-center gap-3">
                     <input

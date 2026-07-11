@@ -85,7 +85,12 @@
     "emptyTitle": "Hakuna mazungumzo bado.",
     "emptyHint": "Shiriki namba yako ya WhatsApp na mteja ili aonekane hapa.",
     "loadError": "Imeshindwa kupakia mazungumzo. Angalia mtandao wako.",
-    "retry": "Jaribu tena"
+    "retry": "Jaribu tena",
+    "searchPlaceholder": "Tafuta kwa jina au namba ya simu",
+    "noResultsTitle": "Hakuna kilichopatikana",
+    "noResultsHint": "Hakuna mazungumzo yanayolingana na utafutaji huo.",
+    "selectTitle": "Chagua mazungumzo",
+    "selectHint": "Chagua mazungumzo upande wa kushoto ili kusoma na kujibu hapa."
   },
   "thread": {
     "back": "Rudi kwenye Meseji",
@@ -228,7 +233,9 @@
     "toneNotesPlaceholder": "Salimia wateja kwa ukarimu na tumia lugha rahisi.",
     "loadError": "Imeshindwa kupakia mipangilio. Angalia mtandao wako.",
     "saveError": "Imeshindwa kuhifadhi. Angalia mtandao wako kisha ujaribu tena.",
-    "retry": "Jaribu tena"
+    "retry": "Jaribu tena",
+    "aiEnabledLabel": "AI inajibu wateja",
+    "aiEnabledHint": "Ukizima hii, AI itanyamaza kila mahali; timu yako itajibu kila ujumbe."
   },
   "testAi": {
     "title": "Jaribu msaidizi wako",

@@ -85,7 +85,12 @@
     "emptyTitle": "No conversations yet.",
     "emptyHint": "Share your WhatsApp number with a customer to see them here.",
     "loadError": "Could not load conversations. Check your connection.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "searchPlaceholder": "Search by name or phone",
+    "noResultsTitle": "No matches",
+    "noResultsHint": "No conversation matches that search.",
+    "selectTitle": "Pick a conversation",
+    "selectHint": "Choose a conversation on the left to read and reply here."
   },
   "thread": {
     "back": "Back to Inbox",
@@ -228,7 +233,9 @@
     "toneNotesPlaceholder": "Always greet customers warmly and use simple language.",
     "loadError": "Could not load settings. Check your connection.",
     "saveError": "Could not save. Check your connection and try again.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "aiEnabledLabel": "AI answers customers",
+    "aiEnabledHint": "Turn this off and the AI stays silent everywhere; your team answers every message."
   },
   "testAi": {
     "title": "Test your assistant",
