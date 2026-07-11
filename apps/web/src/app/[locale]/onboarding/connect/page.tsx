@@ -27,13 +27,18 @@ export default function OnboardingConnectPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const channelIdRef = useRef<string | null>(null);
+  const startedRef = useRef(false);
 
   const start = useCallback(async (): Promise<void> => {
     setBusy(true);
     setError(null);
     try {
       const existing = await apiFetch<ChannelListResponse>('/api/v1/channels');
-      const current = existing.channels.find((c) => c.status !== 'DISCONNECTED');
+      // Reuse the org's channel even when DISCONNECTED: reconnect re-issues a
+      // QR, while creating a fresh channel would leak instances on every
+      // restart or reload.
+      const current =
+        existing.channels.find((c) => c.status !== 'DISCONNECTED') ?? existing.channels[0];
       const raw = current
         ? await apiFetch<unknown>(`/api/v1/channels/${current.id}/connect`, { method: 'POST' })
         : await apiFetch<unknown>('/api/v1/channels', { method: 'POST' });
@@ -53,6 +58,13 @@ export default function OnboardingConnectPage() {
       router.replace('/login');
       return;
     }
+    // React StrictMode mounts effects twice in dev; without this guard the
+    // two concurrent runs race past the "existing channel?" check and each
+    // create a channel and an Evolution instance.
+    if (startedRef.current) {
+      return;
+    }
+    startedRef.current = true;
     void start();
   }, [router, start]);
 
