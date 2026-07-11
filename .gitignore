@@ -25,3 +25,6 @@ coverage/
 
 # local artifacts
 dump.rdb
+
+# Subagent-driven development scratch (briefs, reports, ledger)
+.superpowers/
