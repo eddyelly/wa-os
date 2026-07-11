@@ -30,7 +30,7 @@ export async function runAiTest(
   if (!organization) {
     throw new NotFoundError('Your business could not be found.');
   }
-  const [queryEmbedding] = await ports.embeddings.embed([question]);
+  const [queryEmbedding] = await ports.embeddings.embed([question], 'query');
   const chunks = queryEmbedding ? await knowledgeRepository.searchChunks(queryEmbedding) : [];
   const settings =
     typeof organization.settings === 'object' && organization.settings !== null

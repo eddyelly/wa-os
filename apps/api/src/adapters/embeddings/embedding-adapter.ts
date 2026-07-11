@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { EmbeddingPort } from '@waos/ports';
 import { AppError } from '../../lib/errors.js';
 import { config } from '../../lib/config.js';
+import { GeminiEmbeddingAdapter } from './gemini-embedding-adapter.js';
 
 const PROVIDER_URLS: Record<string, string> = {
   voyage: 'https://api.voyageai.com/v1/embeddings',
@@ -60,4 +61,5 @@ export class HttpEmbeddingAdapter implements EmbeddingPort {
   }
 }
 
-export const embeddingPort: EmbeddingPort = new HttpEmbeddingAdapter();
+export const embeddingPort: EmbeddingPort =
+  config.EMBEDDING_PROVIDER === 'gemini' ? new GeminiEmbeddingAdapter() : new HttpEmbeddingAdapter();

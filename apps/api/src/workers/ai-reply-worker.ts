@@ -69,7 +69,7 @@ export async function processAiReplyJob(
       const settings = orgSettings(organization.settings);
       const threshold = settings.aiConfidenceThreshold ?? config.AI_CONFIDENCE_THRESHOLD;
 
-      const [queryEmbedding] = await ports.embeddings.embed([question]);
+      const [queryEmbedding] = await ports.embeddings.embed([question], 'query');
       const chunks = queryEmbedding ? await knowledgeRepository.searchChunks(queryEmbedding) : [];
 
       const system = buildSystemPrompt({
