@@ -9,3 +9,6 @@ export * from './schemas/conversation.js';
 export * from './schemas/organization.js';
 export * from './schemas/knowledge.js';
 export * from './schemas/appointment.js';
+export * from './schemas/product.js';
+export * from './schemas/order.js';
+export * from './schemas/notification.js';

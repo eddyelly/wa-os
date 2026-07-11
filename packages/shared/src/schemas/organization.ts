@@ -14,3 +14,14 @@ export const updateOrganizationRequestSchema = z.object({
     .optional(),
 });
 export type UpdateOrganizationRequest = z.infer<typeof updateOrganizationRequestSchema>;
+
+export const updateShopSettingsRequestSchema = z.object({
+  paymentInstructions: z.string().trim().max(500).optional(),
+  ownerAlertPhone: z
+    .string()
+    .regex(/^\+[1-9]\d{6,14}$/, 'must be E.164, e.g. +2557...')
+    .nullable()
+    .optional(),
+  ownerAlertsEnabled: z.boolean().optional(),
+});
+export type UpdateShopSettingsRequest = z.infer<typeof updateShopSettingsRequestSchema>;
