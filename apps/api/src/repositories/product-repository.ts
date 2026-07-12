@@ -73,7 +73,11 @@ export const productRepository = {
   },
 
   update(id: string, data: UpdateProductData): Promise<ProductWithImages> {
-    return prisma.product.update({ where: { id }, data, include: { images: true } });
+    return prisma.product.update({
+      where: { id },
+      data,
+      include: { images: { orderBy: { createdAt: 'asc' } } },
+    });
   },
 
   async remove(id: string): Promise<void> {

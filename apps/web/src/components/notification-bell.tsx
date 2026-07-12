@@ -104,7 +104,11 @@ export function NotificationBell() {
   };
 
   const handleItemClick = (notification: NotificationDto): void => {
-    void markNotificationRead(notification.id).then(refreshUnread);
+    // Swallow the rejection: a failed refresh just leaves the badge stale
+    // until the next socket event picks it up.
+    void markNotificationRead(notification.id)
+      .then(refreshUnread)
+      .catch(() => {});
     setOpen(false);
     router.push(targetPath(notification));
   };
@@ -112,6 +116,9 @@ export function NotificationBell() {
   const handleMarkAllRead = async (): Promise<void> => {
     try {
       await markAllNotificationsRead();
+    } catch {
+      // Swallow the rejection: a failed refresh just leaves the badge stale
+      // until the next socket event picks it up.
     } finally {
       await Promise.all([refreshUnread(), loadFull()]);
     }

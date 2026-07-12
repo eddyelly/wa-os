@@ -91,6 +91,7 @@ export function ConversationThread({
   useEffect(() => {
     setMessages(null);
     setConversation(null);
+    setOrderCount(0);
     void load();
   }, [load]);
 

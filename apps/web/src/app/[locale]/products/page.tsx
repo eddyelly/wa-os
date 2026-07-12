@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ProductDto } from '@waos/shared';
-import { ApiError } from '@/lib/api';
+import { useRouter } from '@/i18n/navigation';
+import { ApiError, getStoredUser } from '@/lib/api';
 import {
   createProduct,
   deleteProduct,
@@ -21,6 +22,8 @@ const DEFAULT_LOW_STOCK_THRESHOLD = '5';
 export default function ProductsPage() {
   const t = useTranslations('products');
   const locale = useLocale();
+  const router = useRouter();
+  const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
   const [products, setProducts] = useState<ProductDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -51,6 +54,16 @@ export default function ProductsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!shopOrg) {
+      router.replace('/home');
+    }
+  }, [router, shopOrg]);
+
+  if (!shopOrg) {
+    return null;
+  }
 
   const resetForm = (): void => {
     setEditingId(null);

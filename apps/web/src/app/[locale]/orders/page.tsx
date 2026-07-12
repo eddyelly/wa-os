@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { OrderDto, OrderStatus } from '@waos/shared';
-import { Link } from '@/i18n/navigation';
-import { ApiError } from '@/lib/api';
+import { Link, useRouter } from '@/i18n/navigation';
+import { ApiError, getStoredUser } from '@/lib/api';
 import { listOrders, setOrderStatus } from '@/lib/shop-api';
 import { getSocket } from '@/lib/socket';
 import { AppShell } from '@/components/app-shell';
@@ -47,6 +47,8 @@ function shortId(id: string): string {
 export default function OrdersPage() {
   const t = useTranslations('orders');
   const locale = useLocale();
+  const router = useRouter();
+  const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [orders, setOrders] = useState<OrderDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +83,16 @@ export default function OrdersPage() {
       socket.off('notification.new', refresh);
     };
   }, [load]);
+
+  useEffect(() => {
+    if (!shopOrg) {
+      router.replace('/home');
+    }
+  }, [router, shopOrg]);
+
+  if (!shopOrg) {
+    return null;
+  }
 
   const transition = async (order: OrderDto, status: OrderStatus): Promise<void> => {
     if (status === 'CANCELLED' && !window.confirm(t('cancelConfirm'))) {
