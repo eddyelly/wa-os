@@ -20,8 +20,8 @@ function fakeLlm(responses: string[]): LLMPort {
   };
 }
 
-function message(direction: 'IN' | 'OUT', body: string): Message {
-  return { direction, body } as Message;
+function message(direction: 'IN' | 'OUT', body: string, id?: string): Message {
+  return { direction, body, id } as Message;
 }
 
 describe('parseAiOutput', () => {
@@ -204,9 +204,10 @@ describe('conversation transcript', () => {
     const history = [
       message('IN', 'Habari'),
       message('OUT', 'Karibu!'),
-      { direction: 'IN', body: null, type: 'IMAGE', mediaKey: 'org1/conv1/msg1' } as Message,
+      { id: 'img1', direction: 'IN', body: null, type: 'IMAGE', mediaKey: 'org1/conv1/msg1' } as Message,
     ];
     const transcript = buildConversationMessages(history, {
+      messageId: 'img1',
       mimeType: 'image/jpeg',
       data: 'YmFzZTY0',
     });
@@ -222,9 +223,16 @@ describe('conversation transcript', () => {
 
   it('uses the caption as the text part when the final image turn has a body', () => {
     const history = [
-      { direction: 'IN', body: 'Hii ni bei gani?', type: 'IMAGE', mediaKey: 'org1/conv1/msg1' } as Message,
+      {
+        id: 'img1',
+        direction: 'IN',
+        body: 'Hii ni bei gani?',
+        type: 'IMAGE',
+        mediaKey: 'org1/conv1/msg1',
+      } as Message,
     ];
     const transcript = buildConversationMessages(history, {
+      messageId: 'img1',
       mimeType: 'image/jpeg',
       data: 'YmFzZTY0',
     });
@@ -237,9 +245,42 @@ describe('conversation transcript', () => {
     });
   });
 
-  it('ignores a supplied image when the last turn is not an IN turn', () => {
+  it('attaches the image to its target message by id even when a newer text turn follows', () => {
+    // Regression for a worker-concurrency bug: the image bytes were fetched
+    // for one specific inbound trigger message, but a positional "attach to
+    // the last turn" rule could splice them onto an unrelated newer turn
+    // that arrived while the fetch was in flight. Identity must win.
+    const history = [
+      {
+        id: 'img1',
+        direction: 'IN',
+        body: null,
+        type: 'IMAGE',
+        mediaKey: 'org1/conv1/img1',
+      } as Message,
+      message('IN', 'Bei gani?', 'txt1'),
+    ];
+    const transcript = buildConversationMessages(history, {
+      messageId: 'img1',
+      mimeType: 'image/jpeg',
+      data: 'YmFzZTY0',
+    });
+    expect(transcript).toEqual([
+      {
+        role: 'user',
+        content: [
+          { type: 'image', mimeType: 'image/jpeg', data: 'YmFzZTY0' },
+          { type: 'text', text: 'What is this? Do you have it?' },
+        ],
+      },
+      { role: 'user', content: 'Bei gani?' },
+    ]);
+  });
+
+  it('behaves as if finalImage were absent when no history entry matches its messageId', () => {
     const history = [message('IN', 'Habari'), message('OUT', 'Karibu!')];
     const transcript = buildConversationMessages(history, {
+      messageId: 'scrolled-out-of-the-200-window',
       mimeType: 'image/jpeg',
       data: 'YmFzZTY0',
     });

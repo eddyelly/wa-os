@@ -59,22 +59,29 @@ const NO_CAPTION_QUESTION = 'What is this? Do you have it?';
 
 /**
  * Builds the LLM transcript from stored messages. When `finalImage` is
- * supplied and the last message in `history` is an inbound (customer) turn,
- * that turn carries the image as a content part alongside its caption (or a
- * generic fallback question when there was none), so the vision-capable
- * model sees the photo directly rather than a blank turn.
+ * supplied, it is attached to the history entry whose id matches
+ * `finalImage.messageId`, wherever that entry sits in the transcript (never
+ * by position): the worker fetches those bytes for one specific trigger
+ * message, and with worker concurrency and rapid follow-up messages the
+ * positionally-last turn is not reliably that same message. That turn
+ * carries the image as a content part alongside its caption (or a generic
+ * fallback question when there was none), so the vision-capable model sees
+ * the photo directly rather than a blank turn, and it is exempt from the
+ * empty-body filter below. When no history entry matches (the message has
+ * scrolled past the 200-message window), this behaves as if `finalImage`
+ * were absent.
  */
 export function buildConversationMessages(
   history: Message[],
-  finalImage?: { mimeType: string; data: string },
+  finalImage?: { messageId: string; mimeType: string; data: string },
 ): LlmMessage[] {
-  const lastRaw = history[history.length - 1];
-  const attachImage = finalImage !== undefined && lastRaw !== undefined && lastRaw.direction === 'IN';
+  const targetMessage =
+    finalImage !== undefined ? history.find((message) => message.id === finalImage.messageId) : undefined;
 
   const messages: LlmMessage[] = history
-    .filter((message) => (attachImage && message === lastRaw) || (message.body ?? '').trim().length > 0)
+    .filter((message) => message === targetMessage || (message.body ?? '').trim().length > 0)
     .map((message) => {
-      if (attachImage && message === lastRaw) {
+      if (message === targetMessage && finalImage !== undefined) {
         const caption = (message.body ?? '').trim();
         return {
           role: 'user' as const,

@@ -17,10 +17,10 @@ vi.mock('bullmq', () => ({
 
 vi.mock('../lib/redis.js', () => ({
   redisConnectionOptions: () => ({ host: 'localhost', port: 6379, maxRetriesPerRequest: null }),
-  redis: { set: vi.fn() },
+  redis: { set: vi.fn(), del: vi.fn() },
 }));
 
-import { aiReplyGuardKey, shouldSendAiReply } from './ai-reply-worker.js';
+import { aiReplyGuardKey, sendWithGuardRelease, shouldSendAiReply } from './ai-reply-worker.js';
 
 describe('aiReplyGuardKey', () => {
   it('builds a per-message guard key', () => {
@@ -40,5 +40,37 @@ describe('shouldSendAiReply', () => {
 
   it('skips for any other value, defensively', () => {
     expect(shouldSendAiReply('SOMETHING_ELSE')).toBe(false);
+  });
+});
+
+describe('sendWithGuardRelease', () => {
+  it('releases the guard key and rethrows when the send fails', async () => {
+    const del = vi.fn().mockResolvedValue(1);
+    const sendError = new Error('provider timed out');
+    const send = vi.fn().mockRejectedValue(sendError);
+
+    await expect(
+      sendWithGuardRelease({ send, releaseKey: 'ai-replied:msg1', redisClient: { del } }),
+    ).rejects.toThrow('provider timed out');
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(del).toHaveBeenCalledWith('ai-replied:msg1');
+  });
+
+  it('never touches the guard key when the send succeeds', async () => {
+    const del = vi.fn().mockResolvedValue(1);
+    const send = vi.fn().mockResolvedValue(undefined);
+
+    await sendWithGuardRelease({ send, releaseKey: 'ai-replied:msg2', redisClient: { del } });
+    expect(del).not.toHaveBeenCalled();
+  });
+
+  it('still rethrows the original send error when the guard release itself fails', async () => {
+    const del = vi.fn().mockRejectedValue(new Error('redis unreachable'));
+    const sendError = new Error('provider timed out');
+    const send = vi.fn().mockRejectedValue(sendError);
+
+    await expect(
+      sendWithGuardRelease({ send, releaseKey: 'ai-replied:msg3', redisClient: { del } }),
+    ).rejects.toThrow('provider timed out');
   });
 });

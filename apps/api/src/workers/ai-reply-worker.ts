@@ -41,6 +41,35 @@ export function shouldSendAiReply(guardResult: string | null): boolean {
   return guardResult === 'OK';
 }
 
+/**
+ * Runs `send`, and on ANY failure releases the guard key that was acquired
+ * before the send was attempted, then rethrows so BullMQ retries. Without
+ * this, a send that throws after the NX guard is set would leave the key
+ * held for its full 24h TTL and the customer would never get a reply on
+ * retry (the retry would see the key held and skip silently). The guard
+ * release itself is best effort: a failure to delete the key is logged and
+ * swallowed so the original send error is what propagates to BullMQ.
+ */
+export async function sendWithGuardRelease(params: {
+  send: () => Promise<void>;
+  releaseKey: string;
+  redisClient: { del(key: string): Promise<unknown> };
+}): Promise<void> {
+  try {
+    await params.send();
+  } catch (error) {
+    try {
+      await params.redisClient.del(params.releaseKey);
+    } catch (releaseError) {
+      logger.warn(
+        { err: releaseError, guardKey: params.releaseKey },
+        'ai reply guard: failed to release guard key after a failed send',
+      );
+    }
+    throw error;
+  }
+}
+
 export async function processAiReplyJob(
   payload: AiReplyJob,
   ports: AiPorts = { llm: llmPort, embeddings: embeddingPort },
@@ -100,10 +129,14 @@ export async function processAiReplyJob(
         shop: { enabled: shopEnabled },
       });
 
-      let finalImage: { mimeType: string; data: string } | undefined;
+      let finalImage: { messageId: string; mimeType: string; data: string } | undefined;
       if (isImageTrigger && lastInbound.mediaKey) {
         const media = await getMediaObject(lastInbound.mediaKey);
-        finalImage = { mimeType: media.mimeType, data: media.data.toString('base64') };
+        finalImage = {
+          messageId: lastInbound.id,
+          mimeType: media.mimeType,
+          data: media.data.toString('base64'),
+        };
       }
       const messages = buildConversationMessages(inbound, finalImage);
       if (messages.length === 0) {
@@ -126,10 +159,19 @@ export async function processAiReplyJob(
           'NX',
         );
         if (shouldSendAiReply(guard)) {
-          await outboundService.sendText({
-            conversationId: conversation.id,
-            body: output.reply,
-            authorType: 'AI',
+          // If the send throws after the guard key was acquired, release it
+          // so a BullMQ retry can actually reach the customer instead of
+          // silently skipping for the rest of the 24h TTL.
+          await sendWithGuardRelease({
+            send: async () => {
+              await outboundService.sendText({
+                conversationId: conversation.id,
+                body: output.reply,
+                authorType: 'AI',
+              });
+            },
+            releaseKey: aiReplyGuardKey(payload.inboundMessageId),
+            redisClient: redis,
           });
         } else {
           logger.warn(
