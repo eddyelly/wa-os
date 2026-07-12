@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import type { BusinessModule } from '@waos/shared';
 import { apiFetch, ApiError, getStoredUser, updateStoredOrganization } from '@/lib/api';
+import { updateShopSettings } from '@/lib/shop-api';
 import { AppShell } from '@/components/app-shell';
 import { Badge, Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 
@@ -15,7 +16,14 @@ interface OrganizationResponse {
     language: string;
     timezone: string;
     modules?: BusinessModule[];
-    settings: { aiEnabled?: boolean; aiConfidenceThreshold?: number; toneNotes?: string } | null;
+    settings: {
+      aiEnabled?: boolean;
+      aiConfidenceThreshold?: number;
+      toneNotes?: string;
+      paymentInstructions?: string;
+      ownerAlertPhone?: string | null;
+      ownerAlertsEnabled?: boolean;
+    } | null;
   };
 }
 
@@ -48,6 +56,11 @@ export default function SettingsPage() {
   const [modules, setModules] = useState<BusinessModule[]>(['appointments']);
   const [savingModules, setSavingModules] = useState(false);
 
+  const [paymentInstructions, setPaymentInstructions] = useState('');
+  const [ownerAlertPhone, setOwnerAlertPhone] = useState('');
+  const [ownerAlertsEnabled, setOwnerAlertsEnabled] = useState(false);
+  const [savingShop, setSavingShop] = useState(false);
+
   const load = useCallback(async (): Promise<void> => {
     try {
       const [org, users] = await Promise.all([
@@ -62,6 +75,9 @@ export default function SettingsPage() {
       setThreshold(org.organization.settings?.aiConfidenceThreshold ?? 0.7);
       setToneNotes(org.organization.settings?.toneNotes ?? '');
       setModules(org.organization.modules ?? ['appointments']);
+      setPaymentInstructions(org.organization.settings?.paymentInstructions ?? '');
+      setOwnerAlertPhone(org.organization.settings?.ownerAlertPhone ?? '');
+      setOwnerAlertsEnabled(org.organization.settings?.ownerAlertsEnabled === true);
       setTeam(users.users);
       setError(null);
     } catch {
@@ -149,6 +165,25 @@ export default function SettingsPage() {
       setError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
       setSavingModules(false);
+    }
+  };
+
+  const saveShop = async (event: SyntheticEvent): Promise<void> => {
+    event.preventDefault();
+    setSavingShop(true);
+    setNotice(null);
+    try {
+      const trimmedPhone = ownerAlertPhone.trim();
+      await updateShopSettings({
+        paymentInstructions,
+        ownerAlertPhone: trimmedPhone === '' ? null : trimmedPhone,
+        ownerAlertsEnabled: trimmedPhone === '' ? false : ownerAlertsEnabled,
+      });
+      setNotice(t('saved'));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('saveError'));
+    } finally {
+      setSavingShop(false);
     }
   };
 
@@ -247,6 +282,56 @@ export default function SettingsPage() {
               >
                 {savingModules ? t('saving') : t('save')}
               </Button>
+            </Card>
+          ) : null}
+
+          {isOwner && modules.includes('shop') ? (
+            <Card>
+              <h2 className="text-base font-semibold text-brand-900">{t('shopSection')}</h2>
+              <form onSubmit={(e) => void saveShop(e)} className="mt-4 space-y-4">
+                <Field label={t('paymentInstructions')} hint={t('paymentInstructionsHint')}>
+                  <textarea
+                    value={paymentInstructions}
+                    onChange={(e) => {
+                      setPaymentInstructions(e.target.value);
+                    }}
+                    rows={3}
+                    maxLength={500}
+                    className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-base"
+                  />
+                </Field>
+                <Field label={t('ownerAlertPhone')} hint={t('ownerAlertPhoneHint')}>
+                  <Input
+                    type="tel"
+                    placeholder="+2557..."
+                    value={ownerAlertPhone}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setOwnerAlertPhone(value);
+                      if (value.trim() === '') {
+                        setOwnerAlertsEnabled(false);
+                      }
+                    }}
+                  />
+                </Field>
+                <label className="flex items-start gap-3 rounded-xl border border-brand-100 bg-brand-50 p-3">
+                  <input
+                    type="checkbox"
+                    checked={ownerAlertsEnabled}
+                    disabled={ownerAlertPhone.trim() === ''}
+                    onChange={(e) => {
+                      setOwnerAlertsEnabled(e.target.checked);
+                    }}
+                    className="mt-0.5 h-5 w-5 accent-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                  <span className="block text-sm font-medium text-brand-900">
+                    {t('ownerAlertsEnabled')}
+                  </span>
+                </label>
+                <Button type="submit" disabled={savingShop}>
+                  {savingShop ? t('saving') : t('save')}
+                </Button>
+              </form>
             </Card>
           ) : null}
 

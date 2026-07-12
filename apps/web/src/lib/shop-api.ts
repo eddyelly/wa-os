@@ -118,7 +118,7 @@ export async function updateShopSettings(input: {
   ownerAlertPhone?: string | null;
   ownerAlertsEnabled?: boolean;
 }): Promise<void> {
-  await apiFetch<unknown>('/api/v1/shop/settings', {
+  await apiFetch<unknown>('/api/v1/organization/shop-settings', {
     method: 'PATCH',
     body: input,
   });
