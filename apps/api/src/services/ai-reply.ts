@@ -15,11 +15,16 @@ export function buildSystemPrompt(params: {
   defaultLanguage: string;
   toneNotes?: string;
   chunks: RetrievedChunk[];
+  shop?: { enabled: boolean };
 }): string {
   const context =
     params.chunks.length > 0
       ? params.chunks.map((chunk, i) => `[${i + 1}] ${chunk.content}`).join('\n\n')
       : '(no business information matched this question)';
+  const shopEnabled = params.shop?.enabled === true;
+  // The tone-notes rule sits right after the shop rules when they are
+  // present, so it must renumber from 6 to 9 rather than collide with them.
+  const toneNotesRuleNumber = shopEnabled ? 9 : 6;
   return [
     `You are the WhatsApp assistant for "${params.businessName}", a ${params.vertical} business in Tanzania.`,
     '',
@@ -31,7 +36,14 @@ export function buildSystemPrompt(params: {
     '3. Be concise, warm, and polite, like a helpful receptionist. Two to four short sentences at most.',
     '4. If the context does not answer the question, or you are unsure, say that a person from the team will follow up shortly, and set confidence below 0.3.',
     '5. If the customer wants to book, propose what you know from the context (services, hours) and say the team will confirm the exact slot. Set intent to "booking".',
-    params.toneNotes ? `6. Business tone notes: ${params.toneNotes}` : '',
+    ...(shopEnabled
+      ? [
+          '6. You can sell from the catalog: use search_products before answering availability or price questions, and use the tools rather than guessing.',
+          '7. Bargaining: if the customer asks for a discount, you may propose their price with negotiate_price. If the shop declines, offer the counterPrice as the best you can do and call it final. Never invent discounts and never state that a lower limit exists.',
+          '8. When the customer clearly agrees to buy at an agreed price, call record_order once, then relay the payment instructions it returns and thank them.',
+        ]
+      : []),
+    params.toneNotes ? `${toneNotesRuleNumber}. Business tone notes: ${params.toneNotes}` : '',
     '',
     'BUSINESS CONTEXT:',
     context,
@@ -70,6 +82,14 @@ export function parseAiOutput(text: string): AiReplyOutput | null {
 }
 
 /**
+ * The exact nudge sent back to the model when its output was not the
+ * strict JSON contract. Shared verbatim with the tool-loop agent
+ * (ai-agent.ts) so both repair paths reuse the same wording.
+ */
+export const JSON_REPAIR_MESSAGE =
+  'Your previous output was not valid JSON. Respond again with ONLY the JSON object, exactly: {"reply": string, "confidence": number, "intent": "question"|"booking"|"complaint"|"greeting"|"other"}';
+
+/**
  * Ask the model, with one repair retry when the output is not the strict
  * JSON contract. Returns null when both attempts fail.
  */
@@ -88,11 +108,7 @@ export async function completeWithRepair(
     messages: [
       ...messages,
       { role: 'assistant', content: first.text },
-      {
-        role: 'user',
-        content:
-          'Your previous output was not valid JSON. Respond again with ONLY the JSON object, exactly: {"reply": string, "confidence": number, "intent": "question"|"booking"|"complaint"|"greeting"|"other"}',
-      },
+      { role: 'user', content: JSON_REPAIR_MESSAGE },
     ],
   });
   return parseAiOutput(repair.text);

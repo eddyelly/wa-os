@@ -125,6 +125,53 @@ describe('prompt construction', () => {
     });
     expect(prompt).toContain('Karibu sana');
   });
+
+  it('omits the shop rules when shop is not enabled', () => {
+    const prompt = buildSystemPrompt({
+      businessName: 'Nuru Salon',
+      vertical: 'salon',
+      defaultLanguage: 'sw',
+      chunks: [],
+    });
+    expect(prompt).not.toContain('search_products');
+    expect(prompt).not.toContain('negotiate_price');
+    expect(prompt).not.toContain('record_order');
+  });
+
+  it('inserts the shop rules as 6-8 and renumbers the tone-notes rule to 9 when shop is enabled', () => {
+    const prompt = buildSystemPrompt({
+      businessName: 'Nuru Salon',
+      vertical: 'salon',
+      defaultLanguage: 'sw',
+      toneNotes: 'Always greet with Karibu sana.',
+      chunks: [],
+      shop: { enabled: true },
+    });
+    expect(prompt).toContain(
+      '6. You can sell from the catalog: use search_products before answering availability or price questions, and use the tools rather than guessing.',
+    );
+    expect(prompt).toContain(
+      "7. Bargaining: if the customer asks for a discount, you may propose their price with negotiate_price. If the shop declines, offer the counterPrice as the best you can do and call it final. Never invent discounts and never state that a lower limit exists.",
+    );
+    expect(prompt).toContain(
+      '8. When the customer clearly agrees to buy at an agreed price, call record_order once, then relay the payment instructions it returns and thank them.',
+    );
+    expect(prompt).toContain('9. Business tone notes: Always greet with Karibu sana.');
+    expect(prompt).not.toContain('6. Business tone notes');
+  });
+
+  it('does not insert the shop rules when shop.enabled is false', () => {
+    const prompt = buildSystemPrompt({
+      businessName: 'Nuru Salon',
+      vertical: 'salon',
+      defaultLanguage: 'sw',
+      toneNotes: 'Always greet with Karibu sana.',
+      chunks: [],
+      shop: { enabled: false },
+    });
+    expect(prompt).not.toContain('search_products');
+    expect(prompt).toContain('6. Business tone notes: Always greet with Karibu sana.');
+  });
 });
 
 describe('conversation transcript', () => {
