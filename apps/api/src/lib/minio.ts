@@ -54,6 +54,26 @@ export function getMediaUrl(key: string): Promise<string> {
 }
 
 /**
+ * Resolves a stored object's real content type via `statObject`, without
+ * fetching its bytes (the outbound worker used to hardcode
+ * `application/octet-stream` for every media send). Falls back to
+ * `application/octet-stream` both when the metadata has no content-type and
+ * when the stat call itself fails: a lookup hiccup must never break an
+ * outbound send.
+ */
+export async function getMediaMimeType(key: string): Promise<string> {
+  try {
+    const stat = await minioClient.statObject(config.MINIO_BUCKET, key);
+    const metaData = stat.metaData as Record<string, unknown>;
+    const contentType = metaData['content-type'];
+    return typeof contentType === 'string' ? contentType : 'application/octet-stream';
+  } catch (error) {
+    logger.warn({ err: error }, 'could not resolve media mime type, falling back to octet-stream');
+    return 'application/octet-stream';
+  }
+}
+
+/**
  * Fetches a stored media object's bytes and content type, for handing an
  * inbound image straight to the vision-capable model. Never logs the bytes
  * (CLAUDE.md section 6); only the object key ever appears in logs upstream.

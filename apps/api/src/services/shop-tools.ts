@@ -95,13 +95,25 @@ export function buildShopTools(params: {
   contactId: string;
   paymentInstructions: string | undefined;
   embeddings: EmbeddingPort;
-}): AgentTools {
+}): AgentTools & { productIdsSeen: string[] } {
   const { conversationId, contactId, paymentInstructions, embeddings } = params;
+
+  // Every distinct productId a search_products result has surfaced during
+  // this run, in order of first appearance (Task 10 brief). runAgentLoop
+  // copies this array into AgentRunResult once the tool loop finishes.
+  const productIdsSeen: string[] = [];
+  const seenProductIds = new Set<string>();
 
   async function searchProducts(query: string): Promise<unknown> {
     const [queryEmbedding] = await embeddings.embed([query], 'query');
     const byEmbedding = queryEmbedding ? await productRepository.searchByEmbedding(queryEmbedding) : [];
     const matches = byEmbedding.length > 0 ? byEmbedding : await productRepository.searchByName(query);
+    for (const product of matches) {
+      if (!seenProductIds.has(product.id)) {
+        seenProductIds.add(product.id);
+        productIdsSeen.push(product.id);
+      }
+    }
     return {
       products: matches.map((product) => ({
         productId: product.id,
@@ -161,6 +173,7 @@ export function buildShopTools(params: {
 
   return {
     definitions: TOOL_DEFINITIONS,
+    productIdsSeen,
     async execute(name: string, args: Record<string, unknown>): Promise<unknown> {
       switch (name) {
         case 'search_products': {

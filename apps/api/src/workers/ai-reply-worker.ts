@@ -14,6 +14,7 @@ import { conversationRepository } from '../repositories/conversation-repository.
 import { knowledgeRepository } from '../repositories/knowledge-repository.js';
 import { messageRepository } from '../repositories/message-repository.js';
 import { organizationRepository } from '../repositories/organization-repository.js';
+import { productRepository } from '../repositories/product-repository.js';
 import { runAgentLoop, type AgentTools } from '../services/ai-agent.js';
 import {
   buildConversationMessages,
@@ -25,6 +26,7 @@ import {
 import { outboundService } from '../services/outbound-service.js';
 import { buildShopTools } from '../services/shop-tools.js';
 import { emitToOrg } from '../sockets/gateway.js';
+import { pickReplyMedia } from './outbound-media.js';
 
 interface AiPorts {
   llm: LLMPort;
@@ -161,14 +163,33 @@ export async function processAiReplyJob(
         if (shouldSendAiReply(guard)) {
           // If the send throws after the guard key was acquired, release it
           // so a BullMQ retry can actually reach the customer instead of
-          // silently skipping for the rest of the 24h TTL.
+          // silently skipping for the rest of the 24h TTL. The product photo
+          // lookup lives inside this closure too, so a lookup failure gets
+          // the same guard-release treatment as a send failure.
           await sendWithGuardRelease({
             send: async () => {
-              await outboundService.sendText({
-                conversationId: conversation.id,
-                body: output.reply,
-                authorType: 'AI',
-              });
+              let mediaKey: string | null = null;
+              const [onlyProductId] = result.productIdsSeen;
+              if (result.productIdsSeen.length === 1 && onlyProductId !== undefined) {
+                const product = await productRepository.findById(onlyProductId);
+                mediaKey = pickReplyMedia(result.productIdsSeen, {
+                  [onlyProductId]: product?.images[0]?.mediaKey,
+                });
+              }
+              if (mediaKey) {
+                await outboundService.sendMedia({
+                  conversationId: conversation.id,
+                  mediaKey,
+                  caption: output.reply,
+                  authorType: 'AI',
+                });
+              } else {
+                await outboundService.sendText({
+                  conversationId: conversation.id,
+                  body: output.reply,
+                  authorType: 'AI',
+                });
+              }
             },
             releaseKey: aiReplyGuardKey(payload.inboundMessageId),
             redisClient: redis,

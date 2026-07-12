@@ -26,10 +26,14 @@ function scriptedLlm(responses: LlmCompletion[]): LLMPort & { calls: LlmCompleti
   };
 }
 
-function fakeTools(execute: (name: string, args: Record<string, unknown>) => Promise<unknown>): AgentTools {
+function fakeTools(
+  execute: (name: string, args: Record<string, unknown>) => Promise<unknown>,
+  productIdsSeen?: string[],
+): AgentTools {
   return {
     definitions: [{ name: 'search_products', description: 'search', parameters: {} }],
     execute,
+    productIdsSeen,
   };
 }
 
@@ -47,6 +51,7 @@ describe('runAgentLoop', () => {
     expect(result.output?.confidence).toBe(0.9);
     expect(result.toolsUsed).toEqual([]);
     expect(result.raw).toBe(goodJson);
+    expect(result.productIdsSeen).toEqual([]);
     expect(llm.calls).toHaveLength(1);
     expect(llm.calls[0]?.tools).toBeUndefined();
   });
@@ -85,6 +90,59 @@ describe('runAgentLoop', () => {
       role: 'user',
       content: [{ type: 'tool_result', name: 'search_products', response: { products: [] } }],
     });
+  });
+
+  it('copies tools.productIdsSeen into the result after a successful run', async () => {
+    const llm = scriptedLlm([
+      { text: '', toolCalls: [{ name: 'search_products', args: { query: 'wig' } }] },
+      { text: goodJson },
+    ]);
+    const tools = fakeTools(() => Promise.resolve({ products: [] }), ['p1', 'p2']);
+
+    const result = await runAgentLoop({
+      llm,
+      system: 'sys',
+      messages: [{ role: 'user', content: 'una wig?' }],
+      tools,
+    });
+
+    expect(result.productIdsSeen).toEqual(['p1', 'p2']);
+  });
+
+  it('copies tools.productIdsSeen into the result even when the answer needed a repair call', async () => {
+    const llm = scriptedLlm([
+      { text: '', toolCalls: [{ name: 'search_products', args: { query: 'wig' } }] },
+      { text: 'not json' },
+      { text: 'still not json' },
+    ]);
+    const tools = fakeTools(() => Promise.resolve({ products: [] }), ['p1']);
+
+    const result = await runAgentLoop({
+      llm,
+      system: 'sys',
+      messages: [{ role: 'user', content: 'una wig?' }],
+      tools,
+    });
+
+    expect(result.output).toBeNull();
+    expect(result.productIdsSeen).toEqual(['p1']);
+  });
+
+  it('defaults productIdsSeen to an empty array when the tools object never sets it', async () => {
+    const llm = scriptedLlm([
+      { text: '', toolCalls: [{ name: 'search_products', args: { query: 'wig' } }] },
+      { text: goodJson },
+    ]);
+    const tools = fakeTools(() => Promise.resolve({ products: [] }));
+
+    const result = await runAgentLoop({
+      llm,
+      system: 'sys',
+      messages: [{ role: 'user', content: 'una wig?' }],
+      tools,
+    });
+
+    expect(result.productIdsSeen).toEqual([]);
   });
 
   it('round cap: an LLM that always returns tool calls stops after MAX_TOOL_ROUNDS and gets one final no-tools call with the nudge', async () => {

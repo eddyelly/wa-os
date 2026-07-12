@@ -13,6 +13,13 @@ import { JSON_REPAIR_MESSAGE, parseAiOutput } from './ai-reply.js';
 export interface AgentTools {
   definitions: LlmToolDefinition[];
   execute(name: string, args: Record<string, unknown>): Promise<unknown>;
+  /**
+   * Every distinct productId seen in a `search_products` result during this
+   * run, in order of first appearance (Task 10 brief). Mutated in place by
+   * the concrete tools built in shop-tools.ts; absent for tool sets that
+   * never deal in products.
+   */
+  readonly productIdsSeen?: string[];
 }
 
 export interface AgentRunResult {
@@ -22,6 +29,8 @@ export interface AgentRunResult {
   toolsUsed: string[];
   /** Final raw text, kept for debugging only. Never logged (CLAUDE.md section 6). */
   raw: string;
+  /** Copied from `tools.productIdsSeen` once the loop finishes; `[]` when absent. */
+  productIdsSeen: string[];
 }
 
 export const MAX_TOOL_ROUNDS = 4;
@@ -96,9 +105,11 @@ export async function runAgentLoop(params: {
     completion = await llm.complete({ system, messages, maxTokens });
   }
 
+  const productIdsSeen = tools?.productIdsSeen ?? [];
+
   const parsed = parseAiOutput(completion.text);
   if (parsed) {
-    return { output: parsed, toolsUsed, raw: completion.text };
+    return { output: parsed, toolsUsed, raw: completion.text, productIdsSeen };
   }
 
   const repair = await llm.complete({
@@ -110,5 +121,5 @@ export async function runAgentLoop(params: {
     ],
     maxTokens,
   });
-  return { output: parseAiOutput(repair.text), toolsUsed, raw: repair.text };
+  return { output: parseAiOutput(repair.text), toolsUsed, raw: repair.text, productIdsSeen };
 }

@@ -153,6 +153,28 @@ describe('shop-tools: search_products', () => {
     expect(productRepo.searchByName).not.toHaveBeenCalled();
     assertNoMinPriceKey(result);
   });
+
+  it('accumulates productIdsSeen across calls, deduped, in order of first appearance', async () => {
+    productRepo.searchByEmbedding.mockResolvedValueOnce([
+      { id: 'p1', name: 'Wig', description: null, price: 85000, stockQty: 4, isActive: true, score: 0.9 },
+      { id: 'p2', name: 'Comb', description: null, price: 2000, stockQty: 5, isActive: true, score: 0.7 },
+    ]);
+    productRepo.searchByEmbedding.mockResolvedValueOnce([
+      { id: 'p2', name: 'Comb', description: null, price: 2000, stockQty: 5, isActive: true, score: 0.9 },
+      { id: 'p3', name: 'Brush', description: null, price: 3000, stockQty: 2, isActive: true, score: 0.6 },
+    ]);
+    const tools = makeTools();
+
+    await tools.execute('search_products', { query: 'wig' });
+    await tools.execute('search_products', { query: 'comb' });
+
+    expect(tools.productIdsSeen).toEqual(['p1', 'p2', 'p3']);
+  });
+
+  it('starts with an empty productIdsSeen when search_products has never run', () => {
+    const tools = makeTools();
+    expect(tools.productIdsSeen).toEqual([]);
+  });
 });
 
 describe('shop-tools: record_order', () => {
