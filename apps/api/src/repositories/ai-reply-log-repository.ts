@@ -9,6 +9,7 @@ export const aiReplyLogRepository = {
     confidence: number;
     action: AiReplyAction;
     latencyMs: number;
+    toolsUsed?: string[];
   }): Promise<AiReplyLog> {
     return prisma.aiReplyLog.create({
       data: { ...data, organizationId: requireRequestContext().organizationId },

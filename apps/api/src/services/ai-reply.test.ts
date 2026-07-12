@@ -199,6 +199,52 @@ describe('conversation transcript', () => {
       )
     ).toBe(true);
   });
+
+  it('attaches an image part with a fallback question when the final IN turn (an image message) has no caption', () => {
+    const history = [
+      message('IN', 'Habari'),
+      message('OUT', 'Karibu!'),
+      { direction: 'IN', body: null, type: 'IMAGE', mediaKey: 'org1/conv1/msg1' } as Message,
+    ];
+    const transcript = buildConversationMessages(history, {
+      mimeType: 'image/jpeg',
+      data: 'YmFzZTY0',
+    });
+    const last = transcript[transcript.length - 1];
+    expect(last).toEqual({
+      role: 'user',
+      content: [
+        { type: 'image', mimeType: 'image/jpeg', data: 'YmFzZTY0' },
+        { type: 'text', text: 'What is this? Do you have it?' },
+      ],
+    });
+  });
+
+  it('uses the caption as the text part when the final image turn has a body', () => {
+    const history = [
+      { direction: 'IN', body: 'Hii ni bei gani?', type: 'IMAGE', mediaKey: 'org1/conv1/msg1' } as Message,
+    ];
+    const transcript = buildConversationMessages(history, {
+      mimeType: 'image/jpeg',
+      data: 'YmFzZTY0',
+    });
+    expect(transcript[transcript.length - 1]).toEqual({
+      role: 'user',
+      content: [
+        { type: 'image', mimeType: 'image/jpeg', data: 'YmFzZTY0' },
+        { type: 'text', text: 'Hii ni bei gani?' },
+      ],
+    });
+  });
+
+  it('ignores a supplied image when the last turn is not an IN turn', () => {
+    const history = [message('IN', 'Habari'), message('OUT', 'Karibu!')];
+    const transcript = buildConversationMessages(history, {
+      mimeType: 'image/jpeg',
+      data: 'YmFzZTY0',
+    });
+    expect(transcript[transcript.length - 1]).toEqual({ role: 'user', content: 'Habari' });
+  });
 });
 
 describe('parseOrgAiSettings', () => {

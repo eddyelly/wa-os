@@ -55,13 +55,40 @@ export function buildSystemPrompt(params: {
     .join('\n');
 }
 
-export function buildConversationMessages(history: Message[]): LlmMessage[] {
+const NO_CAPTION_QUESTION = 'What is this? Do you have it?';
+
+/**
+ * Builds the LLM transcript from stored messages. When `finalImage` is
+ * supplied and the last message in `history` is an inbound (customer) turn,
+ * that turn carries the image as a content part alongside its caption (or a
+ * generic fallback question when there was none), so the vision-capable
+ * model sees the photo directly rather than a blank turn.
+ */
+export function buildConversationMessages(
+  history: Message[],
+  finalImage?: { mimeType: string; data: string },
+): LlmMessage[] {
+  const lastRaw = history[history.length - 1];
+  const attachImage = finalImage !== undefined && lastRaw !== undefined && lastRaw.direction === 'IN';
+
   const messages: LlmMessage[] = history
-    .filter((message) => (message.body ?? '').trim().length > 0)
-    .map((message) => ({
-      role: message.direction === 'IN' ? ('user' as const) : ('assistant' as const),
-      content: message.body ?? '',
-    }));
+    .filter((message) => (attachImage && message === lastRaw) || (message.body ?? '').trim().length > 0)
+    .map((message) => {
+      if (attachImage && message === lastRaw) {
+        const caption = (message.body ?? '').trim();
+        return {
+          role: 'user' as const,
+          content: [
+            { type: 'image' as const, mimeType: finalImage.mimeType, data: finalImage.data },
+            { type: 'text' as const, text: caption.length > 0 ? caption : NO_CAPTION_QUESTION },
+          ],
+        };
+      }
+      return {
+        role: message.direction === 'IN' ? ('user' as const) : ('assistant' as const),
+        content: message.body ?? '',
+      };
+    });
   // The transcript must end with a user turn for the model to answer it.
   while (messages.length > 0 && messages[messages.length - 1]?.role === 'assistant') {
     messages.pop();

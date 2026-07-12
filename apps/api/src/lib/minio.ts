@@ -1,3 +1,4 @@
+import { buffer as streamToBuffer } from 'node:stream/consumers';
 import { Client } from 'minio';
 import { config } from './config.js';
 import { logger } from './logger.js';
@@ -50,4 +51,23 @@ export async function putMediaObject(
 /** Short-lived download URL the dashboard can use directly. */
 export function getMediaUrl(key: string): Promise<string> {
   return minioClient.presignedGetObject(config.MINIO_BUCKET, key, 60 * 60);
+}
+
+/**
+ * Fetches a stored media object's bytes and content type, for handing an
+ * inbound image straight to the vision-capable model. Never logs the bytes
+ * (CLAUDE.md section 6); only the object key ever appears in logs upstream.
+ */
+export async function getMediaObject(key: string): Promise<{ data: Buffer; mimeType: string }> {
+  const [stream, stat] = await Promise.all([
+    minioClient.getObject(config.MINIO_BUCKET, key),
+    minioClient.statObject(config.MINIO_BUCKET, key),
+  ]);
+  const data = await streamToBuffer(stream);
+  const metaData = stat.metaData as Record<string, unknown>;
+  const contentType = metaData['content-type'];
+  return {
+    data,
+    mimeType: typeof contentType === 'string' ? contentType : 'application/octet-stream',
+  };
 }

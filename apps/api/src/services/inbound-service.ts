@@ -115,7 +115,7 @@ async function handleIncomingMessage(channel: Channel, incoming: IncomingMessage
     conversationId: conversation.id,
   });
 
-  if (conversation.aiEnabled && incoming.type === 'TEXT') {
+  if (conversation.aiEnabled && (incoming.type === 'TEXT' || incoming.type === 'IMAGE')) {
     await enqueueAiReply({
       organizationId: channel.organizationId,
       conversationId: conversation.id,

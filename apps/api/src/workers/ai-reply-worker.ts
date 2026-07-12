@@ -6,26 +6,39 @@ import { llmPort } from '../adapters/llm/gemini-adapter.js';
 import { config } from '../lib/config.js';
 import { requireRequestContext, runWithRequestContext } from '../lib/context.js';
 import { logger } from '../lib/logger.js';
+import { getMediaObject } from '../lib/minio.js';
 import { QUEUE_NAMES } from '../lib/queues.js';
-import { redisConnectionOptions } from '../lib/redis.js';
+import { redis, redisConnectionOptions } from '../lib/redis.js';
 import { aiReplyLogRepository } from '../repositories/ai-reply-log-repository.js';
 import { conversationRepository } from '../repositories/conversation-repository.js';
 import { knowledgeRepository } from '../repositories/knowledge-repository.js';
 import { messageRepository } from '../repositories/message-repository.js';
 import { organizationRepository } from '../repositories/organization-repository.js';
+import { runAgentLoop, type AgentTools } from '../services/ai-agent.js';
 import {
   buildConversationMessages,
   buildSystemPrompt,
-  completeWithRepair,
   decideAiAction,
   parseOrgAiSettings,
+  parseOrgShopSettings,
 } from '../services/ai-reply.js';
 import { outboundService } from '../services/outbound-service.js';
+import { buildShopTools } from '../services/shop-tools.js';
 import { emitToOrg } from '../sockets/gateway.js';
 
 interface AiPorts {
   llm: LLMPort;
   embeddings: EmbeddingPort;
+}
+
+/** Guard key for the double-send lock: one send per inbound message, ever. */
+export function aiReplyGuardKey(inboundMessageId: string): string {
+  return `ai-replied:${inboundMessageId}`;
+}
+
+/** `redis.set(..., 'NX')` returns 'OK' only when it acquired the key. */
+export function shouldSendAiReply(guardResult: string | null): boolean {
+  return guardResult === 'OK';
 }
 
 export async function processAiReplyJob(
@@ -43,12 +56,14 @@ export async function processAiReplyJob(
       const inbound = await messageRepository.listByConversation(conversation.id, 200);
       const lastInbound = [...inbound].reverse().find((m) => m.id === payload.inboundMessageId);
       const question = lastInbound?.body ?? '';
-      if (question.trim().length === 0) {
+      // A photo with no caption still triggers the agent (vision trigger):
+      // only bail for an empty turn that carries no image either.
+      const isImageTrigger = lastInbound?.type === 'IMAGE' && Boolean(lastInbound.mediaKey);
+      if (question.trim().length === 0 && !isImageTrigger) {
         return;
       }
-      const organization = await organizationRepository.findCurrent(
-        requireRequestContext().organizationId,
-      );
+      const organizationId = requireRequestContext().organizationId;
+      const organization = await organizationRepository.findCurrent(organizationId);
       if (!organization) {
         return;
       }
@@ -60,8 +75,21 @@ export async function processAiReplyJob(
       }
       const threshold = settings.aiConfidenceThreshold ?? config.AI_CONFIDENCE_THRESHOLD;
 
-      const [queryEmbedding] = await ports.embeddings.embed([question], 'query');
+      // Nothing to embed for an image-only turn with no caption text.
+      const [queryEmbedding] =
+        question.trim().length > 0 ? await ports.embeddings.embed([question], 'query') : [];
       const chunks = queryEmbedding ? await knowledgeRepository.searchChunks(queryEmbedding) : [];
+
+      const shopEnabled = organization.modules.includes('shop');
+      const tools: AgentTools | null = shopEnabled
+        ? buildShopTools({
+            organizationId,
+            conversationId: conversation.id,
+            contactId: conversation.contactId,
+            paymentInstructions: parseOrgShopSettings(organization.settings).paymentInstructions,
+            embeddings: ports.embeddings,
+          })
+        : null;
 
       const system = buildSystemPrompt({
         businessName: organization.name,
@@ -69,22 +97,46 @@ export async function processAiReplyJob(
         defaultLanguage: organization.language,
         toneNotes: settings.toneNotes,
         chunks,
+        shop: { enabled: shopEnabled },
       });
-      const messages = buildConversationMessages(inbound);
+
+      let finalImage: { mimeType: string; data: string } | undefined;
+      if (isImageTrigger && lastInbound.mediaKey) {
+        const media = await getMediaObject(lastInbound.mediaKey);
+        finalImage = { mimeType: media.mimeType, data: media.data.toString('base64') };
+      }
+      const messages = buildConversationMessages(inbound, finalImage);
       if (messages.length === 0) {
         return;
       }
 
-      const output = await completeWithRepair(ports.llm, system, messages);
+      const result = await runAgentLoop({ llm: ports.llm, system, messages, tools });
+      const output = result.output;
       const decision = decideAiAction(output, threshold);
       const isBooking = output?.intent === 'booking';
 
       if (decision === 'REPLY' && output) {
-        await outboundService.sendText({
-          conversationId: conversation.id,
-          body: output.reply,
-          authorType: 'AI',
-        });
+        // Double-send guard: a BullMQ retry after a successful send must
+        // never re-send the same reply (CLAUDE.md ban-risk guardrails).
+        const guard = await redis.set(
+          aiReplyGuardKey(payload.inboundMessageId),
+          '1',
+          'EX',
+          86400,
+          'NX',
+        );
+        if (shouldSendAiReply(guard)) {
+          await outboundService.sendText({
+            conversationId: conversation.id,
+            body: output.reply,
+            authorType: 'AI',
+          });
+        } else {
+          logger.warn(
+            { inboundMessageId: payload.inboundMessageId },
+            'ai reply guard: skipping duplicate send',
+          );
+        }
         if (isBooking && conversation.status !== 'PENDING') {
           // Booking thin slice: the AI proposes, a human confirms the slot.
           await conversationRepository.updateStatus(conversation.id, 'PENDING');
@@ -103,6 +155,7 @@ export async function processAiReplyJob(
         confidence: output?.confidence ?? 0,
         action: decision === 'REPLY' ? 'REPLIED' : 'HANDED_OFF',
         latencyMs: Date.now() - startedAt,
+        toolsUsed: result.toolsUsed,
       });
       logger.info(
         {
