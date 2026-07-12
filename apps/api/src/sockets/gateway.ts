@@ -10,7 +10,8 @@ export type SocketEvent =
   | 'message.new'
   | 'message.updated'
   | 'conversation.updated'
-  | 'channel.status_changed';
+  | 'channel.status_changed'
+  | 'notification.new';
 
 let io: Server | null = null;
 
