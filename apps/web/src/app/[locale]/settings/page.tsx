@@ -76,8 +76,9 @@ export default function SettingsPage() {
       setToneNotes(org.organization.settings?.toneNotes ?? '');
       setModules(org.organization.modules ?? ['appointments']);
       setPaymentInstructions(org.organization.settings?.paymentInstructions ?? '');
-      setOwnerAlertPhone(org.organization.settings?.ownerAlertPhone ?? '');
-      setOwnerAlertsEnabled(org.organization.settings?.ownerAlertsEnabled === true);
+      const ownerAlertPhoneValue = org.organization.settings?.ownerAlertPhone ?? '';
+      setOwnerAlertPhone(ownerAlertPhoneValue);
+      setOwnerAlertsEnabled(ownerAlertPhoneValue !== '' && org.organization.settings?.ownerAlertsEnabled === true);
       setTeam(users.users);
       setError(null);
     } catch {
