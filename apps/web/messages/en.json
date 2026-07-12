@@ -237,6 +237,26 @@
     "retry": "Try again",
     "invalidNumbers": "Prices must be whole numbers above zero."
   },
+  "orders": {
+    "title": "Orders",
+    "filterAll": "All",
+    "statusPENDING_CONFIRMATION": "Needs confirmation",
+    "statusCONFIRMED": "Confirmed",
+    "statusPAID": "Paid",
+    "statusFULFILLED": "Fulfilled",
+    "statusCANCELLED": "Cancelled",
+    "confirm": "Confirm order",
+    "markPaid": "Mark paid",
+    "fulfil": "Mark fulfilled",
+    "cancel": "Cancel order",
+    "cancelConfirm": "Cancel this order? Stock returns if it was already confirmed.",
+    "viewChat": "Open the chat",
+    "total": "Total",
+    "emptyTitle": "No orders yet",
+    "emptyHint": "When the AI closes a sale, the order lands here for you to confirm.",
+    "loadError": "Could not load orders. Check your connection and try again.",
+    "retry": "Try again"
+  },
   "settings": {
     "title": "Settings",
     "profileSection": "Business info",

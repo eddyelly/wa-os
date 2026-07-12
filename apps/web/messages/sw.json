@@ -237,6 +237,26 @@
     "retry": "Jaribu tena",
     "invalidNumbers": "Bei lazima ziwe namba nzima zaidi ya sifuri."
   },
+  "orders": {
+    "title": "Oda",
+    "filterAll": "Zote",
+    "statusPENDING_CONFIRMATION": "Inahitaji uthibitisho",
+    "statusCONFIRMED": "Imethibitishwa",
+    "statusPAID": "Imelipwa",
+    "statusFULFILLED": "Imekamilika",
+    "statusCANCELLED": "Imeghairiwa",
+    "confirm": "Thibitisha oda",
+    "markPaid": "Weka imelipwa",
+    "fulfil": "Weka imekamilika",
+    "cancel": "Ghairi oda",
+    "cancelConfirm": "Ughairi oda hii? Stoki inarudi ikiwa ilishathibitishwa.",
+    "viewChat": "Fungua mazungumzo",
+    "total": "Jumla",
+    "emptyTitle": "Hakuna oda bado",
+    "emptyHint": "AI ikifunga mauzo, oda inafika hapa ili uithibitishe.",
+    "loadError": "Imeshindwa kupakia oda. Angalia muunganisho wako kisha ujaribu tena.",
+    "retry": "Jaribu tena"
+  },
   "settings": {
     "title": "Mipangilio",
     "profileSection": "Taarifa za biashara",

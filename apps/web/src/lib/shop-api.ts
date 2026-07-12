@@ -87,8 +87,8 @@ export async function listOrders(
 }
 
 export async function setOrderStatus(id: string, status: OrderStatus): Promise<OrderDto> {
-  const raw = await apiFetch<unknown>(`/api/v1/orders/${id}`, {
-    method: 'PATCH',
+  const raw = await apiFetch<unknown>(`/api/v1/orders/${id}/status`, {
+    method: 'POST',
     body: { status },
   });
   return orderSchema.parse((raw as { order: unknown }).order);
