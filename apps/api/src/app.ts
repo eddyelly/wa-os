@@ -15,6 +15,7 @@ import { dashboardRoutes } from './routes/dashboard.js';
 import { healthRoutes } from './routes/health.js';
 import { knowledgeRoutes } from './routes/knowledge.js';
 import { organizationRoutes } from './routes/organization.js';
+import { orderRoutes } from './routes/orders.js';
 import { productRoutes } from './routes/products.js';
 import { webhookRoutes } from './routes/webhooks.js';
 
@@ -47,6 +48,7 @@ export function createApp(): Express {
   app.use('/api/v1/knowledge', knowledgeRoutes);
   app.use('/api/v1/appointments', appointmentRoutes);
   app.use('/api/v1/products', productRoutes);
+  app.use('/api/v1/orders', orderRoutes);
   app.use('/api/v1/contacts', contactRoutes);
   app.use('/api/v1/dashboard', dashboardRoutes);
   app.use('/api/v1/ai', aiRoutes);
