@@ -92,14 +92,15 @@ export function NotificationBell() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    void loadFull();
+  }, [open, loadFull]);
+
   const togglePanel = (): void => {
-    setOpen((current) => {
-      const next = !current;
-      if (next) {
-        void loadFull();
-      }
-      return next;
-    });
+    setOpen((c) => !c);
   };
 
   const handleItemClick = (notification: NotificationDto): void => {
