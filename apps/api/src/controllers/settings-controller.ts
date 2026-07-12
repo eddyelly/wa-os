@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
+import { updateShopSettingsRequestSchema } from '@waos/shared';
 import { requireRequestContext } from '../lib/context.js';
 import { NotFoundError } from '../lib/errors.js';
 import { organizationRepository } from '../repositories/organization-repository.js';
@@ -47,6 +48,35 @@ export const updateAiSettings = async (req: Request, res: Response): Promise<voi
         ? { aiConfidenceThreshold: input.aiConfidenceThreshold }
         : {}),
       ...(input.toneNotes !== undefined ? { toneNotes: input.toneNotes } : {}),
+    },
+  });
+  res.json({ settings: updated.settings });
+};
+
+export const updateShopSettings = async (req: Request, res: Response): Promise<void> => {
+  const input = updateShopSettingsRequestSchema.parse(req.body);
+  const { organizationId } = requireRequestContext();
+  const organization = await organizationRepository.findCurrent(organizationId);
+  if (!organization) {
+    throw new NotFoundError('Your business could not be found.');
+  }
+  const settings =
+    typeof organization.settings === 'object' && organization.settings !== null
+      ? (organization.settings as Record<string, unknown>)
+      : {};
+  const updated = await organizationRepository.update(organizationId, {
+    settings: {
+      ...settings,
+      ...(input.paymentInstructions !== undefined
+        ? { paymentInstructions: input.paymentInstructions }
+        : {}),
+      // ownerAlertPhone: null is a deliberate clear, stored as an explicit
+      // null rather than a deleted key so its presence in settings always
+      // reflects the latest value the owner set.
+      ...(input.ownerAlertPhone !== undefined ? { ownerAlertPhone: input.ownerAlertPhone } : {}),
+      ...(input.ownerAlertsEnabled !== undefined
+        ? { ownerAlertsEnabled: input.ownerAlertsEnabled }
+        : {}),
     },
   });
   res.json({ settings: updated.settings });

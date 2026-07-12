@@ -46,6 +46,20 @@ describe('policy engine: evolution (entry tier)', () => {
       reason: 'OPT_IN_REQUIRED',
     });
   });
+
+  it('allows owner alerts to an opted-in owner contact, rate limited', () => {
+    expect(policyEngine.check('OWNER_ALERT', 'evolution', optedIn)).toEqual({
+      outcome: 'allow',
+      rateLimited: true,
+    });
+  });
+
+  it('blocks owner alerts without opt-in', () => {
+    expect(policyEngine.check('OWNER_ALERT', 'evolution', notOptedIn)).toEqual({
+      outcome: 'block',
+      reason: 'OPT_IN_REQUIRED',
+    });
+  });
 });
 
 describe('policy engine: cloud_api (later)', () => {
@@ -55,6 +69,7 @@ describe('policy engine: cloud_api (later)', () => {
     'REMINDER_OPTED_IN',
     'BROADCAST',
     'MESSAGE_NON_CONTACT',
+    'OWNER_ALERT',
   ] as const)('allows %s without entry tier pacing', (action) => {
     expect(policyEngine.check(action, 'cloud_api', notOptedIn)).toEqual({
       outcome: 'allow',

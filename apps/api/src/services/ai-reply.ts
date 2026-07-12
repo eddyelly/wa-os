@@ -138,3 +138,32 @@ export function parseOrgAiSettings(settings: unknown): OrgAiSettings {
       : {}),
   };
 }
+
+export interface OrgShopSettings {
+  paymentInstructions?: string;
+  ownerAlertPhone?: string;
+  ownerAlertsEnabled: boolean;
+}
+
+/**
+ * Parse the org's untyped settings Json into the shop owner-alert knobs.
+ * ownerAlertsEnabled is true only when explicitly enabled AND a phone
+ * number is on file: there is nowhere to send the alert otherwise, so a
+ * bare `ownerAlertsEnabled: true` with no phone is treated as disabled.
+ */
+export function parseOrgShopSettings(settings: unknown): OrgShopSettings {
+  if (typeof settings !== 'object' || settings === null) {
+    return { ownerAlertsEnabled: false };
+  }
+  const record = settings as Record<string, unknown>;
+  const hasPhone =
+    typeof record.ownerAlertPhone === 'string' && record.ownerAlertPhone.length > 0;
+  return {
+    ...(typeof record.paymentInstructions === 'string' &&
+    record.paymentInstructions.trim().length > 0
+      ? { paymentInstructions: record.paymentInstructions }
+      : {}),
+    ...(hasPhone ? { ownerAlertPhone: record.ownerAlertPhone as string } : {}),
+    ownerAlertsEnabled: record.ownerAlertsEnabled === true && hasPhone,
+  };
+}

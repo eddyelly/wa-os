@@ -37,6 +37,10 @@ export const policyEngine = {
         return { outcome: 'block', reason: 'COMING_SOON' };
       case 'MESSAGE_NON_CONTACT':
         return { outcome: 'block', reason: 'OPT_IN_REQUIRED' };
+      case 'OWNER_ALERT':
+        return context.contactOptedIn
+          ? allow(true)
+          : { outcome: 'block', reason: 'OPT_IN_REQUIRED' };
     }
   },
 };

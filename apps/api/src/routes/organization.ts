@@ -12,3 +12,4 @@ organizationRoutes.patch('/', organizationController.update);
 organizationRoutes.get('/users', organizationController.listUsers);
 organizationRoutes.post('/users', requireOwner, settingsController.invite);
 organizationRoutes.patch('/ai-settings', requireOwner, settingsController.updateAiSettings);
+organizationRoutes.patch('/shop-settings', requireOwner, settingsController.updateShopSettings);

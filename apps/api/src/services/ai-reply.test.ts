@@ -8,6 +8,7 @@ import {
   decideAiAction,
   parseAiOutput,
   parseOrgAiSettings,
+  parseOrgShopSettings,
 } from './ai-reply.js';
 
 const goodJson = '{"reply": "Tunafungua saa tatu asubuhi.", "confidence": 0.9, "intent": "question"}';
@@ -177,6 +178,34 @@ describe('parseOrgAiSettings', () => {
       aiEnabled: false,
       aiConfidenceThreshold: 0.5,
       toneNotes: 'warm and brief',
+    });
+  });
+});
+
+describe('parseOrgShopSettings', () => {
+  it('defaults owner alerts to disabled for missing or malformed settings', () => {
+    expect(parseOrgShopSettings(null)).toEqual({ ownerAlertsEnabled: false });
+    expect(parseOrgShopSettings(undefined)).toEqual({ ownerAlertsEnabled: false });
+    expect(parseOrgShopSettings('junk')).toEqual({ ownerAlertsEnabled: false });
+    expect(parseOrgShopSettings({})).toEqual({ ownerAlertsEnabled: false });
+  });
+
+  it('treats ownerAlertsEnabled as false when no phone is on file', () => {
+    expect(parseOrgShopSettings({ ownerAlertsEnabled: true })).toEqual({
+      ownerAlertsEnabled: false,
+    });
+  });
+
+  it('enables owner alerts and carries the phone and payment instructions through', () => {
+    const parsed = parseOrgShopSettings({
+      ownerAlertsEnabled: true,
+      ownerAlertPhone: '+255700000000',
+      paymentInstructions: 'Pay via M-Pesa to 0700 000 000.',
+    });
+    expect(parsed).toEqual({
+      ownerAlertsEnabled: true,
+      ownerAlertPhone: '+255700000000',
+      paymentInstructions: 'Pay via M-Pesa to 0700 000 000.',
     });
   });
 });

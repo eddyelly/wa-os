@@ -6,6 +6,7 @@ export const policyActionSchema = z.enum([
   'REMINDER_OPTED_IN',
   'BROADCAST',
   'MESSAGE_NON_CONTACT',
+  'OWNER_ALERT',
 ]);
 export type PolicyAction = z.infer<typeof policyActionSchema>;
 
