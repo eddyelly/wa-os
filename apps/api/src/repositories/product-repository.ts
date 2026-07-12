@@ -140,6 +140,36 @@ export const productRepository = {
   },
 
   /**
+   * Creates the ProductImage row directly (not a nested write: the tenant
+   * extension forbids those). The tenant client forces organizationId onto
+   * the create, so this can never attach an image to another tenant's row.
+   */
+  async addImage(productId: string, data: { mediaKey: string; description: string }): Promise<void> {
+    await prisma.productImage.create({
+      data: {
+        productId,
+        mediaKey: data.mediaKey,
+        description: data.description,
+        // Overridden by the tenant extension at runtime; the generated
+        // Prisma type still requires it here.
+        organizationId: requireRequestContext().organizationId,
+      },
+    });
+  },
+
+  /**
+   * Verifies the image belongs to this product before deleting it, so a
+   * caller cannot remove another product's photo by guessing its id.
+   */
+  async removeImage(productId: string, imageId: string): Promise<void> {
+    const image = await prisma.productImage.findUnique({ where: { id: imageId } });
+    if (!image || image.productId !== productId) {
+      throw new NotFoundError('This product photo no longer exists.');
+    }
+    await prisma.productImage.delete({ where: { id: imageId } });
+  },
+
+  /**
    * Atomic stock adjustment. Reads the current row, validates the floor,
    * and writes inside a single transaction on the tenant client so the
    * check and the increment cannot race; the tenant extension carries

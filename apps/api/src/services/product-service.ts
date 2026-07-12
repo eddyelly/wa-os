@@ -1,14 +1,47 @@
+import { randomUUID } from 'node:crypto';
 import type { CreateProductRequest, ProductDto, UpdateProductRequest } from '@waos/shared';
+import type { LLMPort } from '@waos/ports';
 import { embeddingPort } from '../adapters/embeddings/embedding-adapter.js';
+import { llmPort } from '../adapters/llm/gemini-adapter.js';
+import { requireRequestContext } from '../lib/context.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
-import { getMediaUrl } from '../lib/minio.js';
+import { getMediaUrl, putMediaObject } from '../lib/minio.js';
 import { productRepository, type ProductWithImages } from '../repositories/product-repository.js';
+
+const VISION_DESCRIPTION_MAX_LENGTH = 500;
+
+const VISION_PROMPT =
+  'Describe this product photo for a shop catalog in one short paragraph: what the item is, its colors, materials, and any distinguishing features. Plain text, no lists.';
 
 function buildEmbeddingText(product: ProductWithImages): string {
   return [product.name, product.description ?? '', ...product.images.map((image) => image.description)]
     .filter(Boolean)
     .join('\n');
+}
+
+/**
+ * Vision description for a single product photo. Reused as-is by the
+ * customer-photo worker (Task 8), which is why it is a free function rather
+ * than a service method: it has no tenant or product concept of its own.
+ * Throws on LLM failure; callers decide how to degrade.
+ */
+export async function describeImage(
+  buffer: Buffer,
+  mimeType: string,
+  ports: { llm: LLMPort } = { llm: llmPort },
+): Promise<string> {
+  const completion = await ports.llm.complete({
+    system: VISION_PROMPT,
+    messages: [
+      {
+        role: 'user',
+        content: [{ type: 'image', mimeType, data: buffer.toString('base64') }],
+      },
+    ],
+    maxTokens: 200,
+  });
+  return completion.text.trim().slice(0, VISION_DESCRIPTION_MAX_LENGTH);
 }
 
 export const productService = {
@@ -113,5 +146,56 @@ export const productService = {
       throw new NotFoundError('This product no longer exists.');
     }
     await productRepository.remove(id);
+  },
+
+  /**
+   * Uploads a product photo to MinIO, asks Gemini vision for a catalog
+   * description, and refreshes the product's embedding so search picks up
+   * the new description. A vision failure is not fatal: the photo is kept
+   * with an empty description and the embedding refresh still runs, so a
+   * down or slow vision model never blocks a photo upload.
+   */
+  async addImage(
+    id: string,
+    file: { buffer: Buffer; mimetype: string; originalname: string },
+  ): Promise<ProductDto> {
+    if (!file.mimetype.startsWith('image/')) {
+      throw new ValidationError('Attach an image file.');
+    }
+    const product = await productRepository.findById(id);
+    if (!product) {
+      throw new NotFoundError('This product no longer exists.');
+    }
+
+    const { organizationId } = requireRequestContext();
+    const mediaKey = `${organizationId}/products/${id}/${randomUUID()}`;
+    await putMediaObject(mediaKey, file.buffer, file.mimetype);
+
+    let description = '';
+    try {
+      description = await describeImage(file.buffer, file.mimetype);
+    } catch (error) {
+      logger.warn({ err: error, productId: id }, 'product image description failed');
+    }
+
+    await productRepository.addImage(id, { mediaKey, description });
+    await this.refreshEmbedding(id);
+
+    const updated = await productRepository.findById(id);
+    if (!updated) {
+      throw new NotFoundError('This product no longer exists.');
+    }
+    return this.toDto(updated);
+  },
+
+  async removeImage(id: string, imageId: string): Promise<ProductDto> {
+    await productRepository.removeImage(id, imageId);
+    await this.refreshEmbedding(id);
+
+    const updated = await productRepository.findById(id);
+    if (!updated) {
+      throw new NotFoundError('This product no longer exists.');
+    }
+    return this.toDto(updated);
   },
 };
