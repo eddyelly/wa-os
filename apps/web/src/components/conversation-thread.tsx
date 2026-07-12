@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'r
 import { useLocale, useTranslations } from 'next-intl';
 import type { ConversationListItem, MessageDto } from '@waos/shared';
 import { Link } from '@/i18n/navigation';
-import { apiFetch, ApiError } from '@/lib/api';
+import { apiFetch, ApiError, getStoredUser } from '@/lib/api';
+import { listOrders } from '@/lib/shop-api';
 import { getSocket } from '@/lib/socket';
 import { Badge, Button, ErrorBox, Spinner } from '@/components/ui';
 
@@ -49,9 +50,11 @@ export function ConversationThread({
   const id = conversationId;
   const t = useTranslations('thread');
   const locale = useLocale();
+  const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
   const [messages, setMessages] = useState<MessageDto[] | null>(null);
   const [conversation, setConversation] = useState<ConversationListItem | null>(null);
   const [team, setTeam] = useState<TeamResponse['users']>([]);
+  const [orderCount, setOrderCount] = useState(0);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -66,13 +69,24 @@ export function ConversationThread({
         apiFetch<TeamResponse>('/api/v1/organization/users'),
       ]);
       setMessages(msgs.messages);
-      setConversation(convs.conversations.find((c) => c.id === id) ?? null);
+      const nextConversation = convs.conversations.find((c) => c.id === id) ?? null;
+      setConversation(nextConversation);
       setTeam(users.users);
       setError(null);
+      if (shopOrg && nextConversation) {
+        try {
+          const orders = await listOrders({ contactId: nextConversation.contact.id });
+          setOrderCount(orders.length);
+        } catch {
+          setOrderCount(0);
+        }
+      } else {
+        setOrderCount(0);
+      }
     } catch {
       setError(t('loadError'));
     }
-  }, [id, t]);
+  }, [id, shopOrg, t]);
 
   useEffect(() => {
     setMessages(null);
@@ -249,6 +263,14 @@ export function ConversationThread({
             >
               {t('bookAppointment')}
             </Link>
+            {orderCount > 0 ? (
+              <Link
+                href="/orders"
+                className="rounded-lg px-2 py-1 text-xs font-medium text-brand-700 underline underline-offset-2 hover:bg-brand-100"
+              >
+                {t('ordersChip', { count: orderCount })}
+              </Link>
+            ) : null}
             {conversation.status === 'PENDING' ? (
               <button
                 onClick={() => {

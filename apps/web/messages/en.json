@@ -118,7 +118,8 @@
     "failed": "Failed",
     "retry": "Try again",
     "optIn": "Customer agreed to receive reminders",
-    "bookAppointment": "Book appointment"
+    "bookAppointment": "Book appointment",
+    "ordersChip": "Orders ({count})"
   },
   "knowledge": {
     "title": "Add your business info",

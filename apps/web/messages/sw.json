@@ -118,7 +118,8 @@
     "failed": "Imeshindikana",
     "retry": "Jaribu tena",
     "optIn": "Mteja amekubali kupokea vikumbusho",
-    "bookAppointment": "Weka miadi"
+    "bookAppointment": "Weka miadi",
+    "ordersChip": "Oda ({count})"
   },
   "knowledge": {
     "title": "Ongeza taarifa za biashara yako",
