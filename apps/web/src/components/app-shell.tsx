@@ -4,7 +4,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { BusinessModule } from '@waos/shared';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
-import { clearSession, getStoredUser, getTokens, type StoredUser } from '@/lib/api';
+import { clearSession, getStoredUser, type StoredUser } from '@/lib/api';
+import { useAuthGuard } from '@/lib/use-auth-guard';
+import { useSocketInvalidation } from '@/lib/use-socket-invalidation';
 import { resetSocket } from '@/lib/socket';
 import { LanguageSwitcher } from './language-switcher';
 import { NotificationBell } from './notification-bell';
@@ -24,16 +26,14 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<StoredUser | null>(null);
-  const [checked, setChecked] = useState(false);
+  const checked = useAuthGuard();
+  useSocketInvalidation();
 
   useEffect(() => {
-    if (!getTokens()) {
-      router.replace('/login');
-      return;
+    if (checked) {
+      setUser(getStoredUser());
     }
-    setUser(getStoredUser());
-    setChecked(true);
-  }, [router]);
+  }, [checked]);
 
   if (!checked) {
     return null;

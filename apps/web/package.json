@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.2",
     "@waos/shared": "workspace:*",
     "next": "^15.3.0",
     "next-intl": "^4.1.0",
