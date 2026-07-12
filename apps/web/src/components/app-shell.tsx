@@ -49,6 +49,8 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     { href: '/home', label: t('home') },
     { href: '/inbox', label: t('inbox') },
     { href: '/appointments', label: t('appointments'), requiredModule: 'appointments' },
+    { href: '/products', label: t('products'), requiredModule: 'shop' },
+    { href: '/orders', label: t('orders'), requiredModule: 'shop' },
     { href: '/contacts', label: t('contacts') },
     { href: '/settings', label: t('settings') },
   ];
