@@ -1,5 +1,5 @@
 import type { Contact, Order, OrderItem, OrderStatus } from '@prisma/client';
-import { NotFoundError } from '../lib/errors.js';
+import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { requireRequestContext } from '../lib/context.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -83,6 +83,57 @@ export const orderRepository = {
       where: { id },
       data: { status },
       include: { items: true, contact: true },
+    });
+  },
+
+  /**
+   * Applies stock adjustments and the order status transition inside one
+   * transaction, so a stock-affecting status change (entering CONFIRMED, or
+   * cancelling out of CONFIRMED/PAID) commits stock and status together.
+   * Without this, a crash or a per-item failure between the stock write and
+   * the status write can leave stock decremented with the order still on
+   * its old status, and a retry of the same transition would decrement
+   * again. Both failure modes are closed by making the whole thing one
+   * transaction: either everything commits, or nothing does.
+   *
+   * The read-validate-increment steps per item mirror
+   * `productRepository.adjustStock` (see product-repository.ts) exactly,
+   * but are inlined here rather than called: this codebase has no
+   * cross-repository transaction handle (the `tx` from one repository's
+   * `$transaction` cannot be handed to another repository's function), so
+   * whichever repository owns a multi-write transaction must also own
+   * every write inside it. Order status and product stock are one atomic
+   * unit for this operation, so order-repository performs the product
+   * write itself instead of delegating to productRepository.adjustStock.
+   */
+  updateStatusWithStock(
+    id: string,
+    status: OrderStatus,
+    adjustments: Array<{ productId: string; delta: number }>,
+  ): Promise<Array<{ productId: string; name: string; stockQty: number; lowStockThreshold: number }>> {
+    return prisma.$transaction(async (tx) => {
+      const results: Array<{ productId: string; name: string; stockQty: number; lowStockThreshold: number }> = [];
+      for (const adjustment of adjustments) {
+        const current = await tx.product.findUnique({ where: { id: adjustment.productId } });
+        if (!current) {
+          throw new NotFoundError('This product no longer exists.');
+        }
+        if (current.stockQty + adjustment.delta < 0) {
+          throw new ValidationError('stock cannot go negative');
+        }
+        const updatedProduct = await tx.product.update({
+          where: { id: adjustment.productId },
+          data: { stockQty: { increment: adjustment.delta } },
+        });
+        results.push({
+          productId: adjustment.productId,
+          name: updatedProduct.name,
+          stockQty: updatedProduct.stockQty,
+          lowStockThreshold: updatedProduct.lowStockThreshold,
+        });
+      }
+      await tx.order.update({ where: { id }, data: { status } });
+      return results;
     });
   },
 };

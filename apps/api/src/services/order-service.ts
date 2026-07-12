@@ -62,30 +62,14 @@ function toDto(order: OrderWithDetails): OrderDto {
 }
 
 /**
- * Adjusts stock for every item that still references a live product
- * (OrderItem.productId is nullable: SetNull on product deletion), applying
- * `sign * quantity` per item. On a decrement (sign -1), fires LOW_STOCK when
- * the fresh stockQty crosses at or under the threshold from strictly above
- * it, so a sale that starts already at or below threshold never fires again.
+ * Narrows an order item to one with a live product reference.
+ * OrderItem.productId is nullable (SetNull on product deletion): items that
+ * fail this check never touch stock, on decrement or restore.
  */
-async function adjustStockForItems(items: OrderWithDetails['items'], sign: 1 | -1): Promise<void> {
-  for (const item of items) {
-    if (!item.productId) {
-      continue;
-    }
-    const delta = sign * item.quantity;
-    const result = await productRepository.adjustStock(item.productId, delta);
-    if (sign === -1) {
-      const preDecrement = result.stockQty + item.quantity;
-      if (result.stockQty <= result.lowStockThreshold && preDecrement > result.lowStockThreshold) {
-        await notificationService.notify('LOW_STOCK', {
-          productId: item.productId,
-          name: result.name,
-          stockQty: result.stockQty,
-        });
-      }
-    }
-  }
+function hasProductId(
+  item: OrderWithDetails['items'][number],
+): item is OrderWithDetails['items'][number] & { productId: string } {
+  return item.productId !== null;
 }
 
 export const orderService = {
@@ -166,16 +150,61 @@ export const orderService = {
       throw new ValidationError(`An order cannot move from ${order.status} to ${status}.`);
     }
 
+    // sign is the stock direction for this transition: -1 to decrement on
+    // entering CONFIRMED (the only legal edge into CONFIRMED is from
+    // PENDING_CONFIRMATION, so this can never run twice for the same
+    // order), +1 to restore on cancelling an order whose stock is still
+    // live (CONFIRMED or PAID), null when this transition never touches
+    // stock.
+    let sign: -1 | 1 | null = null;
     if (status === 'CONFIRMED') {
-      // The only legal edge into CONFIRMED is from PENDING_CONFIRMATION, so
-      // this runs exactly once per order: the decrement never repeats on the
-      // later CONFIRMED -> PAID -> FULFILLED edges.
-      await adjustStockForItems(order.items, -1);
+      sign = -1;
     } else if (status === 'CANCELLED' && STOCK_DECREMENTED_STATUSES.includes(order.status)) {
-      await adjustStockForItems(order.items, 1);
+      sign = 1;
     }
 
-    const updated = await orderRepository.updateStatus(id, status);
+    const stockItems = sign === null ? [] : order.items.filter(hasProductId);
+    const stockAdjustments = stockItems.map((item) => ({
+      productId: item.productId,
+      delta: (sign as -1 | 1) * item.quantity,
+      quantity: item.quantity,
+    }));
+
+    let updated: OrderWithDetails;
+    if (stockAdjustments.length > 0) {
+      // Stock and status commit inside one repository transaction: see
+      // updateStatusWithStock's comment in order-repository.ts for why a
+      // partial failure here can never leave stock decremented with the
+      // order still on its old status, and why a retry cannot
+      // double-decrement.
+      const results = await orderRepository.updateStatusWithStock(
+        id,
+        status,
+        stockAdjustments.map(({ productId, delta }) => ({ productId, delta })),
+      );
+      // On a decrement (sign -1), fire LOW_STOCK when the fresh stockQty
+      // crosses at or under the threshold from strictly above it, so a
+      // sale that starts already at or below threshold never fires again.
+      if (sign === -1) {
+        for (const [index, result] of results.entries()) {
+          const quantity = stockAdjustments[index]?.quantity ?? 0;
+          const preDecrement = result.stockQty + quantity;
+          if (result.stockQty <= result.lowStockThreshold && preDecrement > result.lowStockThreshold) {
+            await notificationService.notify('LOW_STOCK', {
+              productId: result.productId,
+              name: result.name,
+              stockQty: result.stockQty,
+            });
+          }
+        }
+      }
+      // The transaction already committed the status change; items and
+      // contact are untouched by this transition, so there is no need to
+      // re-fetch the order just to build the DTO.
+      updated = { ...order, status };
+    } else {
+      updated = await orderRepository.updateStatus(id, status);
+    }
     return toDto(updated);
   },
 

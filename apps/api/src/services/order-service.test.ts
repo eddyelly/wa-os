@@ -99,6 +99,44 @@ const { products, orders, orderRepo, productRepo, notify } = vi.hoisted(() => {
       orders.set(id, updated);
       return Promise.resolve(updated);
     }),
+    // Mirrors the real transaction in order-repository.ts: mutates
+    // `products` and `orders` as one step, so a mockRejectedValueOnce
+    // override (used to simulate a failed transaction) leaves both maps
+    // untouched, the same guarantee a real rolled-back transaction gives.
+    updateStatusWithStock: vi.fn(
+      (id: string, status: OrderStatus, adjustments: Array<{ productId: string; delta: number }>) => {
+        const existing = orders.get(id);
+        if (!existing) {
+          return Promise.reject(new Error('not found'));
+        }
+        const results: Array<{
+          productId: string;
+          name: string;
+          stockQty: number;
+          lowStockThreshold: number;
+        }> = [];
+        for (const adjustment of adjustments) {
+          const product = products.get(adjustment.productId);
+          if (!product) {
+            return Promise.reject(new Error('missing product'));
+          }
+          const next = product.stockQty + adjustment.delta;
+          if (next < 0) {
+            return Promise.reject(new Error('stock cannot go negative'));
+          }
+          product.stockQty = next;
+          results.push({
+            productId: adjustment.productId,
+            name: product.name,
+            stockQty: product.stockQty,
+            lowStockThreshold: product.lowStockThreshold,
+          });
+        }
+        const updated: FakeOrder = { ...existing, status, updatedAt: new Date() };
+        orders.set(id, updated);
+        return Promise.resolve(results);
+      },
+    ),
   };
 
   const productRepo = {
@@ -299,13 +337,15 @@ describe('orderService.setStatus: stock and low-stock', () => {
     const order = await makeOrder(2);
 
     await orderService.setStatus(order.id, 'CONFIRMED');
-    expect(productRepo.adjustStock).toHaveBeenCalledTimes(1);
-    expect(productRepo.adjustStock).toHaveBeenCalledWith('p1', -2);
+    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledTimes(1);
+    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledWith(order.id, 'CONFIRMED', [
+      { productId: 'p1', delta: -2 },
+    ]);
     expect(products.get('p1')?.stockQty).toBe(8);
 
     await orderService.setStatus(order.id, 'PAID');
     await orderService.setStatus(order.id, 'FULFILLED');
-    expect(productRepo.adjustStock).toHaveBeenCalledTimes(1);
+    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledTimes(1);
     expect(products.get('p1')?.stockQty).toBe(8);
   });
 
@@ -331,30 +371,62 @@ describe('orderService.setStatus: stock and low-stock', () => {
     const confirmedOrder = await makeOrder(2);
     await orderService.setStatus(confirmedOrder.id, 'CONFIRMED');
     expect(products.get('p1')?.stockQty).toBe(8);
-    productRepo.adjustStock.mockClear();
+    orderRepo.updateStatusWithStock.mockClear();
 
     await orderService.setStatus(confirmedOrder.id, 'CANCELLED');
-    expect(productRepo.adjustStock).toHaveBeenCalledWith('p1', 2);
+    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledWith(confirmedOrder.id, 'CANCELLED', [
+      { productId: 'p1', delta: 2 },
+    ]);
     expect(products.get('p1')?.stockQty).toBe(10);
 
-    productRepo.adjustStock.mockClear();
+    orderRepo.updateStatusWithStock.mockClear();
     const pendingOrder = await makeOrder(1);
     await orderService.setStatus(pendingOrder.id, 'CANCELLED');
-    expect(productRepo.adjustStock).not.toHaveBeenCalled();
+    expect(orderRepo.updateStatusWithStock).not.toHaveBeenCalled();
     expect(products.get('p1')?.stockQty).toBe(10);
   });
 
-  it('cancel after PAID also restores stock (stock was decremented at CONFIRMED)', async () => {
+  it('cancel after PAID also restores stock via updateStatusWithStock with a positive delta', async () => {
     addProduct({ id: 'p1', stockQty: 10, lowStockThreshold: 3 });
     const order = await makeOrder(4);
     await orderService.setStatus(order.id, 'CONFIRMED');
     expect(products.get('p1')?.stockQty).toBe(6);
     await orderService.setStatus(order.id, 'PAID');
-    productRepo.adjustStock.mockClear();
+    orderRepo.updateStatusWithStock.mockClear();
 
     await orderService.setStatus(order.id, 'CANCELLED');
-    expect(productRepo.adjustStock).toHaveBeenCalledWith('p1', 4);
+    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledWith(order.id, 'CANCELLED', [
+      { productId: 'p1', delta: 4 },
+    ]);
     expect(products.get('p1')?.stockQty).toBe(10);
+  });
+
+  it('propagates a whole-transaction failure for a multi-item order without any partial notification', async () => {
+    addProduct({ id: 'p1', stockQty: 10, lowStockThreshold: 3 });
+    addProduct({ id: 'p2', stockQty: 1, lowStockThreshold: 3 }); // would cross the threshold on decrement
+    const order = await orderRepo.create({
+      conversationId: null,
+      contactId: 'c1',
+      totalAgreed: 20000,
+      items: [
+        { productId: 'p1', productName: 'Product 1', quantity: 2, listPrice: 10000, agreedPrice: 10000 },
+        { productId: 'p2', productName: 'Product 2', quantity: 1, listPrice: 10000, agreedPrice: 10000 },
+      ],
+    });
+
+    // Simulates the whole repository transaction failing (crash, or a
+    // later item in the loop hitting the negative-stock guard): nothing
+    // committed, so the mocked maps are left untouched, same as a real
+    // rolled-back transaction.
+    orderRepo.updateStatusWithStock.mockRejectedValueOnce(new Error('transaction failed'));
+
+    await expect(orderService.setStatus(order.id, 'CONFIRMED')).rejects.toThrow('transaction failed');
+    // Atomicity is the repository's job: the service must not notify off
+    // the back of a transaction that never committed.
+    expect(notify).not.toHaveBeenCalled();
+    expect(orders.get(order.id)?.status).toBe('PENDING_CONFIRMATION');
+    expect(products.get('p1')?.stockQty).toBe(10);
+    expect(products.get('p2')?.stockQty).toBe(1);
   });
 });
 
