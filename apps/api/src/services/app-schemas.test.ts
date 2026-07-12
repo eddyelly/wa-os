@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ZodError } from 'zod';
 import {
   aiTestResultSchema,
   contactSchema,
@@ -30,7 +31,7 @@ describe('app response schemas', () => {
   it('ai test result accepts only REPLY or HANDOFF actions', () => {
     expect(() =>
       aiTestResultSchema.parse({ reply: 'x', confidence: 0.5, intent: 'question', action: 'MAYBE', chunksUsed: 1 }),
-    ).toThrow();
+    ).toThrow(ZodError);
   });
 
   it('organization detail keeps unknown settings keys (passthrough)', () => {
@@ -42,6 +43,19 @@ describe('app response schemas', () => {
   });
 
   it('team member requires email', () => {
-    expect(() => teamMemberSchema.parse({ id: 'u1', name: 'A', role: 'OWNER' })).toThrow();
+    expect(() => teamMemberSchema.parse({ id: 'u1', name: 'A', role: 'OWNER' })).toThrow(ZodError);
+  });
+
+  it('ai test result parses handoff with null reply and intent', () => {
+    const parsed = aiTestResultSchema.parse({
+      reply: null,
+      confidence: 0,
+      intent: null,
+      action: 'HANDOFF',
+      chunksUsed: 2,
+    });
+    expect(parsed.reply).toBeNull();
+    expect(parsed.intent).toBeNull();
+    expect(parsed.action).toBe('HANDOFF');
   });
 });

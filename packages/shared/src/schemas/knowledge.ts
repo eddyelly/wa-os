@@ -28,9 +28,9 @@ export const aiReplyOutputSchema = z.object({
 export type AiReplyOutput = z.infer<typeof aiReplyOutputSchema>;
 
 export const aiTestResultSchema = z.object({
-  reply: z.string(),
+  reply: z.string().nullable(),
   confidence: z.number().min(0).max(1),
-  intent: z.string(),
+  intent: z.string().nullable(),
   action: z.enum(['REPLY', 'HANDOFF']),
   chunksUsed: z.number().int(),
 });
