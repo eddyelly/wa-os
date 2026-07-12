@@ -96,20 +96,20 @@ export async function setOrderStatus(id: string, status: OrderStatus): Promise<O
 
 export async function listNotifications(unreadOnly = false): Promise<NotificationDto[]> {
   const raw = await apiFetch<unknown>(
-    `/api/v1/notifications${unreadOnly ? '?unreadOnly=1' : ''}`,
+    `/api/v1/notifications${unreadOnly ? '?unread=1' : ''}`,
   );
   return z.array(notificationSchema).parse((raw as { notifications: unknown }).notifications);
 }
 
 export async function markNotificationRead(id: string): Promise<void> {
   await apiFetch<unknown>(`/api/v1/notifications/${id}/read`, {
-    method: 'PATCH',
+    method: 'POST',
   });
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
   await apiFetch<unknown>('/api/v1/notifications/read-all', {
-    method: 'PATCH',
+    method: 'POST',
   });
 }
 

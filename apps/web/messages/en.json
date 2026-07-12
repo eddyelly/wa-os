@@ -257,6 +257,15 @@
     "loadError": "Could not load orders. Check your connection and try again.",
     "retry": "Try again"
   },
+  "notifications": {
+    "label": "Notifications",
+    "markAllRead": "Mark all read",
+    "emptyTitle": "Nothing yet",
+    "emptyHint": "Order and stock alerts appear here.",
+    "typeNEW_ORDER": "New order recorded",
+    "typeLOW_STOCK": "Stock is running low",
+    "typeHANDOFF": "A customer needs a human"
+  },
   "settings": {
     "title": "Settings",
     "profileSection": "Business info",

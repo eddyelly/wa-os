@@ -257,6 +257,15 @@
     "loadError": "Imeshindwa kupakia oda. Angalia muunganisho wako kisha ujaribu tena.",
     "retry": "Jaribu tena"
   },
+  "notifications": {
+    "label": "Arifa",
+    "markAllRead": "Weka zote zimesomwa",
+    "emptyTitle": "Hakuna kitu bado",
+    "emptyHint": "Arifa za oda na stoki zinaonekana hapa.",
+    "typeNEW_ORDER": "Oda mpya imerekodiwa",
+    "typeLOW_STOCK": "Stoki inakaribia kuisha",
+    "typeHANDOFF": "Mteja anahitaji binadamu"
+  },
   "settings": {
     "title": "Mipangilio",
     "profileSection": "Taarifa za biashara",

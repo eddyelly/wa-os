@@ -7,6 +7,7 @@ import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { clearSession, getStoredUser, getTokens, type StoredUser } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
 import { LanguageSwitcher } from './language-switcher';
+import { NotificationBell } from './notification-bell';
 
 interface NavItem {
   href: string;
@@ -65,6 +66,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           {process.env.NEXT_PUBLIC_APP_NAME ?? 'WaOS'}
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
+          <NotificationBell />
           <span className="hidden text-sm text-brand-700 sm:block">
             {user?.organization.name}
           </span>
