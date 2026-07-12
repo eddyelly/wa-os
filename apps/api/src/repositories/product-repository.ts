@@ -67,7 +67,7 @@ export const productRepository = {
   list(params: { includeInactive?: boolean } = {}): Promise<ProductWithImages[]> {
     return prisma.product.findMany({
       where: params.includeInactive ? {} : { isActive: true },
-      include: { images: true },
+      include: { images: { orderBy: { createdAt: 'asc' } } },
       orderBy: { createdAt: 'desc' },
     });
   },

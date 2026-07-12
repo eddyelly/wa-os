@@ -69,9 +69,12 @@ export const orderRepository = {
     return prisma.order.findUnique({ where: { id }, include: { items: true, contact: true } });
   },
 
-  list(status?: OrderStatus): Promise<OrderWithDetails[]> {
+  list(filter?: { status?: OrderStatus; contactId?: string }): Promise<OrderWithDetails[]> {
     return prisma.order.findMany({
-      where: status ? { status } : {},
+      where: {
+        ...(filter?.status ? { status: filter.status } : {}),
+        ...(filter?.contactId ? { contactId: filter.contactId } : {}),
+      },
       include: { items: true, contact: true },
       orderBy: { createdAt: 'desc' },
       take: 100,

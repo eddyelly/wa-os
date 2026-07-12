@@ -6,7 +6,11 @@ import { orderService } from '../services/order-service.js';
 export const list = async (req: Request, res: Response): Promise<void> => {
   const status =
     typeof req.query.status === 'string' ? orderStatusSchema.parse(req.query.status) : undefined;
-  const orders = await orderService.list(status);
+  const contactId =
+    typeof req.query.contactId === 'string' && req.query.contactId.length > 0
+      ? req.query.contactId
+      : undefined;
+  const orders = await orderService.list(status, contactId);
   res.json({ orders });
 };
 

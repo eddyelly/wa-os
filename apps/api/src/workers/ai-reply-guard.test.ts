@@ -20,7 +20,12 @@ vi.mock('../lib/redis.js', () => ({
   redis: { set: vi.fn(), del: vi.fn() },
 }));
 
-import { aiReplyGuardKey, sendWithGuardRelease, shouldSendAiReply } from './ai-reply-worker.js';
+import {
+  aiReplyGuardKey,
+  buildHandoffNotifyPayload,
+  sendWithGuardRelease,
+  shouldSendAiReply,
+} from './ai-reply-worker.js';
 
 describe('aiReplyGuardKey', () => {
   it('builds a per-message guard key', () => {
@@ -72,5 +77,20 @@ describe('sendWithGuardRelease', () => {
     await expect(
       sendWithGuardRelease({ send, releaseKey: 'ai-replied:msg3', redisClient: { del } }),
     ).rejects.toThrow('provider timed out');
+  });
+});
+
+describe('buildHandoffNotifyPayload', () => {
+  it('extracts conversationId and the contact name for the HANDOFF notification', () => {
+    expect(
+      buildHandoffNotifyPayload({ id: 'conv1', contact: { name: 'Fatuma' } }),
+    ).toEqual({ conversationId: 'conv1', contactName: 'Fatuma' });
+  });
+
+  it('passes through a null contact name rather than substituting a placeholder', () => {
+    expect(buildHandoffNotifyPayload({ id: 'conv2', contact: { name: null } })).toEqual({
+      conversationId: 'conv2',
+      contactName: null,
+    });
   });
 });

@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { MulterError } from 'multer';
 import { ZodError } from 'zod';
 import { AppError, NotFoundError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
@@ -20,6 +21,16 @@ export function errorHandler(
         code: 'VALIDATION_ERROR',
         message: 'Some fields are missing or invalid. Fix them and try again.',
         details: error.flatten().fieldErrors,
+      },
+    });
+    return;
+  }
+
+  if (error instanceof MulterError) {
+    res.status(400).json({
+      error: {
+        code: 'UPLOAD_INVALID',
+        message: error.message,
       },
     });
     return;

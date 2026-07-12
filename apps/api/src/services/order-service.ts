@@ -89,6 +89,25 @@ export const orderService = {
       throw new ValidationError('An order needs at least one item.');
     }
 
+    // The agent can propose the same product across two lines in one turn
+    // (e.g. it re-quotes a product already in the cart). Aggregate by
+    // productId, in first-appearance order, before any stock or price
+    // validation runs: otherwise two lines that each individually fit
+    // within stock could together oversell it, and a Map preserves
+    // insertion order so the stored items keep that same first-seen order.
+    const aggregated = new Map<string, { quantity: number; agreedPrice: number }>();
+    for (const item of params.items) {
+      const existing = aggregated.get(item.productId);
+      if (existing) {
+        if (existing.agreedPrice !== item.agreedPrice) {
+          throw new ValidationError('conflicting prices for the same product');
+        }
+        existing.quantity += item.quantity;
+      } else {
+        aggregated.set(item.productId, { quantity: item.quantity, agreedPrice: item.agreedPrice });
+      }
+    }
+
     const items: Array<{
       productId: string;
       productName: string;
@@ -98,29 +117,29 @@ export const orderService = {
     }> = [];
     let totalAgreed = 0;
 
-    for (const item of params.items) {
-      const product = await productRepository.findById(item.productId);
+    for (const [productId, { quantity, agreedPrice }] of aggregated) {
+      const product = await productRepository.findById(productId);
       if (!product || !product.isActive) {
         throw new ValidationError('One of these products is no longer available.');
       }
-      if (item.quantity < 1) {
+      if (quantity < 1) {
         throw new ValidationError('Quantity must be at least 1.');
       }
-      if (item.quantity > product.stockQty) {
+      if (quantity > product.stockQty) {
         throw new ValidationError(`Not enough stock for ${product.name}.`);
       }
       const floor = product.minPrice ?? product.price;
-      if (item.agreedPrice < floor) {
+      if (agreedPrice < floor) {
         throw new ValidationError(`The price for ${product.name} is too low.`);
       }
       items.push({
         productId: product.id,
         productName: product.name,
-        quantity: item.quantity,
+        quantity,
         listPrice: product.price,
-        agreedPrice: item.agreedPrice,
+        agreedPrice,
       });
-      totalAgreed += item.agreedPrice * item.quantity;
+      totalAgreed += agreedPrice * quantity;
     }
 
     const order = await orderRepository.create({
@@ -226,8 +245,8 @@ export const orderService = {
     return toDto(updated);
   },
 
-  async list(status?: OrderStatus): Promise<OrderDto[]> {
-    const rows = await orderRepository.list(status);
+  async list(status?: OrderStatus, contactId?: string): Promise<OrderDto[]> {
+    const rows = await orderRepository.list({ status, contactId });
     return rows.map(toDto);
   },
 };

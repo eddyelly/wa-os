@@ -87,8 +87,14 @@ const { products, orders, orderRepo, productRepo, notify } = vi.hoisted(() => {
       },
     ),
     findById: vi.fn((id: string) => Promise.resolve(orders.get(id) ?? null)),
-    list: vi.fn((status?: OrderStatus) =>
-      Promise.resolve([...orders.values()].filter((order) => !status || order.status === status)),
+    list: vi.fn((filter?: { status?: OrderStatus; contactId?: string }) =>
+      Promise.resolve(
+        [...orders.values()].filter(
+          (order) =>
+            (!filter?.status || order.status === filter.status) &&
+            (!filter?.contactId || order.contactId === filter.contactId),
+        ),
+      ),
     ),
     // Mirrors the real guarded updateMany in order-repository.ts: a
     // mismatched expectedFrom (another request already moved this order)
@@ -296,6 +302,77 @@ describe('orderService.createFromAgent', () => {
         items: [{ productId: 'missing', quantity: 1, agreedPrice: 10000 }],
       }),
     ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('merges two lines of the same product into one item before validating stock', async () => {
+    addProduct({ id: 'p1', name: 'Hair oil', price: 12000, stockQty: 3 });
+
+    const result = await orderService.createFromAgent({
+      conversationId: null,
+      contactId: 'c1',
+      items: [
+        { productId: 'p1', quantity: 1, agreedPrice: 12000 },
+        { productId: 'p1', quantity: 2, agreedPrice: 12000 },
+      ],
+    });
+
+    const created = orderRepo.create.mock.calls[0]?.[0] as { items: Array<Record<string, unknown>> };
+    expect(created.items).toEqual([
+      { productId: 'p1', productName: 'Hair oil', quantity: 3, listPrice: 12000, agreedPrice: 12000 },
+    ]);
+    expect(result.totalAgreed).toBe(3 * 12000);
+  });
+
+  it('validates the SUMMED quantity against stock, rejecting even when each individual line fits alone', async () => {
+    addProduct({ id: 'p1', name: 'Hair oil', price: 12000, stockQty: 2 });
+
+    await expect(
+      orderService.createFromAgent({
+        conversationId: null,
+        contactId: 'c1',
+        items: [
+          { productId: 'p1', quantity: 1, agreedPrice: 12000 },
+          { productId: 'p1', quantity: 2, agreedPrice: 12000 },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(orderRepo.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects duplicate lines for the same product with different agreedPrice', async () => {
+    addProduct({ id: 'p1', name: 'Hair oil', price: 12000, stockQty: 10 });
+
+    await expect(
+      orderService.createFromAgent({
+        conversationId: null,
+        contactId: 'c1',
+        items: [
+          { productId: 'p1', quantity: 1, agreedPrice: 12000 },
+          { productId: 'p1', quantity: 1, agreedPrice: 11000 },
+        ],
+      }),
+    ).rejects.toThrow('conflicting prices for the same product');
+    expect(orderRepo.create).not.toHaveBeenCalled();
+  });
+
+  it('preserves the order of first appearance across three distinct products', async () => {
+    addProduct({ id: 'p1', name: 'A', price: 1000, stockQty: 10 });
+    addProduct({ id: 'p2', name: 'B', price: 2000, stockQty: 10 });
+    addProduct({ id: 'p3', name: 'C', price: 3000, stockQty: 10 });
+
+    await orderService.createFromAgent({
+      conversationId: null,
+      contactId: 'c1',
+      items: [
+        { productId: 'p2', quantity: 1, agreedPrice: 2000 },
+        { productId: 'p1', quantity: 1, agreedPrice: 1000 },
+        { productId: 'p2', quantity: 1, agreedPrice: 2000 },
+        { productId: 'p3', quantity: 1, agreedPrice: 3000 },
+      ],
+    });
+
+    const created = orderRepo.create.mock.calls[0]?.[0] as { items: Array<Record<string, unknown>> };
+    expect(created.items.map((item) => item.productId)).toEqual(['p2', 'p1', 'p3']);
   });
 });
 
@@ -509,5 +586,21 @@ describe('orderService.list', () => {
 
     const filtered = await orderService.list('CONFIRMED');
     expect(filtered).toEqual([]);
+  });
+
+  it('passes contactId through to the repository when provided, combinable with status', async () => {
+    addProduct({ id: 'p1', stockQty: 10 });
+    await orderRepo.create({
+      conversationId: null,
+      contactId: 'c1',
+      totalAgreed: 10000,
+      items: [{ productId: 'p1', productName: 'Product', quantity: 1, listPrice: 10000, agreedPrice: 10000 }],
+    });
+
+    await orderService.list(undefined, 'c1');
+    expect(orderRepo.list).toHaveBeenLastCalledWith({ status: undefined, contactId: 'c1' });
+
+    await orderService.list('CONFIRMED', 'c1');
+    expect(orderRepo.list).toHaveBeenLastCalledWith({ status: 'CONFIRMED', contactId: 'c1' });
   });
 });

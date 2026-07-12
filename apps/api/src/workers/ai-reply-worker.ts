@@ -16,6 +16,7 @@ import { messageRepository } from '../repositories/message-repository.js';
 import { organizationRepository } from '../repositories/organization-repository.js';
 import { productRepository } from '../repositories/product-repository.js';
 import { runAgentLoop, type AgentTools } from '../services/ai-agent.js';
+import { notificationService } from '../services/notification-service.js';
 import {
   buildConversationMessages,
   buildSystemPrompt,
@@ -41,6 +42,18 @@ export function aiReplyGuardKey(inboundMessageId: string): string {
 /** `redis.set(..., 'NX')` returns 'OK' only when it acquired the key. */
 export function shouldSendAiReply(guardResult: string | null): boolean {
   return guardResult === 'OK';
+}
+
+/**
+ * Builds the HANDOFF notification payload from the already-loaded
+ * conversation, kept pure so the decision of what to send is unit-testable
+ * without standing up the rest of the worker's dependencies.
+ */
+export function buildHandoffNotifyPayload(conversation: {
+  id: string;
+  contact: { name: string | null };
+}): { conversationId: string; contactName: string | null } {
+  return { conversationId: conversation.id, contactName: conversation.contact.name };
 }
 
 /**
@@ -206,6 +219,17 @@ export async function processAiReplyJob(
         }
       } else {
         await conversationRepository.updateStatus(conversation.id, 'PENDING');
+        try {
+          await notificationService.notify('HANDOFF', buildHandoffNotifyPayload(conversation));
+        } catch (error) {
+          // Best-effort: the PENDING flip already committed. Log ids only
+          // and continue so a down notification path never blocks the
+          // handoff itself.
+          logger.warn(
+            { err: error, conversationId: conversation.id },
+            'handoff notification failed',
+          );
+        }
       }
 
       emitToOrg(payload.organizationId, 'conversation.updated', {

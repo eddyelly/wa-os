@@ -28,7 +28,7 @@ interface FakeProduct {
 // vi.mock factories below are hoisted above these consts; a plain top-level
 // const referenced from inside a factory would throw a temporal-dead-zone
 // ReferenceError otherwise.
-const { store, repo, embed, getMediaUrl } = vi.hoisted(() => {
+const { store, repo, embed, getMediaUrl, notify } = vi.hoisted(() => {
   const store = new Map<string, FakeProduct>();
   let nextId = 1;
 
@@ -85,8 +85,9 @@ const { store, repo, embed, getMediaUrl } = vi.hoisted(() => {
 
   const embed = vi.fn();
   const getMediaUrl = vi.fn((key: string) => Promise.resolve(`https://cdn.example/${key}`));
+  const notify = vi.fn((_type: string, _payload: Record<string, unknown>) => Promise.resolve());
 
-  return { store, repo, embed, getMediaUrl };
+  return { store, repo, embed, getMediaUrl, notify };
 });
 
 vi.mock('../repositories/product-repository.js', () => ({ productRepository: repo }));
@@ -94,6 +95,7 @@ vi.mock('../adapters/embeddings/embedding-adapter.js', () => ({
   embeddingPort: { embed },
 }));
 vi.mock('../lib/minio.js', () => ({ getMediaUrl }));
+vi.mock('./notification-service.js', () => ({ notificationService: { notify } }));
 
 import { productService } from './product-service.js';
 
@@ -103,6 +105,8 @@ describe('productService', () => {
     vi.clearAllMocks();
     embed.mockReset();
     getMediaUrl.mockImplementation((key: string) => Promise.resolve(`https://cdn.example/${key}`));
+    notify.mockReset();
+    notify.mockResolvedValue(undefined);
   });
 
   it('embeds name + description as a document and stores it via setEmbedding', async () => {
@@ -178,6 +182,63 @@ describe('productService', () => {
     await expect(productService.update(product.id, { price: 50000 })).rejects.toThrow(
       'minPrice cannot exceed price',
     );
+  });
+
+  it('fires LOW_STOCK once when a manual stock edit crosses the threshold downward', async () => {
+    embed.mockResolvedValue([[0.2]]);
+    const product = await productService.create({
+      name: 'Hair oil',
+      price: 12000,
+      stockQty: 6,
+      lowStockThreshold: 5,
+      tags: [],
+    });
+    notify.mockClear();
+
+    await productService.update(product.id, { stockQty: 4 });
+
+    expect(notify).toHaveBeenCalledWith('LOW_STOCK', {
+      productId: product.id,
+      name: 'Hair oil',
+      stockQty: 4,
+    });
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not notify when already at or below threshold, nor on an upward edit', async () => {
+    embed.mockResolvedValue([[0.2]]);
+    const product = await productService.create({
+      name: 'Hair oil',
+      price: 12000,
+      stockQty: 3,
+      lowStockThreshold: 5,
+      tags: [],
+    });
+    notify.mockClear();
+
+    await productService.update(product.id, { stockQty: 2 });
+    expect(notify).not.toHaveBeenCalled();
+
+    await productService.update(product.id, { stockQty: 9 });
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('still commits the stock update when the LOW_STOCK notify rejects (best-effort)', async () => {
+    embed.mockResolvedValue([[0.2]]);
+    const product = await productService.create({
+      name: 'Hair oil',
+      price: 12000,
+      stockQty: 6,
+      lowStockThreshold: 5,
+      tags: [],
+    });
+    notify.mockClear();
+    notify.mockRejectedValueOnce(new Error('relay down'));
+
+    const updated = await productService.update(product.id, { stockQty: 4 });
+
+    expect(updated.stockQty).toBe(4);
+    expect(notify).toHaveBeenCalledTimes(1);
   });
 
   it('toDto presigns each image mediaKey via getMediaUrl and never exposes mediaKey', async () => {

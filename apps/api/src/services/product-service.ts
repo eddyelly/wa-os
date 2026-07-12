@@ -8,6 +8,7 @@ import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 import { getMediaUrl, putMediaObject } from '../lib/minio.js';
 import { productRepository, type ProductWithImages } from '../repositories/product-repository.js';
+import { notificationService } from './notification-service.js';
 
 const VISION_DESCRIPTION_MAX_LENGTH = 500;
 
@@ -135,6 +136,30 @@ export const productService = {
 
     if (input.name !== undefined || input.description !== undefined) {
       await this.refreshEmbedding(id);
+    }
+
+    // A manual stock edit (the owner correcting a count, not a sale) fires
+    // the same LOW_STOCK alert a sale-driven decrement does, but only on
+    // the downward crossing: stored qty strictly above the threshold and
+    // the new qty at or below it. An upward edit, or an edit that starts
+    // and stays at or below threshold, never notifies.
+    if (input.stockQty !== undefined) {
+      const threshold =
+        input.lowStockThreshold !== undefined ? input.lowStockThreshold : stored.lowStockThreshold;
+      if (input.stockQty <= threshold && stored.stockQty > threshold) {
+        try {
+          await notificationService.notify('LOW_STOCK', {
+            productId: id,
+            name: updated.name,
+            stockQty: input.stockQty,
+          });
+        } catch (error) {
+          // Best-effort: the stock update already committed. Log ids only
+          // and continue so a slow or down notification path never fails
+          // a manual stock correction.
+          logger.warn({ err: error, productId: id }, 'low stock notification failed');
+        }
+      }
     }
 
     return this.toDto(updated);
