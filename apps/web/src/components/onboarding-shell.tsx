@@ -30,20 +30,30 @@ function StepCircle({ state, index }: { state: 'done' | 'current' | 'todo'; inde
 
 /**
  * The signature onboarding frame: deep green gradient, wordmark, language
- * switcher, and a labeled four-step progress trail. Pass `step` (0 to 3)
- * on wizard screens; omit it for login and signup.
+ * switcher, and a labeled progress trail. Pass `step` as an index into the
+ * rendered labels array on wizard screens; omit it for login and signup.
+ * The trail is four steps normally, or five when `includeProducts` is set
+ * (shop-module orgs get an extra "Products" step between connect and info).
  */
 export function OnboardingShell({
   step,
+  includeProducts = false,
   wide = false,
   children,
 }: {
   step?: number;
+  includeProducts?: boolean;
   wide?: boolean;
   children: ReactNode;
 }) {
   const t = useTranslations('wizard');
-  const steps = [t('stepProfile'), t('stepConnect'), t('stepKnowledge'), t('stepTest')];
+  const steps = [
+    t('stepProfile'),
+    t('stepConnect'),
+    ...(includeProducts ? [t('stepProducts')] : []),
+    t('stepKnowledge'),
+    t('stepTest'),
+  ];
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-gradient-to-br from-brand-950 via-brand-800 to-brand-600 px-4 py-6 sm:py-10">

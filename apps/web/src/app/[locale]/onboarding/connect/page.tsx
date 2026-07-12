@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { connectChannelResponseSchema, type ChannelDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch, ApiError, getTokens } from '@/lib/api';
+import { apiFetch, ApiError, getStoredUser, getTokens } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { Badge, Button, Card, ErrorBox, Spinner } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
@@ -28,6 +28,7 @@ export default function OnboardingConnectPage() {
   const [busy, setBusy] = useState(false);
   const channelIdRef = useRef<string | null>(null);
   const startedRef = useRef(false);
+  const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
 
   const start = useCallback(async (): Promise<void> => {
     setBusy(true);
@@ -94,7 +95,7 @@ export default function OnboardingConnectPage() {
   const connected = channel?.status === 'CONNECTED';
 
   return (
-    <OnboardingShell step={1}>
+    <OnboardingShell step={1} includeProducts={shopOrg}>
       <Card className="w-full p-8 shadow-2xl">
         <h1 className="text-2xl font-bold text-brand-900">{t('title')}</h1>
         <p className="mt-1 text-sm text-brand-600">{t('subtitle')}</p>
@@ -107,7 +108,12 @@ export default function OnboardingConnectPage() {
           <div className="mt-6 space-y-4 text-center">
             <Badge tone="success">{t('statusConnected')}</Badge>
             <p className="text-sm text-brand-700">{t('connectedHint')}</p>
-            <Button onClick={() => { router.push('/onboarding/knowledge'); }} className="w-full">
+            <Button
+              onClick={() => {
+                router.push(shopOrg ? '/onboarding/products' : '/onboarding/knowledge');
+              }}
+              className="w-full"
+            >
               {t('continue')}
             </Button>
           </div>

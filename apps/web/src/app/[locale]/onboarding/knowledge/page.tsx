@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'r
 import { useTranslations } from 'next-intl';
 import type { KnowledgeDocDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch, ApiError, apiUpload, getTokens } from '@/lib/api';
+import { apiFetch, ApiError, apiUpload, getStoredUser, getTokens } from '@/lib/api';
 import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
@@ -21,6 +21,7 @@ export default function KnowledgePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -85,7 +86,7 @@ export default function KnowledgePage() {
   };
 
   return (
-    <OnboardingShell step={2} wide>
+    <OnboardingShell step={shopOrg ? 3 : 2} includeProducts={shopOrg} wide>
       <Card className="p-8 shadow-2xl">
         <h1 className="text-2xl font-bold text-brand-900">{t('title')}</h1>
         <p className="mt-1 text-sm text-brand-600">{t('subtitle')}</p>

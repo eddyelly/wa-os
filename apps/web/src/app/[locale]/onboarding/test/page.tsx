@@ -3,7 +3,7 @@
 import { useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch, ApiError } from '@/lib/api';
+import { apiFetch, ApiError, getStoredUser } from '@/lib/api';
 import { Badge, Button, Card, ErrorBox, Field, Input } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
@@ -24,6 +24,7 @@ export default function OnboardingTestPage() {
   const [result, setResult] = useState<AiTestResponse['result'] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
 
   const ask = async (event: SyntheticEvent): Promise<void> => {
     event.preventDefault();
@@ -44,7 +45,7 @@ export default function OnboardingTestPage() {
   };
 
   return (
-    <OnboardingShell step={3}>
+    <OnboardingShell step={shopOrg ? 4 : 3} includeProducts={shopOrg}>
       <Card className="w-full p-8 shadow-2xl">
         <h1 className="text-2xl font-bold text-brand-900">{t('title')}</h1>
         <p className="mt-1 text-sm text-brand-600">{t('subtitle')}</p>

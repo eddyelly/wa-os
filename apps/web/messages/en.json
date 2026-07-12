@@ -47,7 +47,7 @@
     "modules_appointments": "Take bookings",
     "modules_appointmentsHint": "Appointments, reminders, and a calendar.",
     "modules_shop": "Sell products",
-    "modules_shopHint": "A catalog your AI sells from. Shop tools arrive soon.",
+    "modules_shopHint": "A catalog your AI sells from, bargains included.",
     "modules_both": "Both",
     "modules_bothHint": "Bookings and selling in one place.",
     "language": "Language your customers prefer",
@@ -237,6 +237,21 @@
     "retry": "Try again",
     "invalidNumbers": "Prices must be whole numbers above zero."
   },
+  "onboardingProducts": {
+    "title": "Add your first products",
+    "subtitle": "Give the AI something to sell. You can add photos and more products later under Products.",
+    "name": "Product name",
+    "price": "Price (TZS)",
+    "minPrice": "Lowest acceptable price (TZS, optional)",
+    "minPriceHint": "The AI bargains down to this but never below. Customers never see it.",
+    "stockQty": "In stock",
+    "addAnother": "Add and add another",
+    "continue": "Continue",
+    "skip": "Skip for now",
+    "added": "Added so far",
+    "saveError": "Could not save this product. Check the values and try again.",
+    "invalidNumbers": "Prices must be whole numbers above zero."
+  },
   "orders": {
     "title": "Orders",
     "filterAll": "All",
@@ -279,7 +294,7 @@
     "modulesSection": "What your business does",
     "modulesHint": "Turn on the parts of WaOS you need. At least one stays on.",
     "moduleAppointments": "Bookings and reminders",
-    "moduleShop": "Shop and selling (coming soon)",
+    "moduleShop": "Shop and selling",
     "teamSection": "Team",
     "roleOwner": "Owner",
     "roleStaff": "Staff",
@@ -327,6 +342,7 @@
     "progressLabel": "Setup progress",
     "stepProfile": "Business",
     "stepConnect": "Connect",
+    "stepProducts": "Products",
     "stepKnowledge": "Info",
     "stepTest": "Test"
   },

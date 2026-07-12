@@ -4,7 +4,7 @@ import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import type { BusinessModule } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch, ApiError, getTokens, updateStoredOrganization } from '@/lib/api';
+import { apiFetch, ApiError, getStoredUser, getTokens, updateStoredOrganization } from '@/lib/api';
 import { Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
@@ -38,6 +38,10 @@ export default function OnboardingProfilePage() {
   const [moduleChoice, setModuleChoice] = useState<ModuleChoice>('appointments');
   const [language, setLanguage] = useState('sw');
   const [timezone, setTimezone] = useState('Africa/Dar_es_Salaam');
+  // The trail's step count depends on the module choice already saved for
+  // this org, not the in-progress radio selection above: the choice on this
+  // page only takes effect (and updates the stored organization) on submit.
+  const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
 
   useEffect(() => {
     if (!getTokens()) {
@@ -85,7 +89,7 @@ export default function OnboardingProfilePage() {
   };
 
   return (
-    <OnboardingShell step={0}>
+    <OnboardingShell step={0} includeProducts={shopOrg}>
       <Card className="w-full p-8 shadow-2xl">
         <h1 className="text-2xl font-bold text-brand-900">{t('profileTitle')}</h1>
         <p className="mt-1 text-sm text-brand-600">{t('profileSubtitle')}</p>

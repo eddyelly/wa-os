@@ -47,7 +47,7 @@
     "modules_appointments": "Kupokea miadi",
     "modules_appointmentsHint": "Miadi, vikumbusho, na kalenda.",
     "modules_shop": "Kuuza bidhaa",
-    "modules_shopHint": "Katalogi ambayo AI yako inauzia. Zana za duka zinakuja hivi karibuni.",
+    "modules_shopHint": "Katalogi ambayo AI yako inauzia, ikiwemo majadiliano ya bei.",
     "modules_both": "Vyote viwili",
     "modules_bothHint": "Miadi na mauzo mahali pamoja.",
     "language": "Lugha wanayopendelea wateja wako",
@@ -237,6 +237,21 @@
     "retry": "Jaribu tena",
     "invalidNumbers": "Bei lazima ziwe namba nzima zaidi ya sifuri."
   },
+  "onboardingProducts": {
+    "title": "Ongeza bidhaa zako za kwanza",
+    "subtitle": "Ipe AI kitu cha kuuza. Unaweza kuongeza picha na bidhaa zaidi baadaye kwenye Bidhaa.",
+    "name": "Jina la bidhaa",
+    "price": "Bei (TZS)",
+    "minPrice": "Bei ya chini kabisa (TZS, si lazima)",
+    "minPriceHint": "AI inajadili bei hadi kiwango hiki lakini kamwe si chini yake. Wateja hawakioni.",
+    "stockQty": "Zilizopo",
+    "addAnother": "Ongeza kisha ongeza nyingine",
+    "continue": "Endelea",
+    "skip": "Ruka kwa sasa",
+    "added": "Zilizoongezwa",
+    "saveError": "Imeshindwa kuhifadhi bidhaa hii. Angalia thamani kisha ujaribu tena.",
+    "invalidNumbers": "Bei lazima ziwe namba nzima zaidi ya sifuri."
+  },
   "orders": {
     "title": "Oda",
     "filterAll": "Zote",
@@ -279,7 +294,7 @@
     "modulesSection": "Biashara yako inafanya nini",
     "modulesHint": "Washa sehemu za WaOS unazohitaji. Angalau moja hubaki imewashwa.",
     "moduleAppointments": "Miadi na vikumbusho",
-    "moduleShop": "Duka na mauzo (inakuja hivi karibuni)",
+    "moduleShop": "Duka na mauzo",
     "teamSection": "Timu",
     "roleOwner": "Mmiliki",
     "roleStaff": "Mfanyakazi",
@@ -327,6 +342,7 @@
     "progressLabel": "Hatua za usajili",
     "stepProfile": "Biashara",
     "stepConnect": "Unganisha",
+    "stepProducts": "Bidhaa",
     "stepKnowledge": "Taarifa",
     "stepTest": "Jaribu"
   },
