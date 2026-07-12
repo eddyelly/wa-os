@@ -1,5 +1,6 @@
 import type { OrderDto, OrderStatus } from '@waos/shared';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { logger } from '../lib/logger.js';
 import { orderRepository, type OrderWithDetails } from '../repositories/order-repository.js';
 import { productRepository } from '../repositories/product-repository.js';
 import { notificationService } from './notification-service.js';
@@ -110,7 +111,7 @@ export const orderService = {
       }
       const floor = product.minPrice ?? product.price;
       if (item.agreedPrice < floor) {
-        throw new ValidationError(`The agreed price for ${product.name} is below the floor.`);
+        throw new ValidationError(`The price for ${product.name} is too low.`);
       }
       items.push({
         productId: product.id,
@@ -130,11 +131,18 @@ export const orderService = {
       items,
     });
 
-    await notificationService.notify('NEW_ORDER', {
-      orderId: order.id,
-      total: totalAgreed,
-      contactName: order.contact.name,
-    });
+    try {
+      await notificationService.notify('NEW_ORDER', {
+        orderId: order.id,
+        total: totalAgreed,
+        contactName: order.contact.name,
+      });
+    } catch (error) {
+      // Best-effort: the order already committed. An uncaught throw here
+      // would poison a successful creation (the agent may retry and
+      // duplicate the order), so log ids only and continue.
+      logger.warn({ err: error, orderId: order.id }, 'new order notification failed');
+    }
 
     return { orderId: order.id, totalAgreed };
   },
@@ -175,11 +183,14 @@ export const orderService = {
       // Stock and status commit inside one repository transaction: see
       // updateStatusWithStock's comment in order-repository.ts for why a
       // partial failure here can never leave stock decremented with the
-      // order still on its old status, and why a retry cannot
-      // double-decrement.
+      // order still on its old status. Passing order.status as
+      // expectedFrom lets the repository guard the status write with a
+      // conditional updateMany, so two concurrent requests for the same
+      // transition can never both commit and double-decrement.
       const results = await orderRepository.updateStatusWithStock(
         id,
         status,
+        order.status,
         stockAdjustments.map(({ productId, delta }) => ({ productId, delta })),
       );
       // On a decrement (sign -1), fire LOW_STOCK when the fresh stockQty
@@ -190,11 +201,18 @@ export const orderService = {
           const quantity = stockAdjustments[index]?.quantity ?? 0;
           const preDecrement = result.stockQty + quantity;
           if (result.stockQty <= result.lowStockThreshold && preDecrement > result.lowStockThreshold) {
-            await notificationService.notify('LOW_STOCK', {
-              productId: result.productId,
-              name: result.name,
-              stockQty: result.stockQty,
-            });
+            try {
+              await notificationService.notify('LOW_STOCK', {
+                productId: result.productId,
+                name: result.name,
+                stockQty: result.stockQty,
+              });
+            } catch (error) {
+              // Best-effort: the stock decrement and status transition
+              // already committed. Log ids only and continue so a
+              // confirm retry never hits a bogus transition error.
+              logger.warn({ err: error, productId: result.productId }, 'low stock notification failed');
+            }
           }
         }
       }
@@ -203,7 +221,7 @@ export const orderService = {
       // re-fetch the order just to build the DTO.
       updated = { ...order, status };
     } else {
-      updated = await orderRepository.updateStatus(id, status);
+      updated = await orderRepository.updateStatus(id, status, order.status);
     }
     return toDto(updated);
   },

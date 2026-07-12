@@ -53,12 +53,15 @@ export const productRepository = {
         tags: data.tags,
         organizationId: requireRequestContext().organizationId,
       },
-      include: { images: true },
+      include: { images: { orderBy: { createdAt: 'asc' } } },
     });
   },
 
   findById(id: string): Promise<ProductWithImages | null> {
-    return prisma.product.findUnique({ where: { id }, include: { images: true } });
+    return prisma.product.findUnique({
+      where: { id },
+      include: { images: { orderBy: { createdAt: 'asc' } } },
+    });
   },
 
   list(params: { includeInactive?: boolean } = {}): Promise<ProductWithImages[]> {

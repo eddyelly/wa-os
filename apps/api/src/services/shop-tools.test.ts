@@ -220,16 +220,14 @@ describe('shop-tools: record_order', () => {
   });
 
   it('surfaces a ValidationError as { error } so the model can renegotiate', async () => {
-    orderSvc.createFromAgent.mockRejectedValue(
-      new ValidationError('The agreed price for Wig is below the floor.'),
-    );
+    orderSvc.createFromAgent.mockRejectedValue(new ValidationError('The price for Wig is too low.'));
     const tools = makeTools();
 
     const result = await tools.execute('record_order', {
       items: [{ productId: 'p1', quantity: 1, agreedPrice: 100 }],
     });
 
-    expect(result).toEqual({ error: 'The agreed price for Wig is below the floor.' });
+    expect(result).toEqual({ error: 'The price for Wig is too low.' });
   });
 });
 

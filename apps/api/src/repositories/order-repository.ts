@@ -78,12 +78,29 @@ export const orderRepository = {
     });
   },
 
-  updateStatus(id: string, status: OrderStatus): Promise<OrderWithDetails> {
-    return prisma.order.update({
-      where: { id },
+  /**
+   * Guards the write with a conditional updateMany keyed on the
+   * pre-transition status (`expectedFrom`), so two concurrent requests
+   * racing the same transition can never both succeed: only the first to
+   * commit matches `status: expectedFrom`, the second matches zero rows
+   * and throws instead of silently overwriting.
+   */
+  async updateStatus(id: string, status: OrderStatus, expectedFrom: OrderStatus): Promise<OrderWithDetails> {
+    const result = await prisma.order.updateMany({
+      where: { id, status: expectedFrom },
       data: { status },
+    });
+    if (result.count !== 1) {
+      throw new ValidationError('The order changed while processing. Refresh and try again.');
+    }
+    const updated = await prisma.order.findUnique({
+      where: { id },
       include: { items: true, contact: true },
     });
+    if (!updated) {
+      throw new NotFoundError('This order no longer exists.');
+    }
+    return updated;
   },
 
   /**
@@ -105,10 +122,21 @@ export const orderRepository = {
    * every write inside it. Order status and product stock are one atomic
    * unit for this operation, so order-repository performs the product
    * write itself instead of delegating to productRepository.adjustStock.
+   *
+   * The status write is guarded by a conditional updateMany keyed on
+   * `expectedFrom`, the status the caller observed before deciding to make
+   * this transition (see updateStatus above for why). Two concurrent
+   * requests for the same transition both pass the service's
+   * pre-transaction check; inside the transaction only the first to commit
+   * matches `status: expectedFrom` and its stock adjustment lands. The
+   * second matches zero rows, throws, and the whole transaction (including
+   * its stock adjustment) rolls back, so stock can never be decremented
+   * twice for one transition.
    */
   updateStatusWithStock(
     id: string,
     status: OrderStatus,
+    expectedFrom: OrderStatus,
     adjustments: Array<{ productId: string; delta: number }>,
   ): Promise<Array<{ productId: string; name: string; stockQty: number; lowStockThreshold: number }>> {
     return prisma.$transaction(async (tx) => {
@@ -132,7 +160,10 @@ export const orderRepository = {
           lowStockThreshold: updatedProduct.lowStockThreshold,
         });
       }
-      await tx.order.update({ where: { id }, data: { status } });
+      const updateResult = await tx.order.updateMany({ where: { id, status: expectedFrom }, data: { status } });
+      if (updateResult.count !== 1) {
+        throw new ValidationError('The order changed while processing. Refresh and try again.');
+      }
       return results;
     });
   },

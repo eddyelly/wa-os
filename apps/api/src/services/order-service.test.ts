@@ -90,10 +90,18 @@ const { products, orders, orderRepo, productRepo, notify } = vi.hoisted(() => {
     list: vi.fn((status?: OrderStatus) =>
       Promise.resolve([...orders.values()].filter((order) => !status || order.status === status)),
     ),
-    updateStatus: vi.fn((id: string, status: OrderStatus) => {
+    // Mirrors the real guarded updateMany in order-repository.ts: a
+    // mismatched expectedFrom (another request already moved this order)
+    // rejects with ValidationError instead of overwriting.
+    updateStatus: vi.fn((id: string, status: OrderStatus, expectedFrom: OrderStatus) => {
       const existing = orders.get(id);
       if (!existing) {
         return Promise.reject(new Error('not found'));
+      }
+      if (existing.status !== expectedFrom) {
+        return Promise.reject(
+          new ValidationError('The order changed while processing. Refresh and try again.'),
+        );
       }
       const updated: FakeOrder = { ...existing, status, updatedAt: new Date() };
       orders.set(id, updated);
@@ -103,11 +111,23 @@ const { products, orders, orderRepo, productRepo, notify } = vi.hoisted(() => {
     // `products` and `orders` as one step, so a mockRejectedValueOnce
     // override (used to simulate a failed transaction) leaves both maps
     // untouched, the same guarantee a real rolled-back transaction gives.
+    // Also mirrors the guarded updateMany: a mismatched expectedFrom
+    // rejects with ValidationError before any stock mutation is applied.
     updateStatusWithStock: vi.fn(
-      (id: string, status: OrderStatus, adjustments: Array<{ productId: string; delta: number }>) => {
+      (
+        id: string,
+        status: OrderStatus,
+        expectedFrom: OrderStatus,
+        adjustments: Array<{ productId: string; delta: number }>,
+      ) => {
         const existing = orders.get(id);
         if (!existing) {
           return Promise.reject(new Error('not found'));
+        }
+        if (existing.status !== expectedFrom) {
+          return Promise.reject(
+            new ValidationError('The order changed while processing. Refresh and try again.'),
+          );
         }
         const results: Array<{
           productId: string;
@@ -243,6 +263,21 @@ describe('orderService.createFromAgent', () => {
     });
   });
 
+  it('still returns the order when the notification relay rejects', async () => {
+    addProduct({ id: 'p1', name: 'Hair oil', price: 12000, stockQty: 10 });
+    notify.mockRejectedValueOnce(new Error('relay down'));
+
+    const result = await orderService.createFromAgent({
+      conversationId: null,
+      contactId: 'c1',
+      items: [{ productId: 'p1', quantity: 1, agreedPrice: 12000 }],
+    });
+
+    expect(result.orderId).toBeDefined();
+    expect(result.totalAgreed).toBe(12000);
+    expect(orderRepo.create).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects an inactive product and a missing product', async () => {
     addProduct({ id: 'p1', isActive: false });
 
@@ -338,9 +373,12 @@ describe('orderService.setStatus: stock and low-stock', () => {
 
     await orderService.setStatus(order.id, 'CONFIRMED');
     expect(orderRepo.updateStatusWithStock).toHaveBeenCalledTimes(1);
-    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledWith(order.id, 'CONFIRMED', [
-      { productId: 'p1', delta: -2 },
-    ]);
+    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledWith(
+      order.id,
+      'CONFIRMED',
+      'PENDING_CONFIRMATION',
+      [{ productId: 'p1', delta: -2 }],
+    );
     expect(products.get('p1')?.stockQty).toBe(8);
 
     await orderService.setStatus(order.id, 'PAID');
@@ -374,9 +412,12 @@ describe('orderService.setStatus: stock and low-stock', () => {
     orderRepo.updateStatusWithStock.mockClear();
 
     await orderService.setStatus(confirmedOrder.id, 'CANCELLED');
-    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledWith(confirmedOrder.id, 'CANCELLED', [
-      { productId: 'p1', delta: 2 },
-    ]);
+    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledWith(
+      confirmedOrder.id,
+      'CANCELLED',
+      'CONFIRMED',
+      [{ productId: 'p1', delta: 2 }],
+    );
     expect(products.get('p1')?.stockQty).toBe(10);
 
     orderRepo.updateStatusWithStock.mockClear();
@@ -395,9 +436,26 @@ describe('orderService.setStatus: stock and low-stock', () => {
     orderRepo.updateStatusWithStock.mockClear();
 
     await orderService.setStatus(order.id, 'CANCELLED');
-    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledWith(order.id, 'CANCELLED', [
+    expect(orderRepo.updateStatusWithStock).toHaveBeenCalledWith(order.id, 'CANCELLED', 'PAID', [
       { productId: 'p1', delta: 4 },
     ]);
+    expect(products.get('p1')?.stockQty).toBe(10);
+  });
+
+  it('propagates a repository status-conflict and fires no notification', async () => {
+    addProduct({ id: 'p1', stockQty: 10, lowStockThreshold: 3 });
+    const order = await makeOrder(2);
+
+    // Simulates a concurrent request already having flipped this order's
+    // status, so the guarded updateMany inside the repository transaction
+    // matches zero rows and throws instead of double-decrementing.
+    orderRepo.updateStatusWithStock.mockRejectedValueOnce(
+      new ValidationError('The order changed while processing. Refresh and try again.'),
+    );
+
+    await expect(orderService.setStatus(order.id, 'CONFIRMED')).rejects.toBeInstanceOf(ValidationError);
+    expect(notify).not.toHaveBeenCalled();
+    expect(orders.get(order.id)?.status).toBe('PENDING_CONFIRMATION');
     expect(products.get('p1')?.stockQty).toBe(10);
   });
 
