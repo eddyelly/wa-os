@@ -2,26 +2,18 @@
 
 import { useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
+import type { AiTestResultDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch, ApiError, getStoredUser } from '@/lib/api';
+import { ApiError, getStoredUser } from '@/lib/api';
+import { runAiTest } from '@/lib/app-api';
 import { Badge, Button, Card, ErrorBox, Field, Input } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
-
-interface AiTestResponse {
-  result: {
-    reply: string | null;
-    confidence: number;
-    intent: string | null;
-    action: 'REPLY' | 'HANDOFF';
-    chunksUsed: number;
-  };
-}
 
 export default function OnboardingTestPage() {
   const t = useTranslations('testAi');
   const router = useRouter();
   const [question, setQuestion] = useState('');
-  const [result, setResult] = useState<AiTestResponse['result'] | null>(null);
+  const [result, setResult] = useState<AiTestResultDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
@@ -32,11 +24,8 @@ export default function OnboardingTestPage() {
     setError(null);
     setResult(null);
     try {
-      const data = await apiFetch<AiTestResponse>('/api/v1/ai/test', {
-        method: 'POST',
-        body: { question },
-      });
-      setResult(data.result);
+      const data = await runAiTest(question);
+      setResult(data);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('genericError'));
     } finally {
