@@ -8,6 +8,12 @@ Phase 1 (MVP) is free: no payment or billing code exists in this codebase.
 Read `CLAUDE.md` for the architecture, standards, and scope rules before
 contributing. `KICKOFF_PROMPT.md` tracks the milestone plan.
 
+Organizations that turn on the `shop` module let the same AI also sell from a
+product catalog: it searches products, negotiates within a floor price the
+owner sets and the AI never sees, and records agreed orders as
+`PENDING_CONFIRMATION` for the owner to confirm and get paid for outside the
+platform.
+
 ## Stack
 
 Express + TypeScript API, Prisma + PostgreSQL 16 (pgvector), BullMQ on Redis,

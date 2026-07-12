@@ -100,12 +100,17 @@ BEFORE it is enqueued. Rules are keyed on `channel.provider`:
 | Reply in an active conversation | allow                  | allow             |
 | Media in an active chat         | allow                  | allow             |
 | Reminder to opted-in contact    | allow, rate limited    | allow             |
+| Owner alert to opted-in owner   | allow, rate limited    | allow             |
 | Broadcast / marketing blast     | block: COMING_SOON     | allow             |
 | Message to non-contact          | block: OPT_IN_REQUIRED | allow             |
 | Above volume threshold          | throttle               | allow             |
 
 A blocked action returns a typed `PolicyDecision`, never a thrown string. The
-UI renders the decision reason in plain language.
+UI renders the decision reason in plain language. `OWNER_ALERT` is the shop
+module's owner alert: it relays a `NEW_ORDER` or `LOW_STOCK` `Notification`
+to the owner's own WhatsApp as a proactive send, so it is modeled as a normal
+opted-in contact and goes through the same rate limiting and opt-in check as
+a reminder.
 
 ### 3.3 Ban-risk guardrails (entry tier)
 
@@ -234,8 +239,26 @@ String[]`, `optedInAt DateTime?`, `customFields Json`.
   `status: BOOKED | REMINDED | COMPLETED | NO_SHOW | CANCELLED`,
   `reminderJobIds String[]`.
 - **AiReplyLog**: every AI decision. `conversationId`, `retrievedChunkIds`,
-  `confidence Float`, `action: REPLIED | HANDED_OFF`, `latencyMs`. This
-  powers the deflection metric and debugging.
+  `confidence Float`, `action: REPLIED | HANDED_OFF`, `latencyMs`,
+  `toolsUsed String[]` (names of agent tools invoked, e.g. `search_products`,
+  `negotiate_price`, `record_order`). This powers the deflection metric and
+  debugging.
+- **Product** and **ProductImage**: the `shop` module's catalog. Product has
+  `price` and `minPrice` (both whole TZS integers; `minPrice` is the
+  bargaining floor, nullable meaning fixed price, and is NEVER exposed to the
+  AI), `stockQty`, `lowStockThreshold` (default 5), `isActive`, `tags
+String[]`, `embedding` (pgvector, built from name, description, and image
+  descriptions). ProductImage has `mediaKey` (MinIO) and `description`
+  (written by Gemini vision at upload, feeds the product embedding).
+- **Order** and **OrderItem**: `Order` has `contactId`, `conversationId?`
+  (nullable), `status: PENDING_CONFIRMATION | CONFIRMED | PAID | FULFILLED |
+CANCELLED`, `totalAgreed`. `OrderItem` has `orderId`, `productId?`
+  (nullable, set to null if the product is later deleted) and snapshots
+  `productName`, `listPrice`, and `agreedPrice` at order time so a line item
+  is unaffected by later product edits or deletion.
+- **Notification**: `type: NEW_ORDER | LOW_STOCK | HANDOFF`, `payload Json`,
+  `readAt?`. Feeds the dashboard bell (Socket.IO `notification.new`, ids and
+  type only) and, for `NEW_ORDER` and `LOW_STOCK`, the owner WhatsApp alert.
 
 Migrations via `prisma migrate`. Never edit a committed migration.
 
@@ -254,6 +277,20 @@ context, (b) replies in the contact's language (Swahili or English), (c)
 returns JSON `{ reply, confidence, intent }` -> if `confidence >=
 AI_CONFIDENCE_THRESHOLD` enqueue outbound send as `authorType: AI`; else set
 conversation to PENDING, notify humans via Socket.IO, do not send.
+
+**AI selling (shop module):** when the organization's `modules` include
+`shop`, the AI reply job also runs a bounded tool loop (max 4 rounds) with
+`search_knowledge`, `search_products`, `negotiate_price`, and `record_order`
+before it answers -> price floors (`Product.minPrice`) are enforced in code
+at two layers, never told to the model: `negotiate_price`'s executor clamps
+to the floor, and `record_order` revalidates every item against the live
+floor and stock before writing anything -> a struck deal creates an `Order`
+as `PENDING_CONFIRMATION` and returns payment instructions for the AI to
+relay in chat, the platform never processes the payment itself -> stock
+decrements atomically with the transition to `CONFIRMED`; a low-stock
+crossing creates a `LOW_STOCK` `Notification` -> `NEW_ORDER` and `LOW_STOCK`
+notifications relay to the owner's own WhatsApp through the `OWNER_ALERT`
+policy action when owner alerts are enabled in shop settings.
 
 **Outbound send job:** PolicyEngine.check -> rate limiter + jitter ->
 MessagingPort.sendText/sendMedia -> update Message.status from provider ack.
