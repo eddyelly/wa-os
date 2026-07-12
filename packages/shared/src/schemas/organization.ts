@@ -25,3 +25,24 @@ export const updateShopSettingsRequestSchema = z.object({
   ownerAlertsEnabled: z.boolean().optional(),
 });
 export type UpdateShopSettingsRequest = z.infer<typeof updateShopSettingsRequestSchema>;
+
+export const organizationDetailSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  vertical: z.string(),
+  language: z.string(),
+  timezone: z.string(),
+  modules: z.array(businessModuleSchema),
+  settings: z
+    .object({
+      aiEnabled: z.boolean().optional(),
+      aiConfidenceThreshold: z.number().optional(),
+      toneNotes: z.string().optional(),
+      paymentInstructions: z.string().optional(),
+      ownerAlertPhone: z.string().nullable().optional(),
+      ownerAlertsEnabled: z.boolean().optional(),
+    })
+    .passthrough()
+    .nullable(),
+});
+export type OrganizationDetailDto = z.infer<typeof organizationDetailSchema>;

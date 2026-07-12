@@ -26,3 +26,12 @@ export const aiReplyOutputSchema = z.object({
   intent: z.enum(['question', 'booking', 'complaint', 'greeting', 'other']),
 });
 export type AiReplyOutput = z.infer<typeof aiReplyOutputSchema>;
+
+export const aiTestResultSchema = z.object({
+  reply: z.string(),
+  confidence: z.number().min(0).max(1),
+  intent: z.string(),
+  action: z.enum(['REPLY', 'HANDOFF']),
+  chunksUsed: z.number().int(),
+});
+export type AiTestResultDto = z.infer<typeof aiTestResultSchema>;
