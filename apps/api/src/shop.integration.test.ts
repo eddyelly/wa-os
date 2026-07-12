@@ -138,6 +138,22 @@ describe.skipIf(!databaseUrl)('shop order flow (live database)', () => {
     expect(result.output?.reply).toBe('Nimeweka oda yako.');
     expect(result.toolsUsed).toEqual(['negotiate_price', 'record_order']);
 
+    // Assert the tool_result that drove the recorded order
+    const secondCall = llm.calls[1];
+    expect(secondCall).toBeDefined();
+    const lastMessage = secondCall?.messages[secondCall.messages.length - 1];
+    expect(lastMessage?.role).toBe('user');
+    const messageContent = lastMessage?.content;
+    expect(Array.isArray(messageContent)).toBe(true);
+    if (Array.isArray(messageContent)) {
+      const negotiatePricePart = messageContent.find(
+        (part): part is { type: 'tool_result'; name: string; response: unknown } =>
+          part.type === 'tool_result'
+      );
+      expect(negotiatePricePart?.name).toBe('negotiate_price');
+      expect(negotiatePricePart?.response).toEqual({ accepted: false, counterPrice: 8000, isFinal: true });
+    }
+
     const order = await asOrg(() =>
       basePrisma.order.findFirst({
         where: { organizationId, contactId },
