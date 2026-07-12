@@ -12,7 +12,10 @@ Organizations that turn on the `shop` module let the same AI also sell from a
 product catalog: it searches products, negotiates within a floor price the
 owner sets and the AI never sees, and records agreed orders as
 `PENDING_CONFIRMATION` for the owner to confirm and get paid for outside the
-platform.
+platform. The dashboard adds Products and Orders screens for those
+organizations to manage the catalog and confirm orders, and every
+organization gets a realtime notification bell for new orders, low stock,
+and handoffs.
 
 ## Stack
 

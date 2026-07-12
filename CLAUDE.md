@@ -290,7 +290,9 @@ relay in chat, the platform never processes the payment itself -> stock
 decrements atomically with the transition to `CONFIRMED`; a low-stock
 crossing creates a `LOW_STOCK` `Notification` -> `NEW_ORDER` and `LOW_STOCK`
 notifications relay to the owner's own WhatsApp through the `OWNER_ALERT`
-policy action when owner alerts are enabled in shop settings.
+policy action when owner alerts are enabled in shop settings. The dashboard
+also surfaces recorded orders for the owner to confirm directly and receives
+these notifications live over Socket.IO `notification.new`.
 
 **Outbound send job:** PolicyEngine.check -> rate limiter + jitter ->
 MessagingPort.sendText/sendMedia -> update Message.status from provider ack.
