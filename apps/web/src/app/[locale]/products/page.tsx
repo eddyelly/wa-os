@@ -60,6 +60,7 @@ export default function ProductsPage() {
     setMinPrice('');
     setStockQty(DEFAULT_STOCK_QTY);
     setLowStockThreshold(DEFAULT_LOW_STOCK_THRESHOLD);
+    setFormError(null);
   };
 
   const startEdit = (product: ProductDto): void => {
@@ -387,10 +388,10 @@ export default function ProductsPage() {
                     onClick={() => {
                       triggerUpload(product.id);
                     }}
-                    disabled={uploadingId === product.id}
+                    disabled={uploadingId !== null}
                     className="rounded-lg bg-brand-100 px-3 py-1.5 text-xs font-semibold text-brand-900 hover:bg-brand-200 disabled:opacity-50"
                   >
-                    {uploadingId === product.id ? t('uploading') : t('addImage')}
+                    {uploadingId !== null ? t('uploading') : t('addImage')}
                   </button>
                   <button
                     onClick={() => void remove(product.id)}

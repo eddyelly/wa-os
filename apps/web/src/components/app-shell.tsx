@@ -86,7 +86,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex-1 py-3 text-center text-sm font-medium ${
+                className={`flex-1 min-w-0 overflow-hidden truncate py-3 text-center text-sm font-medium ${
                   active ? 'text-brand-800 font-semibold' : 'text-brand-500'
                 }`}
               >
