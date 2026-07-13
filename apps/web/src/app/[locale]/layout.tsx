@@ -1,14 +1,22 @@
 import type { Metadata } from 'next';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
-import { Inter } from 'next/font/google';
+import localFont from 'next/font/local';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Providers } from '@/components/providers';
 import { routing } from '@/i18n/routing';
 import '../globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+// Inter is self-hosted (src/fonts) rather than fetched from Google Fonts, so
+// builds never depend on network reachability. One variable file covers all
+// weights from 100 to 900.
+const inter = localFont({
+  src: '../../fonts/InterVariable.woff2',
+  variable: '--font-inter',
+  display: 'swap',
+  weight: '100 900',
+});
 
 const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'WaOS';
 
