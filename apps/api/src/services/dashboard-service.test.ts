@@ -55,6 +55,10 @@ describe('dashboardSummary', () => {
     });
     expect(orderRepo.countByStatus).toHaveBeenCalledWith('PENDING_CONFIRMATION');
     expect(orderRepo.sumAgreedSince).toHaveBeenCalledWith(expect.any(Date), ['CONFIRMED', 'PAID', 'FULFILLED']);
+
+    const ordersTodayArg = orderRepo.countCreatedSince.mock.calls[0][0] as Date;
+    const revenueSinceArg = orderRepo.sumAgreedSince.mock.calls[0][0] as Date;
+    expect(ordersTodayArg.getTime()).toBeGreaterThan(revenueSinceArg.getTime());
   });
 
   it('omits sales KPIs for an appointments-only organization', async () => {
@@ -63,6 +67,8 @@ describe('dashboardSummary', () => {
     const result = await runWithRequestContext(ctx, () => dashboardSummary());
 
     expect(result.sales).toBeUndefined();
+    expect(orderRepo.countCreatedSince).not.toHaveBeenCalled();
+    expect(orderRepo.sumAgreedSince).not.toHaveBeenCalled();
     expect(orderRepo.countByStatus).not.toHaveBeenCalled();
     expect(productRepo.countLowStock).not.toHaveBeenCalled();
   });

@@ -53,12 +53,16 @@ export default function HomeDashboardPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard tone="brand" label={t('conversationsToday')} value={String(summary.conversationsToday)} />
-            <StatCard
-              tone={summary.pendingHandoffs > 0 ? 'accent' : 'neutral'}
-              label={t('pendingHandoffs')}
-              value={String(summary.pendingHandoffs)}
-            />
+            <Link href="/inbox" className="block">
+              <StatCard tone="brand" label={t('conversationsToday')} value={String(summary.conversationsToday)} />
+            </Link>
+            <Link href="/inbox" className="block">
+              <StatCard
+                tone={summary.pendingHandoffs > 0 ? 'accent' : 'neutral'}
+                label={t('pendingHandoffs')}
+                value={String(summary.pendingHandoffs)}
+              />
+            </Link>
             <StatCard
               tone="brand"
               label={t('deflection')}
