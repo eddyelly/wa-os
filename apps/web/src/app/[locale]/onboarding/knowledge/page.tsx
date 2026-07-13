@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'r
 import { useTranslations } from 'next-intl';
 import type { KnowledgeDocDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch, ApiError, apiUpload, getStoredUser, getTokens } from '@/lib/api';
+import { apiFetch, ApiError, apiUpload, getStoredUser } from '@/lib/api';
+import { useAuthGuard } from '@/lib/use-auth-guard';
 import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
@@ -15,6 +16,7 @@ interface DocsResponse {
 export default function KnowledgePage() {
   const t = useTranslations('knowledge');
   const router = useRouter();
+  const checked = useAuthGuard();
   const [docs, setDocs] = useState<KnowledgeDocDto[] | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -33,8 +35,7 @@ export default function KnowledgePage() {
   }, [t]);
 
   useEffect(() => {
-    if (!getTokens()) {
-      router.replace('/login');
+    if (!checked) {
       return;
     }
     void load();
@@ -44,7 +45,7 @@ export default function KnowledgePage() {
     return () => {
       clearInterval(timer);
     };
-  }, [router, load]);
+  }, [checked, load]);
 
   const submitText = async (event: SyntheticEvent): Promise<void> => {
     event.preventDefault();

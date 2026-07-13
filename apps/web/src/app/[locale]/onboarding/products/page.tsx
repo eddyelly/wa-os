@@ -4,8 +4,9 @@ import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ProductDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
-import { ApiError, getStoredUser, getTokens } from '@/lib/api';
+import { ApiError, getStoredUser } from '@/lib/api';
 import { createProduct } from '@/lib/shop-api';
+import { useAuthGuard } from '@/lib/use-auth-guard';
 import { Button, Card, ErrorBox, Field, Input } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
@@ -17,6 +18,7 @@ export default function OnboardingProductsPage() {
   const router = useRouter();
   const locale = useLocale();
   const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
+  const checked = useAuthGuard();
 
   // Products added this visit only. A listProducts fetch would work too, but
   // it costs a round trip this step does not need: the user just created
@@ -30,14 +32,13 @@ export default function OnboardingProductsPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!getTokens()) {
-      router.replace('/login');
+    if (!checked) {
       return;
     }
     if (!shopOrg) {
       router.replace('/onboarding/knowledge');
     }
-  }, [router, shopOrg]);
+  }, [checked, router, shopOrg]);
 
   const goToKnowledge = (): void => {
     router.push('/onboarding/knowledge');

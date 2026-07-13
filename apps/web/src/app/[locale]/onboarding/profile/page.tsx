@@ -4,7 +4,8 @@ import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import type { BusinessModule } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch, ApiError, getStoredUser, getTokens, updateStoredOrganization } from '@/lib/api';
+import { apiFetch, ApiError, getStoredUser, updateStoredOrganization } from '@/lib/api';
+import { useAuthGuard } from '@/lib/use-auth-guard';
 import { Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
@@ -30,6 +31,7 @@ interface OrganizationResponse {
 export default function OnboardingProfilePage() {
   const t = useTranslations('onboarding');
   const router = useRouter();
+  const checked = useAuthGuard();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -44,8 +46,7 @@ export default function OnboardingProfilePage() {
   const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
 
   useEffect(() => {
-    if (!getTokens()) {
-      router.replace('/login');
+    if (!checked) {
       return;
     }
     apiFetch<OrganizationResponse>('/api/v1/organization')
@@ -68,7 +69,7 @@ export default function OnboardingProfilePage() {
         setError(t('loadError'));
         setLoading(false);
       });
-  }, [router, t]);
+  }, [checked, t]);
 
   const submit = async (event: SyntheticEvent): Promise<void> => {
     event.preventDefault();

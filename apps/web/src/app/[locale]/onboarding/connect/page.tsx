@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { connectChannelResponseSchema, type ChannelDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch, ApiError, getStoredUser, getTokens } from '@/lib/api';
+import { apiFetch, ApiError, getStoredUser } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
+import { useAuthGuard } from '@/lib/use-auth-guard';
 import { Badge, Button, Card, ErrorBox, Spinner } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
@@ -22,6 +23,7 @@ interface StatusEvent {
 export default function OnboardingConnectPage() {
   const t = useTranslations('connect');
   const router = useRouter();
+  const checked = useAuthGuard();
   const [channel, setChannel] = useState<ChannelDto | null>(null);
   const [qr, setQr] = useState<{ code: string; base64?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,8 +57,7 @@ export default function OnboardingConnectPage() {
   }, [t]);
 
   useEffect(() => {
-    if (!getTokens()) {
-      router.replace('/login');
+    if (!checked) {
       return;
     }
     // React StrictMode mounts effects twice in dev; without this guard the
@@ -67,7 +68,7 @@ export default function OnboardingConnectPage() {
     }
     startedRef.current = true;
     void start();
-  }, [router, start]);
+  }, [checked, start]);
 
   useEffect(() => {
     const socket = getSocket();
