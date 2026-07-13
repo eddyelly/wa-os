@@ -1,41 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useState, type SyntheticEvent } from 'react';
+import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BusinessModule } from '@waos/shared';
 import { apiFetch, ApiError, getStoredUser, updateStoredOrganization } from '@/lib/api';
+import { getOrganization, listTeam } from '@/lib/app-api';
 import { updateShopSettings } from '@/lib/shop-api';
+import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
 import { Badge, Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 
-interface OrganizationResponse {
-  organization: {
-    id: string;
-    name: string;
-    vertical: string;
-    language: string;
-    timezone: string;
-    modules?: BusinessModule[];
-    settings: {
-      aiEnabled?: boolean;
-      aiConfidenceThreshold?: number;
-      toneNotes?: string;
-      paymentInstructions?: string;
-      ownerAlertPhone?: string | null;
-      ownerAlertsEnabled?: boolean;
-    } | null;
-  };
-}
-
-interface TeamResponse {
-  users: { id: string; name: string; email: string; role: string }[];
-}
-
 export default function SettingsPage() {
   const t = useTranslations('settings');
+  const queryClient = useQueryClient();
   const isOwner = getStoredUser()?.user.role === 'OWNER';
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -44,7 +24,6 @@ export default function SettingsPage() {
   const [language, setLanguage] = useState('sw');
   const [timezone, setTimezone] = useState('');
 
-  const [team, setTeam] = useState<TeamResponse['users']>([]);
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [tempPassword, setTempPassword] = useState<string | null>(null);
@@ -61,36 +40,46 @@ export default function SettingsPage() {
   const [ownerAlertsEnabled, setOwnerAlertsEnabled] = useState(false);
   const [savingShop, setSavingShop] = useState(false);
 
-  const load = useCallback(async (): Promise<void> => {
-    try {
-      const [org, users] = await Promise.all([
-        apiFetch<OrganizationResponse>('/api/v1/organization'),
-        apiFetch<TeamResponse>('/api/v1/organization/users'),
-      ]);
-      setName(org.organization.name);
-      setVertical(org.organization.vertical);
-      setLanguage(org.organization.language);
-      setTimezone(org.organization.timezone);
-      setAiOn(org.organization.settings?.aiEnabled !== false);
-      setThreshold(org.organization.settings?.aiConfidenceThreshold ?? 0.7);
-      setToneNotes(org.organization.settings?.toneNotes ?? '');
-      setModules(org.organization.modules ?? ['appointments']);
-      setPaymentInstructions(org.organization.settings?.paymentInstructions ?? '');
-      const ownerAlertPhoneValue = org.organization.settings?.ownerAlertPhone ?? '';
-      setOwnerAlertPhone(ownerAlertPhoneValue);
-      setOwnerAlertsEnabled(ownerAlertPhoneValue !== '' && org.organization.settings?.ownerAlertsEnabled === true);
-      setTeam(users.users);
-      setError(null);
-    } catch {
-      setError(t('loadError'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+  const {
+    data: org,
+    isPending: orgPending,
+    isError: orgHasError,
+    refetch: refetchOrg,
+  } = useQuery({ queryKey: queryKeys.organization, queryFn: getOrganization });
+
+  const {
+    data: team,
+    isPending: teamPending,
+    isError: teamHasError,
+    refetch: refetchTeam,
+  } = useQuery({ queryKey: queryKeys.team, queryFn: listTeam });
+
+  const loading = orgPending || teamPending;
+  const displayError = mutationError ?? (orgHasError || teamHasError ? t('loadError') : null);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!org) {
+      return;
+    }
+    setName(org.name);
+    setVertical(org.vertical);
+    setLanguage(org.language);
+    setTimezone(org.timezone);
+    setAiOn(org.settings?.aiEnabled !== false);
+    setThreshold(org.settings?.aiConfidenceThreshold ?? 0.7);
+    setToneNotes(org.settings?.toneNotes ?? '');
+    setModules(org.modules);
+    setPaymentInstructions(org.settings?.paymentInstructions ?? '');
+    const ownerAlertPhoneValue = org.settings?.ownerAlertPhone ?? '';
+    setOwnerAlertPhone(ownerAlertPhoneValue);
+    setOwnerAlertsEnabled(ownerAlertPhoneValue !== '' && org.settings?.ownerAlertsEnabled === true);
+  }, [org]);
+
+  const retryLoad = (): void => {
+    setMutationError(null);
+    void refetchOrg();
+    void refetchTeam();
+  };
 
   const saveProfile = async (event: SyntheticEvent): Promise<void> => {
     event.preventDefault();
@@ -101,9 +90,10 @@ export default function SettingsPage() {
         method: 'PATCH',
         body: { name, vertical, language, timezone },
       });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.organization });
       setNotice(t('saved'));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('saveError'));
+      setMutationError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
       setBusy(false);
     }
@@ -121,9 +111,9 @@ export default function SettingsPage() {
       setTempPassword(result.user.temporaryPassword);
       setInviteName('');
       setInviteEmail('');
-      await load();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.team });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('saveError'));
+      setMutationError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
       setBusy(false);
     }
@@ -138,9 +128,10 @@ export default function SettingsPage() {
         method: 'PATCH',
         body: { aiEnabled: aiOn, aiConfidenceThreshold: threshold, toneNotes },
       });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.organization });
       setNotice(t('saved'));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('saveError'));
+      setMutationError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
       setBusy(false);
     }
@@ -161,9 +152,10 @@ export default function SettingsPage() {
         { method: 'PATCH', body: { modules } },
       );
       updateStoredOrganization({ modules: response.organization.modules });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.organization });
       setNotice(t('saved'));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('saveError'));
+      setMutationError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
       setSavingModules(false);
     }
@@ -180,9 +172,10 @@ export default function SettingsPage() {
         ownerAlertPhone: trimmedPhone === '' ? null : trimmedPhone,
         ownerAlertsEnabled: trimmedPhone === '' ? false : ownerAlertsEnabled,
       });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.organization });
       setNotice(t('saved'));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('saveError'));
+      setMutationError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
       setSavingShop(false);
     }
@@ -194,7 +187,9 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <h1 className="mb-4 text-xl font-bold text-brand-900">{t('title')}</h1>
-      {error ? <ErrorBox message={error} onRetry={() => void load()} retryLabel={t('retry')} /> : null}
+      {displayError ? (
+        <ErrorBox message={displayError} onRetry={retryLoad} retryLabel={t('retry')} />
+      ) : null}
       {notice ? (
         <p className="mb-3 rounded-xl bg-emerald-50 px-4 py-2 text-sm text-emerald-800">{notice}</p>
       ) : null}
@@ -340,7 +335,7 @@ export default function SettingsPage() {
             <Card>
               <h2 className="text-base font-semibold text-brand-900">{t('teamSection')}</h2>
               <ul className="mt-3 space-y-2">
-                {team.map((member) => (
+                {(team ?? []).map((member) => (
                   <li key={member.id} className="flex items-center justify-between text-sm">
                     <span className="text-brand-950">
                       {member.name} <span className="text-brand-500">({member.email})</span>

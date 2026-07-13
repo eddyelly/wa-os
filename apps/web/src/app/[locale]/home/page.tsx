@@ -1,46 +1,32 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import type { AppointmentDto } from '@waos/shared';
 import { Link } from '@/i18n/navigation';
-import { apiFetch } from '@/lib/api';
+import { getDashboardSummary } from '@/lib/app-api';
+import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState, ErrorBox, Skeleton } from '@/components/ui';
-
-interface Summary {
-  conversationsToday: number;
-  pendingHandoffs: number;
-  deflection: { replied: number; handedOff: number; percent: number | null };
-  upcomingAppointments: AppointmentDto[];
-}
 
 export default function HomeDashboardPage() {
   const t = useTranslations('homeDash');
   const locale = useLocale();
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async (): Promise<void> => {
-    try {
-      const data = await apiFetch<{ summary: Summary }>('/api/v1/dashboard');
-      setSummary(data.summary);
-      setError(null);
-    } catch {
-      setError(t('loadError'));
-    }
-  }, [t]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const {
+    data: summary,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.dashboard,
+    queryFn: getDashboardSummary,
+  });
 
   return (
     <AppShell>
       <h1 className="mb-4 text-xl font-bold text-brand-900">{t('title')}</h1>
-      {error ? (
-        <ErrorBox message={error} onRetry={() => void load()} retryLabel={t('retry')} />
-      ) : summary === null ? (
+      {isError ? (
+        <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
+      ) : isPending ? (
         <div className="grid grid-cols-2 gap-3">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />

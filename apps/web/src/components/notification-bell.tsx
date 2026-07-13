@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NotificationDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from '@/lib/shop-api';
-import { getSocket } from '@/lib/socket';
+import { queryKeys } from '@/lib/query-keys';
 import { Skeleton } from './ui';
 
 /**
@@ -36,46 +37,21 @@ export function NotificationBell() {
   const t = useTranslations('notifications');
   const locale = useLocale();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [items, setItems] = useState<NotificationDto[] | null>(null);
 
-  const refreshUnread = useCallback(async (): Promise<void> => {
-    try {
-      const unread = await listNotifications(true);
-      setUnreadCount(unread.length);
-    } catch {
-      // The bell degrades to no badge rather than throwing into the shell.
-    }
-  }, []);
+  const { data: unread } = useQuery({
+    queryKey: queryKeys.notifications(true),
+    queryFn: () => listNotifications(true),
+  });
+  const unreadCount = unread?.length ?? 0;
 
-  const loadFull = useCallback(async (): Promise<void> => {
-    try {
-      const list = await listNotifications(false);
-      setItems(list);
-    } catch {
-      setItems([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refreshUnread();
-  }, [refreshUnread]);
-
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) {
-      return;
-    }
-    const onNew = (): void => {
-      void refreshUnread();
-    };
-    socket.on('notification.new', onNew);
-    return () => {
-      socket.off('notification.new', onNew);
-    };
-  }, [refreshUnread]);
+  const { data: items, isPending: itemsPending } = useQuery({
+    queryKey: queryKeys.notifications(false),
+    queryFn: () => listNotifications(false),
+    enabled: open,
+  });
 
   useEffect(() => {
     if (!open) {
@@ -92,13 +68,6 @@ export function NotificationBell() {
     };
   }, [open]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    void loadFull();
-  }, [open, loadFull]);
-
   const togglePanel = (): void => {
     setOpen((c) => !c);
   };
@@ -107,7 +76,7 @@ export function NotificationBell() {
     // Swallow the rejection: a failed refresh just leaves the badge stale
     // until the next socket event picks it up.
     void markNotificationRead(notification.id)
-      .then(refreshUnread)
+      .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.notificationsRoot }))
       .catch(() => {});
     setOpen(false);
     router.push(targetPath(notification));
@@ -120,7 +89,7 @@ export function NotificationBell() {
       // Swallow the rejection: a failed refresh just leaves the badge stale
       // until the next socket event picks it up.
     } finally {
-      await Promise.all([refreshUnread(), loadFull()]);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.notificationsRoot });
     }
   };
 
@@ -161,19 +130,19 @@ export function NotificationBell() {
             ) : null}
           </div>
 
-          {items === null ? (
+          {itemsPending ? (
             <div className="space-y-2 p-4">
               <Skeleton className="h-10" />
               <Skeleton className="h-10" />
             </div>
-          ) : items.length === 0 ? (
+          ) : (items ?? []).length === 0 ? (
             <div className="px-4 py-8 text-center">
               <p className="text-sm font-semibold text-brand-900">{t('emptyTitle')}</p>
               <p className="mt-1 text-xs text-brand-600">{t('emptyHint')}</p>
             </div>
           ) : (
             <ul>
-              {items.map((notification) => (
+              {(items ?? []).map((notification) => (
                 <li key={notification.id} className="border-b border-brand-50 last:border-b-0">
                   <button
                     type="button"

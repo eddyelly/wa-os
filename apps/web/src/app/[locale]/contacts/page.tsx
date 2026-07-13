@@ -1,53 +1,46 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ContactDto } from '@waos/shared';
 import { apiFetch } from '@/lib/api';
+import { listContacts } from '@/lib/app-api';
+import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
 import { Badge, Button, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 
-interface ContactRow {
-  id: string;
-  phone: string;
-  name: string | null;
-  language: string | null;
-  tags: string[];
-  optedInAt: string | null;
-  customFields: Record<string, string> | null;
-}
-
 export default function ContactsPage() {
   const t = useTranslations('contacts');
-  const [items, setItems] = useState<ContactRow[] | null>(null);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<ContactRow | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [editing, setEditing] = useState<ContactDto | null>(null);
   const [editName, setEditName] = useState('');
   const [editTags, setEditTags] = useState('');
   const [editLanguage, setEditLanguage] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async (): Promise<void> => {
-    try {
-      const query = search ? `?search=${encodeURIComponent(search)}` : '';
-      const data = await apiFetch<{ contacts: ContactRow[] }>(`/api/v1/contacts${query}`);
-      setItems(data.contacts);
-      setError(null);
-    } catch {
-      setError(t('loadError'));
-    }
-  }, [search, t]);
-
   useEffect(() => {
     const timer = setTimeout(() => {
-      void load();
+      setDebouncedSearch(search);
     }, 250);
     return () => {
       clearTimeout(timer);
     };
-  }, [load]);
+  }, [search]);
 
-  const startEdit = (contact: ContactRow): void => {
+  const {
+    data: items,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.contacts(debouncedSearch),
+    queryFn: () => listContacts(debouncedSearch),
+  });
+
+  const startEdit = (contact: ContactDto): void => {
     setEditing(contact);
     setEditName(contact.name ?? '');
     setEditTags(contact.tags.join(', '));
@@ -72,7 +65,7 @@ export default function ContactsPage() {
         },
       });
       setEditing(null);
-      await load();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.contactsRoot });
     } finally {
       setBusy(false);
     }
@@ -80,7 +73,7 @@ export default function ContactsPage() {
 
   const optIn = async (id: string): Promise<void> => {
     await apiFetch(`/api/v1/contacts/${id}/opt-in`, { method: 'POST' });
-    await load();
+    await queryClient.invalidateQueries({ queryKey: queryKeys.contactsRoot });
   };
 
   return (
@@ -95,9 +88,9 @@ export default function ContactsPage() {
         placeholder={t('searchPlaceholder')}
         className="mb-4"
       />
-      {error ? (
-        <ErrorBox message={error} onRetry={() => void load()} retryLabel={t('retry')} />
-      ) : items === null ? (
+      {isError ? (
+        <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
+      ) : isPending ? (
         <div className="space-y-2">
           <Skeleton className="h-20" />
           <Skeleton className="h-20" />
