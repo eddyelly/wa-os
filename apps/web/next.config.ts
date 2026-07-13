@@ -10,11 +10,13 @@ const nextConfig: NextConfig = {
   // Next infer the wrong root for output file tracing.
   outputFileTracingRoot: path.join(__dirname, '..', '..'),
   transpilePackages: ['@waos/shared'],
-  // The shared package uses NodeNext-style .js extensions in TS source.
+  // The shared package, and this app's own component layer, use
+  // NodeNext-style .js extensions in TS/TSX source, so webpack must be told
+  // a `.js` specifier may resolve to a `.tsx` or `.ts` file on disk.
   webpack: (config: { resolve: { extensionAlias?: Record<string, string[]> } }) => {
     config.resolve.extensionAlias = {
       ...config.resolve.extensionAlias,
-      '.js': ['.ts', '.js'],
+      '.js': ['.tsx', '.ts', '.js'],
     };
     return config;
   },
