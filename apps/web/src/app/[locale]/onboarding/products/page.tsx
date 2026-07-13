@@ -7,7 +7,7 @@ import { useRouter } from '@/i18n/navigation';
 import { ApiError, getStoredUser } from '@/lib/api';
 import { createProduct } from '@/lib/shop-api';
 import { useAuthGuard } from '@/lib/use-auth-guard';
-import { Button, Card, ErrorBox, Field, Input } from '@/components/ui-legacy';
+import { Button, Card, ErrorBox, Field, Input } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
 const DEFAULT_STOCK_QTY = '0';

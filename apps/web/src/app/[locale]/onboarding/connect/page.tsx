@@ -7,7 +7,7 @@ import { useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, getStoredUser } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { useAuthGuard } from '@/lib/use-auth-guard';
-import { Badge, Button, Card, ErrorBox, Spinner } from '@/components/ui-legacy';
+import { Badge, Button, Card, ErrorBox, Spinner } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
 interface ChannelListResponse {

@@ -6,7 +6,7 @@ import type { KnowledgeDocDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, apiUpload, getStoredUser } from '@/lib/api';
 import { useAuthGuard } from '@/lib/use-auth-guard';
-import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
+import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
 interface DocsResponse {
