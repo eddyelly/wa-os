@@ -9,7 +9,7 @@ import { listConversations } from '@/lib/app-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
 import { ConversationThread } from '@/components/conversation-thread';
-import { Badge, EmptyState, ErrorBox, Input, Skeleton } from '@/components/ui';
+import { Badge, EmptyState, ErrorBox, Input, Skeleton } from '@/components/ui-legacy';
 
 type Filter = 'ALL' | 'PENDING' | 'OPEN' | 'CLOSED';
 

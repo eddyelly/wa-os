@@ -9,7 +9,7 @@ import { ApiError, getStoredUser } from '@/lib/api';
 import { listOrders, setOrderStatus } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, EmptyState, ErrorBox, Skeleton } from '@/components/ui';
+import { Badge, EmptyState, ErrorBox, Skeleton } from '@/components/ui-legacy';
 
 type Filter = 'ALL' | OrderStatus;
 

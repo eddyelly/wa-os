@@ -9,7 +9,7 @@ import { getOrganization, listTeam } from '@/lib/app-api';
 import { updateShopSettings } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');

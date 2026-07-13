@@ -6,7 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { getDashboardSummary } from '@/lib/app-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { EmptyState, ErrorBox, Skeleton } from '@/components/ui';
+import { EmptyState, ErrorBox, Skeleton } from '@/components/ui-legacy';
 
 export default function HomeDashboardPage() {
   const t = useTranslations('homeDash');

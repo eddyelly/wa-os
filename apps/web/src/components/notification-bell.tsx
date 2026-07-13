@@ -7,7 +7,7 @@ import type { NotificationDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
-import { Skeleton } from './ui';
+import { Skeleton } from './ui-legacy';
 
 /**
  * Where an item click lands. HANDOFF payloads carry a conversationId when

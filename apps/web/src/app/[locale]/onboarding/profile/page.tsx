@@ -6,7 +6,7 @@ import type { BusinessModule } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, getStoredUser, updateStoredOrganization } from '@/lib/api';
 import { useAuthGuard } from '@/lib/use-auth-guard';
-import { Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
+import { Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
 type ModuleChoice = 'appointments' | 'shop' | 'both';

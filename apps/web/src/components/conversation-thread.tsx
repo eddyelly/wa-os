@@ -9,7 +9,7 @@ import { apiFetch, ApiError, getStoredUser } from '@/lib/api';
 import { listConversations, listMessages, listTeam } from '@/lib/app-api';
 import { listOrders } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
-import { Badge, Button, ErrorBox, Spinner } from '@/components/ui';
+import { Badge, Button, ErrorBox, Spinner } from '@/components/ui-legacy';
 
 function tickmarks(status: MessageDto['status']): string {
   switch (status) {

@@ -8,7 +8,7 @@ import { apiFetch } from '@/lib/api';
 import { listContacts } from '@/lib/app-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, Button, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
+import { Badge, Button, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
 
 export default function ContactsPage() {
   const t = useTranslations('contacts');

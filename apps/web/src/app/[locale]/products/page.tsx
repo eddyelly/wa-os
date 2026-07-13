@@ -16,7 +16,7 @@ import {
 } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
 
 const DEFAULT_STOCK_QTY = '0';
 const DEFAULT_LOW_STOCK_THRESHOLD = '5';

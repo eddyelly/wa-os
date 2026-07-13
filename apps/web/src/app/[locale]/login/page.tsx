@@ -6,7 +6,7 @@ import { authResponseSchema } from '@waos/shared';
 import { Link, useRouter } from '@/i18n/navigation';
 import { apiFetch, ApiError, setSession } from '@/lib/api';
 import { resetSocket } from '@/lib/socket';
-import { Button, Card, ErrorBox, Field, Input } from '@/components/ui';
+import { Button, Card, ErrorBox, Field, Input } from '@/components/ui-legacy';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
 export default function LoginPage() {

@@ -6,7 +6,7 @@ import type { AiTestResultDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { ApiError, getStoredUser } from '@/lib/api';
 import { runAiTest } from '@/lib/app-api';
-import { Badge, Button, Card, ErrorBox, Field, Input } from '@/components/ui';
+import { Badge, Button, Card, ErrorBox, Field, Input } from '@/components/ui-legacy';
 import { OnboardingShell } from '@/components/onboarding-shell';
 
 export default function OnboardingTestPage() {

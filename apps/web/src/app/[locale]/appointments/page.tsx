@@ -9,7 +9,7 @@ import { apiFetch, ApiError } from '@/lib/api';
 import { getWeeklyStats, listAppointments, listContacts } from '@/lib/app-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
 
 function statusTone(status: AppointmentDto['status']): 'neutral' | 'success' | 'warning' | 'danger' {
   switch (status) {
