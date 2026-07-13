@@ -72,6 +72,20 @@ export const productRepository = {
     });
   },
 
+  /**
+   * Count active products at or below their low-stock threshold. Prisma has
+   * no column-to-column comparison in `where`, so the comparison runs in JS
+   * over a lean projection. The catalog is small (MVP scale), so this stays
+   * within the tenant-scoped client and avoids raw SQL. Read-only.
+   */
+  async countLowStock(): Promise<number> {
+    const rows = await prisma.product.findMany({
+      where: { isActive: true },
+      select: { stockQty: true, lowStockThreshold: true },
+    });
+    return rows.filter((row) => row.stockQty <= row.lowStockThreshold).length;
+  },
+
   update(id: string, data: UpdateProductData): Promise<ProductWithImages> {
     return prisma.product.update({
       where: { id },

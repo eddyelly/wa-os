@@ -81,6 +81,28 @@ export const orderRepository = {
     });
   },
 
+  /** Count orders created at or after `since` (e.g. the start of today). Read-only. */
+  countCreatedSince(since: Date): Promise<number> {
+    return prisma.order.count({ where: { createdAt: { gte: since } } });
+  },
+
+  /** Count orders currently in a given status. Read-only. */
+  countByStatus(status: OrderStatus): Promise<number> {
+    return prisma.order.count({ where: { status } });
+  },
+
+  /**
+   * Sum `totalAgreed` over orders created at or after `since` whose status is
+   * one of `statuses`. Returns 0 when nothing matches. Read-only.
+   */
+  async sumAgreedSince(since: Date, statuses: OrderStatus[]): Promise<number> {
+    const result = await prisma.order.aggregate({
+      _sum: { totalAgreed: true },
+      where: { createdAt: { gte: since }, status: { in: statuses } },
+    });
+    return result._sum.totalAgreed ?? 0;
+  },
+
   /**
    * Guards the write with a conditional updateMany keyed on the
    * pre-transition status (`expectedFrom`), so two concurrent requests
