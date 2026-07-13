@@ -13,7 +13,8 @@
     "contacts": "Customers",
     "settings": "Settings",
     "logout": "Log out",
-    "home": "Home"
+    "home": "Home",
+    "more": "More"
   },
   "auth": {
     "loginTitle": "Log in",

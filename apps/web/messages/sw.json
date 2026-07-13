@@ -13,7 +13,8 @@
     "contacts": "Wateja",
     "settings": "Mipangilio",
     "logout": "Toka",
-    "home": "Mwanzo"
+    "home": "Mwanzo",
+    "more": "Zaidi"
   },
   "auth": {
     "loginTitle": "Ingia",
