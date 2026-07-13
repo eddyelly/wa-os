@@ -145,7 +145,7 @@ live connection state. Losing a session on deploy is a P1 bug.
 | Realtime      | Socket.IO (Redis adapter ready, single instance for now)                  |
 | LLM           | `LLMPort` interface; Gemini SDK (`@google/genai`) default, model from env |
 | Embeddings    | `EmbeddingPort` interface; Gemini default provider, model from env        |
-| Dashboard     | Next.js (App Router), Tailwind, shadcn/ui, next-intl                      |
+| Dashboard     | Next.js (App Router), Tailwind, shadcn/ui, TanStack Query, next-intl      |
 | Infra         | Docker Compose on a single Ubuntu VPS behind Nginx                        |
 
 Do not add new infrastructure (no second database, no Kafka, no k8s). Every

@@ -21,8 +21,9 @@ and handoffs.
 
 Express + TypeScript API, Prisma + PostgreSQL 16 (pgvector), BullMQ on Redis,
 MinIO for media, Evolution API for the WhatsApp entry tier transport, Next.js
-dashboard with Swahili and English via next-intl. Everything runs from one
-pnpm monorepo, deployed with Docker Compose on a single VPS.
+dashboard (TanStack Query, shadcn/ui) with Swahili and English via next-intl.
+Everything runs from one pnpm monorepo, deployed with Docker Compose on a
+single VPS.
 
 AI replies and embeddings run on Gemini (`@google/genai`); a `GEMINI_API_KEY`
 is required for AI replies to work. If you switch `EMBEDDING_PROVIDER` or
