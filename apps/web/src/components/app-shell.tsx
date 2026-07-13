@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { BusinessModule } from '@waos/shared';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
@@ -25,15 +25,9 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<StoredUser | null>(null);
+  const [user] = useState<StoredUser | null>(() => getStoredUser());
   const checked = useAuthGuard();
   useSocketInvalidation();
-
-  useEffect(() => {
-    if (checked) {
-      setUser(getStoredUser());
-    }
-  }, [checked]);
 
   if (!checked) {
     return null;
