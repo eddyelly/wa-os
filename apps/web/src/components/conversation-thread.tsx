@@ -49,23 +49,47 @@ export function ConversationThread({
 
   const {
     data: messages,
-    isError,
-    refetch,
+    isPending: messagesPending,
+    isError: messagesHasError,
+    refetch: refetchMessages,
   } = useQuery({
     queryKey: queryKeys.messages(id),
     queryFn: () => listMessages(id),
   });
 
-  const { data: conversations } = useQuery({
+  const {
+    data: conversations,
+    isPending: conversationsPending,
+    isError: conversationsHasError,
+    refetch: refetchConversations,
+  } = useQuery({
     queryKey: queryKeys.conversations('ALL'),
     queryFn: () => listConversations(),
   });
-  const conversation = conversations?.find((c) => c.id === id) ?? null;
 
-  const { data: team } = useQuery({
+  const {
+    data: team,
+    isPending: teamPending,
+    isError: teamHasError,
+    refetch: refetchTeam,
+  } = useQuery({
     queryKey: queryKeys.team,
     queryFn: listTeam,
   });
+
+  // Combined so the header, message list, and team select flip from loading
+  // to loaded in one render, matching the pre-migration Promise.all: nothing
+  // here populates until messages, conversations, and team have all resolved.
+  const isPending = messagesPending || conversationsPending || teamPending;
+  const isError = messagesHasError || conversationsHasError || teamHasError;
+  const conversation =
+    !isPending && !isError ? (conversations.find((c) => c.id === id) ?? null) : null;
+
+  const retryThread = (): void => {
+    void refetchMessages();
+    void refetchConversations();
+    void refetchTeam();
+  };
 
   const contactId = conversation?.contact.id;
   const { data: orders } = useQuery({
@@ -256,8 +280,8 @@ export function ConversationThread({
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 py-4">
           {isError ? (
-            <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
-          ) : messages === undefined ? (
+            <ErrorBox message={t('loadError')} onRetry={retryThread} retryLabel={t('retry')} />
+          ) : isPending ? (
             <Spinner label={t('loading')} />
           ) : messages.length === 0 ? (
             <p className="py-10 text-center text-sm text-brand-600">{t('emptyThread')}</p>

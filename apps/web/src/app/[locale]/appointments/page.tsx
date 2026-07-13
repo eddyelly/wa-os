@@ -40,22 +40,48 @@ function AppointmentsPageInner() {
 
   const {
     data: items,
-    isError,
-    refetch,
+    isPending: itemsPending,
+    isError: itemsHasError,
+    refetch: refetchItems,
   } = useQuery({
     queryKey: queryKeys.appointments(),
     queryFn: () => listAppointments(),
   });
 
-  const { data: contacts } = useQuery({
+  const {
+    data: contacts,
+    isPending: contactsPending,
+    isError: contactsHasError,
+    refetch: refetchContacts,
+  } = useQuery({
     queryKey: queryKeys.contacts(),
     queryFn: () => listContacts(),
   });
 
-  const { data: stats } = useQuery({
+  const {
+    data: stats,
+    isPending: statsPending,
+    isError: statsHasError,
+    refetch: refetchStats,
+  } = useQuery({
     queryKey: queryKeys.weeklyStats,
     queryFn: getWeeklyStats,
   });
+
+  // Combined so the list, the weekly-stats banner, and the create-form's
+  // contact dropdown flip from loading to loaded in one render, matching the
+  // pre-migration Promise.all: nothing here populates until appointments,
+  // contacts, and weeklyStats have all resolved.
+  const isPending = itemsPending || contactsPending || statsPending;
+  const isError = itemsHasError || contactsHasError || statsHasError;
+  const contactOptions = !isPending && !isError ? contacts : [];
+  const statsToShow = !isPending && !isError ? stats : undefined;
+
+  const retryLoad = (): void => {
+    void refetchItems();
+    void refetchContacts();
+    void refetchStats();
+  };
 
   const invalidateAppointments = async (): Promise<void> => {
     await Promise.all([
@@ -120,13 +146,13 @@ function AppointmentsPageInner() {
         </Button>
       </div>
 
-      {stats ? (
+      {statsToShow ? (
         <div className="mb-4 flex gap-2">
           <span className="rounded-xl bg-white px-3 py-2 text-xs text-brand-800 shadow-sm">
-            {t('remindersSentWeek', { count: stats.remindersSent })}
+            {t('remindersSentWeek', { count: statsToShow.remindersSent })}
           </span>
           <span className="rounded-xl bg-white px-3 py-2 text-xs text-brand-800 shadow-sm">
-            {t('noShowsWeek', { count: stats.noShowsMarked })}
+            {t('noShowsWeek', { count: statsToShow.noShowsMarked })}
           </span>
         </div>
       ) : null}
@@ -144,7 +170,7 @@ function AppointmentsPageInner() {
                 className="min-h-12 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-base"
               >
                 <option value="">{t('chooseCustomer')}</option>
-                {(contacts ?? []).map((contact) => (
+                {contactOptions.map((contact) => (
                   <option key={contact.id} value={contact.id}>
                     {contact.name ?? contact.phone}
                   </option>
@@ -196,8 +222,8 @@ function AppointmentsPageInner() {
       ) : null}
 
       {isError ? (
-        <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
-      ) : items === undefined ? (
+        <ErrorBox message={t('loadError')} onRetry={retryLoad} retryLabel={t('retry')} />
+      ) : isPending ? (
         <div className="space-y-2">
           <Skeleton className="h-20" />
           <Skeleton className="h-20" />
