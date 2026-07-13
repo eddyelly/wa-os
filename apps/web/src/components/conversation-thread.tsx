@@ -1,25 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ConversationListItem, MessageDto } from '@waos/shared';
 import { Link } from '@/i18n/navigation';
 import { apiFetch, ApiError, getStoredUser } from '@/lib/api';
+import { listConversations, listMessages, listTeam } from '@/lib/app-api';
 import { listOrders } from '@/lib/shop-api';
-import { getSocket } from '@/lib/socket';
+import { queryKeys } from '@/lib/query-keys';
 import { Badge, Button, ErrorBox, Spinner } from '@/components/ui';
-
-interface MessagesResponse {
-  messages: MessageDto[];
-}
-
-interface ConversationsResponse {
-  conversations: ConversationListItem[];
-}
-
-interface TeamResponse {
-  users: { id: string; name: string; role: string }[];
-}
 
 function tickmarks(status: MessageDto['status']): string {
   switch (status) {
@@ -50,74 +40,51 @@ export function ConversationThread({
   const id = conversationId;
   const t = useTranslations('thread');
   const locale = useLocale();
+  const queryClient = useQueryClient();
   const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
-  const [messages, setMessages] = useState<MessageDto[] | null>(null);
-  const [conversation, setConversation] = useState<ConversationListItem | null>(null);
-  const [team, setTeam] = useState<TeamResponse['users']>([]);
-  const [orderCount, setOrderCount] = useState(0);
   const [draft, setDraft] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const load = useCallback(async (): Promise<void> => {
-    try {
-      const [msgs, convs, users] = await Promise.all([
-        apiFetch<MessagesResponse>(`/api/v1/conversations/${id}/messages`),
-        apiFetch<ConversationsResponse>('/api/v1/conversations'),
-        apiFetch<TeamResponse>('/api/v1/organization/users'),
-      ]);
-      setMessages(msgs.messages);
-      const nextConversation = convs.conversations.find((c) => c.id === id) ?? null;
-      setConversation(nextConversation);
-      setTeam(users.users);
-      setError(null);
-      if (shopOrg && nextConversation) {
-        try {
-          const orders = await listOrders({ contactId: nextConversation.contact.id });
-          setOrderCount(orders.length);
-        } catch {
-          setOrderCount(0);
-        }
-      } else {
-        setOrderCount(0);
-      }
-    } catch {
-      setError(t('loadError'));
-    }
-  }, [id, shopOrg, t]);
+  const {
+    data: messages,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.messages(id),
+    queryFn: () => listMessages(id),
+  });
 
-  useEffect(() => {
-    setMessages(null);
-    setConversation(null);
-    setOrderCount(0);
-    void load();
-  }, [load]);
+  const { data: conversations } = useQuery({
+    queryKey: queryKeys.conversations('ALL'),
+    queryFn: () => listConversations(),
+  });
+  const conversation = conversations?.find((c) => c.id === id) ?? null;
 
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) {
-      return;
-    }
-    const refresh = (event: { conversationId?: string }): void => {
-      if (!event.conversationId || event.conversationId === id) {
-        void load();
-      }
-    };
-    socket.on('message.new', refresh);
-    socket.on('message.updated', refresh);
-    socket.on('conversation.updated', refresh);
-    return () => {
-      socket.off('message.new', refresh);
-      socket.off('message.updated', refresh);
-      socket.off('conversation.updated', refresh);
-    };
-  }, [id, load]);
+  const { data: team } = useQuery({
+    queryKey: queryKeys.team,
+    queryFn: listTeam,
+  });
+
+  const contactId = conversation?.contact.id;
+  const { data: orders } = useQuery({
+    queryKey: queryKeys.orders('ALL', contactId),
+    queryFn: () => listOrders({ contactId }),
+    enabled: shopOrg && !!contactId,
+  });
+  const orderCount = orders?.length ?? 0;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages]);
+
+  const invalidateThread = async (): Promise<void> => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.messagesRoot }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversationsRoot }),
+    ]);
+  };
 
   const send = async (event: SyntheticEvent): Promise<void> => {
     event.preventDefault();
@@ -132,7 +99,7 @@ export function ConversationThread({
         body: { body: draft.trim() },
       });
       setDraft('');
-      await load();
+      await invalidateThread();
     } catch (err) {
       setSendError(err instanceof ApiError ? err.message : t('sendError'));
     } finally {
@@ -142,12 +109,12 @@ export function ConversationThread({
 
   const setAi = async (aiEnabled: boolean): Promise<void> => {
     await apiFetch(`/api/v1/conversations/${id}/ai`, { method: 'POST', body: { aiEnabled } });
-    await load();
+    await invalidateThread();
   };
 
   const setStatus = async (status: ConversationListItem['status']): Promise<void> => {
     await apiFetch(`/api/v1/conversations/${id}/status`, { method: 'POST', body: { status } });
-    await load();
+    await invalidateThread();
   };
 
   const assign = async (assigneeId: string): Promise<void> => {
@@ -155,7 +122,7 @@ export function ConversationThread({
       method: 'POST',
       body: { assigneeId: assigneeId === '' ? null : assigneeId },
     });
-    await load();
+    await invalidateThread();
   };
 
   const optIn = async (): Promise<void> => {
@@ -163,7 +130,7 @@ export function ConversationThread({
       return;
     }
     await apiFetch(`/api/v1/contacts/${conversation.contact.id}/opt-in`, { method: 'POST' });
-    await load();
+    await queryClient.invalidateQueries({ queryKey: queryKeys.conversationsRoot });
   };
 
   const bubbleFor = (message: MessageDto): string => {
@@ -229,7 +196,7 @@ export function ConversationThread({
               aria-label={t('assignLabel')}
             >
               <option value="">{t('unassigned')}</option>
-              {team.map((member) => (
+              {(team ?? []).map((member) => (
                 <option key={member.id} value={member.id}>
                   {member.name}
                 </option>
@@ -288,9 +255,9 @@ export function ConversationThread({
 
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 py-4">
-          {error ? (
-            <ErrorBox message={error} onRetry={() => void load()} retryLabel={t('retry')} />
-          ) : messages === null ? (
+          {isError ? (
+            <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
+          ) : messages === undefined ? (
             <Spinner label={t('loading')} />
           ) : messages.length === 0 ? (
             <p className="py-10 text-center text-sm text-brand-600">{t('emptyThread')}</p>

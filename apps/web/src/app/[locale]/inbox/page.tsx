@@ -1,20 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import type { ConversationListItem, ConversationStatus } from '@waos/shared';
+import { useQuery } from '@tanstack/react-query';
+import type { ConversationStatus } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
-import { apiFetch } from '@/lib/api';
-import { getSocket } from '@/lib/socket';
+import { listConversations } from '@/lib/app-api';
+import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
 import { ConversationThread } from '@/components/conversation-thread';
 import { Badge, EmptyState, ErrorBox, Input, Skeleton } from '@/components/ui';
 
 type Filter = 'ALL' | 'PENDING' | 'OPEN' | 'CLOSED';
-
-interface ConversationsResponse {
-  conversations: ConversationListItem[];
-}
 
 function initials(name: string | null, phone: string): string {
   if (name && name.trim().length > 0) {
@@ -53,40 +50,15 @@ export default function InboxPage() {
   const [filter, setFilter] = useState<Filter>('ALL');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [items, setItems] = useState<ConversationListItem[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (): Promise<void> => {
-    try {
-      const query = filter === 'ALL' ? '' : `?status=${filter}`;
-      const data = await apiFetch<ConversationsResponse>(`/api/v1/conversations${query}`);
-      setItems(data.conversations);
-      setError(null);
-    } catch {
-      setError(t('loadError'));
-    }
-  }, [filter, t]);
-
-  useEffect(() => {
-    setItems(null);
-    void load();
-  }, [load]);
-
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) {
-      return;
-    }
-    const refresh = (): void => {
-      void load();
-    };
-    socket.on('message.new', refresh);
-    socket.on('conversation.updated', refresh);
-    return () => {
-      socket.off('message.new', refresh);
-      socket.off('conversation.updated', refresh);
-    };
-  }, [load]);
+  const {
+    data: items,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.conversations(filter),
+    queryFn: () => listConversations(filter === 'ALL' ? undefined : filter),
+  });
 
   const filters: { key: Filter; label: string }[] = [
     { key: 'ALL', label: t('filterAll') },
@@ -100,7 +72,7 @@ export default function InboxPage() {
 
   const needle = search.trim().toLowerCase();
   const visible =
-    items === null
+    items === undefined
       ? null
       : needle.length === 0
         ? items
@@ -152,8 +124,8 @@ export default function InboxPage() {
           </div>
 
           <div className="min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
-            {error ? (
-              <ErrorBox message={error} onRetry={() => void load()} retryLabel={t('retry')} />
+            {isError ? (
+              <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
             ) : visible === null ? (
               <div className="space-y-2">
                 <Skeleton className="h-20" />

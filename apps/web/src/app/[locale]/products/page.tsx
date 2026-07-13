@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProductDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { ApiError, getStoredUser } from '@/lib/api';
@@ -13,6 +14,7 @@ import {
   updateProduct,
   uploadProductImage,
 } from '@/lib/shop-api';
+import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
 import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 
@@ -23,9 +25,8 @@ export default function ProductsPage() {
   const t = useTranslations('products');
   const locale = useLocale();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
-  const [products, setProducts] = useState<ProductDto[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -41,19 +42,14 @@ export default function ProductsPage() {
   const [stockQty, setStockQty] = useState(DEFAULT_STOCK_QTY);
   const [lowStockThreshold, setLowStockThreshold] = useState(DEFAULT_LOW_STOCK_THRESHOLD);
 
-  const load = useCallback(async (): Promise<void> => {
-    try {
-      const items = await listProducts(true);
-      setProducts(items);
-      setError(null);
-    } catch {
-      setError(t('loadError'));
-    }
-  }, [t]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const {
+    data: products,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.products(true),
+    queryFn: () => listProducts(true),
+  });
 
   useEffect(() => {
     if (!shopOrg) {
@@ -134,7 +130,7 @@ export default function ProductsPage() {
         });
       }
       resetForm();
-      await load();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.productsRoot });
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
@@ -146,7 +142,7 @@ export default function ProductsPage() {
     setActionError(null);
     try {
       await updateProduct(product.id, { isActive: !product.isActive });
-      await load();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.productsRoot });
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : t('saveError'));
     }
@@ -162,7 +158,7 @@ export default function ProductsPage() {
       if (editingId === id) {
         resetForm();
       }
-      await load();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.productsRoot });
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : t('saveError'));
     }
@@ -178,7 +174,7 @@ export default function ProductsPage() {
     setActionError(null);
     try {
       await uploadProductImage(id, file);
-      await load();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.productsRoot });
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
@@ -195,7 +191,7 @@ export default function ProductsPage() {
     setActionError(null);
     try {
       await removeProductImage(productId, imageId);
-      await load();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.productsRoot });
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
@@ -307,9 +303,9 @@ export default function ProductsPage() {
         }}
       />
 
-      {error ? (
-        <ErrorBox message={error} onRetry={() => void load()} retryLabel={t('retry')} />
-      ) : products === null ? (
+      {isError ? (
+        <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
+      ) : products === undefined ? (
         <div className="space-y-2">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />

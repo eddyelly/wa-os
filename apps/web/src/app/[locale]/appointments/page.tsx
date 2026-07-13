@@ -1,22 +1,15 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState, type SyntheticEvent } from 'react';
+import { Suspense, useState, type SyntheticEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import type { AppointmentDto, WeeklyStats } from '@waos/shared';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { AppointmentDto } from '@waos/shared';
 import { apiFetch, ApiError } from '@/lib/api';
+import { getWeeklyStats, listAppointments, listContacts } from '@/lib/app-api';
+import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
 import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
-
-interface AppointmentsResponse {
-  appointments: AppointmentDto[];
-}
-interface ContactsResponse {
-  contacts: { id: string; name: string | null; phone: string }[];
-}
-interface StatsResponse {
-  stats: WeeklyStats;
-}
 
 function statusTone(status: AppointmentDto['status']): 'neutral' | 'success' | 'warning' | 'danger' {
   switch (status) {
@@ -36,10 +29,7 @@ function AppointmentsPageInner() {
   const t = useTranslations('appointments');
   const locale = useLocale();
   const searchParams = useSearchParams();
-  const [items, setItems] = useState<AppointmentDto[] | null>(null);
-  const [contacts, setContacts] = useState<ContactsResponse['contacts']>([]);
-  const [stats, setStats] = useState<WeeklyStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(searchParams.has('contactId'));
@@ -48,25 +38,32 @@ function AppointmentsPageInner() {
   const [startsAt, setStartsAt] = useState('');
   const [durationMinutes, setDurationMinutes] = useState('60');
 
-  const load = useCallback(async (): Promise<void> => {
-    try {
-      const [appts, cts, st] = await Promise.all([
-        apiFetch<AppointmentsResponse>('/api/v1/appointments'),
-        apiFetch<ContactsResponse>('/api/v1/contacts'),
-        apiFetch<StatsResponse>('/api/v1/appointments/stats/weekly'),
-      ]);
-      setItems(appts.appointments);
-      setContacts(cts.contacts);
-      setStats(st.stats);
-      setError(null);
-    } catch {
-      setError(t('loadError'));
-    }
-  }, [t]);
+  const {
+    data: items,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.appointments(),
+    queryFn: () => listAppointments(),
+  });
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data: contacts } = useQuery({
+    queryKey: queryKeys.contacts(),
+    queryFn: () => listContacts(),
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: queryKeys.weeklyStats,
+    queryFn: getWeeklyStats,
+  });
+
+  const invalidateAppointments = async (): Promise<void> => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.appointmentsRoot }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.weeklyStats }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard }),
+    ]);
+  };
 
   const create = async (event: SyntheticEvent): Promise<void> => {
     event.preventDefault();
@@ -87,7 +84,7 @@ function AppointmentsPageInner() {
       setServiceName('');
       setStartsAt('');
       setShowForm(false);
-      await load();
+      await invalidateAppointments();
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : t('saveError'));
     } finally {
@@ -97,7 +94,7 @@ function AppointmentsPageInner() {
 
   const setStatus = async (id: string, status: AppointmentDto['status']): Promise<void> => {
     await apiFetch(`/api/v1/appointments/${id}/status`, { method: 'POST', body: { status } });
-    await load();
+    await invalidateAppointments();
   };
 
   const grouped = (items ?? []).reduce<Map<string, AppointmentDto[]>>((map, item) => {
@@ -147,7 +144,7 @@ function AppointmentsPageInner() {
                 className="min-h-12 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-base"
               >
                 <option value="">{t('chooseCustomer')}</option>
-                {contacts.map((contact) => (
+                {(contacts ?? []).map((contact) => (
                   <option key={contact.id} value={contact.id}>
                     {contact.name ?? contact.phone}
                   </option>
@@ -198,9 +195,9 @@ function AppointmentsPageInner() {
         </Card>
       ) : null}
 
-      {error ? (
-        <ErrorBox message={error} onRetry={() => void load()} retryLabel={t('retry')} />
-      ) : items === null ? (
+      {isError ? (
+        <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
+      ) : items === undefined ? (
         <div className="space-y-2">
           <Skeleton className="h-20" />
           <Skeleton className="h-20" />

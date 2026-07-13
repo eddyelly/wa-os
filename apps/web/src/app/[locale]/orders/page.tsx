@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { OrderDto, OrderStatus } from '@waos/shared';
 import { Link, useRouter } from '@/i18n/navigation';
 import { ApiError, getStoredUser } from '@/lib/api';
 import { listOrders, setOrderStatus } from '@/lib/shop-api';
-import { getSocket } from '@/lib/socket';
+import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
 import { Badge, EmptyState, ErrorBox, Skeleton } from '@/components/ui';
 
@@ -48,41 +49,20 @@ export default function OrdersPage() {
   const t = useTranslations('orders');
   const locale = useLocale();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const shopOrg = (getStoredUser()?.organization.modules ?? []).includes('shop');
   const [filter, setFilter] = useState<Filter>('ALL');
-  const [orders, setOrders] = useState<OrderDto[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = useCallback(async (): Promise<void> => {
-    try {
-      const data = await listOrders(filter === 'ALL' ? undefined : { status: filter });
-      setOrders(data);
-      setError(null);
-    } catch {
-      setError(t('loadError'));
-    }
-  }, [filter, t]);
-
-  useEffect(() => {
-    setOrders(null);
-    void load();
-  }, [load]);
-
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) {
-      return;
-    }
-    const refresh = (): void => {
-      void load();
-    };
-    socket.on('notification.new', refresh);
-    return () => {
-      socket.off('notification.new', refresh);
-    };
-  }, [load]);
+  const {
+    data: orders,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.orders(filter),
+    queryFn: () => listOrders(filter === 'ALL' ? undefined : { status: filter }),
+  });
 
   useEffect(() => {
     if (!shopOrg) {
@@ -106,7 +86,10 @@ export default function OrdersPage() {
       setActionError(err instanceof ApiError ? err.message : t('loadError'));
     } finally {
       setBusyId(null);
-      await load();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.ordersRoot }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.productsRoot }),
+      ]);
     }
   };
 
@@ -141,9 +124,9 @@ export default function OrdersPage() {
         ))}
       </div>
 
-      {error ? (
-        <ErrorBox message={error} onRetry={() => void load()} retryLabel={t('retry')} />
-      ) : orders === null ? (
+      {isError ? (
+        <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
+      ) : orders === undefined ? (
         <div className="space-y-2">
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
