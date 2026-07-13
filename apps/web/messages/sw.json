@@ -183,7 +183,15 @@
     "noUpcomingTitle": "Hakuna miadi ijayo.",
     "noUpcomingHint": "Miadi utakayoweka itaonekana hapa.",
     "loadError": "Imeshindwa kupakia muhtasari wako. Angalia mtandao wako.",
-    "retry": "Jaribu tena"
+    "retry": "Jaribu tena",
+    "ordersToday": "Oda za leo",
+    "revenueWeek": "Mapato ya wiki",
+    "pendingConfirmations": "Zinasubiri uthibitisho",
+    "lowStock": "Bidhaa zinazoisha",
+    "pendingOrders": "Oda za kuthibitisha",
+    "noPendingOrdersTitle": "Hakuna oda zinazosubiri.",
+    "noPendingOrdersHint": "Oda mpya kutoka kwenye gumzo zitaonekana hapa.",
+    "ordersError": "Imeshindwa kupakia oda. Angalia muunganisho wako."
   },
   "contacts": {
     "title": "Wateja",

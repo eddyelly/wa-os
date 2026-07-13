@@ -183,7 +183,15 @@
     "noUpcomingTitle": "No upcoming bookings.",
     "noUpcomingHint": "Bookings you create will show up here.",
     "loadError": "Could not load your overview. Check your connection.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "ordersToday": "Orders today",
+    "revenueWeek": "Revenue this week",
+    "pendingConfirmations": "Awaiting confirmation",
+    "lowStock": "Low stock",
+    "pendingOrders": "Orders to confirm",
+    "noPendingOrdersTitle": "No orders waiting.",
+    "noPendingOrdersHint": "New orders from chat will appear here.",
+    "ordersError": "Could not load orders. Check your connection."
   },
   "contacts": {
     "title": "Customers",
