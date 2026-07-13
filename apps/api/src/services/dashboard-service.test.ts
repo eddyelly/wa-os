@@ -56,8 +56,8 @@ describe('dashboardSummary', () => {
     expect(orderRepo.countByStatus).toHaveBeenCalledWith('PENDING_CONFIRMATION');
     expect(orderRepo.sumAgreedSince).toHaveBeenCalledWith(expect.any(Date), ['CONFIRMED', 'PAID', 'FULFILLED']);
 
-    const ordersTodayArg = orderRepo.countCreatedSince.mock.calls[0][0] as Date;
-    const revenueSinceArg = orderRepo.sumAgreedSince.mock.calls[0][0] as Date;
+    const ordersTodayArg = orderRepo.countCreatedSince.mock.calls[0]?.[0] as Date;
+    const revenueSinceArg = orderRepo.sumAgreedSince.mock.calls[0]?.[0] as Date;
     expect(ordersTodayArg.getTime()).toBeGreaterThan(revenueSinceArg.getTime());
   });
 
