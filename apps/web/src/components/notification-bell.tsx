@@ -7,7 +7,7 @@ import type { NotificationDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
-import { Skeleton } from './ui-legacy';
+import { Skeleton } from '@/components/ui';
 
 /**
  * Where an item click lands. HANDOFF payloads carry a conversationId when
@@ -73,11 +73,16 @@ export function NotificationBell() {
   };
 
   const handleItemClick = (notification: NotificationDto): void => {
-    // Swallow the rejection: a failed refresh just leaves the badge stale
-    // until the next socket event picks it up.
-    void markNotificationRead(notification.id)
-      .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.notificationsRoot }))
-      .catch(() => {});
+    const markRead = async (): Promise<void> => {
+      try {
+        await markNotificationRead(notification.id);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.notificationsRoot });
+      } catch {
+        // Swallow the rejection: a failed refresh just leaves the badge stale
+        // until the next socket event picks it up.
+      }
+    };
+    void markRead();
     setOpen(false);
     router.push(targetPath(notification));
   };
