@@ -9,7 +9,7 @@ import { ApiError, getStoredUser } from '@/lib/api';
 import { listOrders, setOrderStatus } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, EmptyState, ErrorBox, Skeleton } from '@/components/ui-legacy';
+import { Badge, EmptyState, ErrorBox, Skeleton } from '@/components/ui';
 
 type Filter = 'ALL' | OrderStatus;
 
@@ -103,9 +103,7 @@ export default function OrdersPage() {
   ];
 
   return (
-    <AppShell>
-      <h1 className="mb-3 text-xl font-bold text-brand-900">{t('title')}</h1>
-
+    <AppShell title={t('title')}>
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
         {filters.map((f) => (
           <button

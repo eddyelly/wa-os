@@ -8,7 +8,7 @@ import { apiFetch } from '@/lib/api';
 import { listContacts } from '@/lib/app-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, Button, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
+import { Badge, Button, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 
 export default function ContactsPage() {
   const t = useTranslations('contacts');
@@ -77,8 +77,7 @@ export default function ContactsPage() {
   };
 
   return (
-    <AppShell>
-      <h1 className="mb-3 text-xl font-bold text-brand-900">{t('title')}</h1>
+    <AppShell title={t('title')}>
       <Input
         type="search"
         value={search}

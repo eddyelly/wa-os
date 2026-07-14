@@ -9,7 +9,7 @@ import { apiFetch, ApiError } from '@/lib/api';
 import { getWeeklyStats, listAppointments, listContacts } from '@/lib/app-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
+import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 
 function statusTone(status: AppointmentDto['status']): 'neutral' | 'success' | 'warning' | 'danger' {
   switch (status) {
@@ -134,9 +134,8 @@ function AppointmentsPageInner() {
   }, new Map());
 
   return (
-    <AppShell>
-      <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-brand-900">{t('title')}</h1>
+    <AppShell title={t('title')}>
+      <div className="mb-3 flex items-center justify-end">
         <Button
           onClick={() => {
             setShowForm((v) => !v);
