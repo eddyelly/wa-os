@@ -16,7 +16,7 @@ import {
 } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
+import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 
 const DEFAULT_STOCK_QTY = '0';
 const DEFAULT_LOW_STOCK_THRESHOLD = '5';
@@ -200,9 +200,7 @@ export default function ProductsPage() {
   };
 
   return (
-    <AppShell>
-      <h1 className="mb-3 text-xl font-bold text-brand-900">{t('title')}</h1>
-
+    <AppShell title={t('title')}>
       <Card className="mb-4">
         <h2 className="mb-3 text-base font-semibold text-brand-900">
           {editingId ? t('editTitle') : t('addTitle')}
@@ -232,6 +230,7 @@ export default function ProductsPage() {
             <Field label={t('price')}>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={1}
                 required
                 value={price}
@@ -243,6 +242,7 @@ export default function ProductsPage() {
             <Field label={t('minPrice')} hint={t('minPriceHint')}>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={1}
                 value={minPrice}
                 onChange={(e) => {
@@ -255,6 +255,7 @@ export default function ProductsPage() {
             <Field label={t('stockQty')}>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={0}
                 required
                 value={stockQty}
@@ -266,6 +267,7 @@ export default function ProductsPage() {
             <Field label={t('lowStockThreshold')}>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={0}
                 required
                 value={lowStockThreshold}
