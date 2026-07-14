@@ -9,7 +9,7 @@ import { listConversations } from '@/lib/app-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
 import { ConversationThread } from '@/components/conversation-thread';
-import { Badge, EmptyState, ErrorBox, Input, Skeleton } from '@/components/ui-legacy';
+import { Badge, EmptyState, ErrorBox, Input, Skeleton } from '@/components/ui';
 
 type Filter = 'ALL' | 'PENDING' | 'OPEN' | 'CLOSED';
 
@@ -91,10 +91,9 @@ export default function InboxPage() {
   };
 
   return (
-    <AppShell wide>
+    <AppShell wide title={t('title')}>
       <div className="lg:grid lg:h-[calc(100dvh-11.5rem)] lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-4">
         <section className="flex min-h-0 flex-col lg:overflow-hidden">
-          <h1 className="mb-3 text-xl font-bold text-brand-900">{t('title')}</h1>
           <Input
             type="search"
             value={search}
