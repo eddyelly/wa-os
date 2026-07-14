@@ -3,13 +3,13 @@
 import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { BusinessModule } from '@waos/shared';
+import { updateShopSettingsRequestSchema, type BusinessModule } from '@waos/shared';
 import { apiFetch, ApiError, getStoredUser, updateStoredOrganization } from '@/lib/api';
 import { getOrganization, listTeam } from '@/lib/app-api';
 import { updateShopSettings } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui-legacy';
+import { Badge, Button, Card, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -37,6 +37,7 @@ export default function SettingsPage() {
 
   const [paymentInstructions, setPaymentInstructions] = useState('');
   const [ownerAlertPhone, setOwnerAlertPhone] = useState('');
+  const [ownerAlertPhoneError, setOwnerAlertPhoneError] = useState<string | null>(null);
   const [ownerAlertsEnabled, setOwnerAlertsEnabled] = useState(false);
   const [savingShop, setSavingShop] = useState(false);
 
@@ -167,6 +168,14 @@ export default function SettingsPage() {
     setNotice(null);
     try {
       const trimmedPhone = ownerAlertPhone.trim();
+      if (
+        trimmedPhone !== '' &&
+        !updateShopSettingsRequestSchema.shape.ownerAlertPhone.safeParse(trimmedPhone).success
+      ) {
+        setOwnerAlertPhoneError(t('ownerAlertPhoneInvalid'));
+        return;
+      }
+      setOwnerAlertPhoneError(null);
       await updateShopSettings({
         paymentInstructions,
         ownerAlertPhone: trimmedPhone === '' ? null : trimmedPhone,
@@ -185,8 +194,7 @@ export default function SettingsPage() {
     threshold <= 0.5 ? t('thresholdLow') : threshold <= 0.75 ? t('thresholdMedium') : t('thresholdHigh');
 
   return (
-    <AppShell>
-      <h1 className="mb-4 text-xl font-bold text-brand-900">{t('title')}</h1>
+    <AppShell title={t('title')}>
       {displayError ? (
         <ErrorBox message={displayError} onRetry={retryLoad} retryLabel={t('retry')} />
       ) : null}
@@ -296,7 +304,11 @@ export default function SettingsPage() {
                     className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-base"
                   />
                 </Field>
-                <Field label={t('ownerAlertPhone')} hint={t('ownerAlertPhoneHint')}>
+                <Field
+                  label={t('ownerAlertPhone')}
+                  hint={t('ownerAlertPhoneHint')}
+                  error={ownerAlertPhoneError ?? undefined}
+                >
                   <Input
                     type="tel"
                     placeholder="+2557..."

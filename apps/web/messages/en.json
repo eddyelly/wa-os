@@ -310,6 +310,7 @@
     "paymentInstructionsHint": "The AI sends this after recording an order, e.g. your Lipa Namba.",
     "ownerAlertPhone": "WhatsApp number for alerts",
     "ownerAlertPhoneHint": "Your own number. New orders and low stock get sent there.",
+    "ownerAlertPhoneInvalid": "Enter a valid WhatsApp number in international format, e.g. +255712345678.",
     "ownerAlertsEnabled": "Send me WhatsApp alerts",
     "teamSection": "Team",
     "roleOwner": "Owner",

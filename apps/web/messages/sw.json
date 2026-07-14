@@ -310,6 +310,7 @@
     "paymentInstructionsHint": "AI inayatuma baada ya kurekodi oda, mfano Lipa Namba yako.",
     "ownerAlertPhone": "Namba ya WhatsApp kwa arifa",
     "ownerAlertPhoneHint": "Namba yako mwenyewe. Oda mpya na stoki pungufu vinatumwa huko.",
+    "ownerAlertPhoneInvalid": "Weka namba sahihi ya WhatsApp katika muundo wa kimataifa, mfano +255712345678.",
     "ownerAlertsEnabled": "Nitumie arifa za WhatsApp",
     "teamSection": "Timu",
     "roleOwner": "Mmiliki",
