@@ -9,7 +9,6 @@ export { Field } from './field.js';
 export { EmptyState } from './empty-state.js';
 export { ErrorBox } from './error-box.js';
 export { Spinner } from './spinner.js';
-export { PageHeader } from './page-header.js';
 export { StatCard } from './stat-card.js';
 export * from '@/components/shadcn/dialog';
 export * from '@/components/shadcn/dropdown-menu';
