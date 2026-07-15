@@ -5,7 +5,7 @@ import { messagingPortFor } from '../adapters/messaging.js';
 import { config } from '../lib/config.js';
 import { runWithRequestContext } from '../lib/context.js';
 import { logger } from '../lib/logger.js';
-import { getMediaMimeType, getMediaUrl } from '../lib/minio.js';
+import { getMediaMimeType, getProviderMediaUrl } from '../lib/minio.js';
 import { QUEUE_NAMES } from '../lib/queues.js';
 import { redisConnectionOptions, redis } from '../lib/redis.js';
 import { policyEngine } from '../policy/policy-engine.js';
@@ -102,7 +102,7 @@ async function process(job: Job<OutboundSendJob>, token: string | undefined): Pr
       let providerMessageId: string;
       if (message.mediaKey) {
         const [url, mimeType] = await Promise.all([
-          getMediaUrl(message.mediaKey),
+          getProviderMediaUrl(message.mediaKey),
           getMediaMimeType(message.mediaKey),
         ]);
         const result = await port.sendMedia(

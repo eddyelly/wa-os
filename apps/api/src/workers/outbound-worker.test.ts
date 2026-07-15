@@ -52,7 +52,7 @@ vi.mock('../lib/redis.js', () => ({
 }));
 
 vi.mock('../lib/minio.js', () => ({
-  getMediaUrl: vi.fn(),
+  getProviderMediaUrl: vi.fn(),
   getMediaMimeType: vi.fn(),
 }));
 

@@ -25,6 +25,10 @@ const envSchema = z.object({
   REDIS_URL: z.string().min(1),
 
   MINIO_ENDPOINT: z.string().min(1),
+  // Endpoint for presigning media URLs handed to the WhatsApp provider
+  // container (it cannot reach the host's localhost). Optional; defaults to
+  // MINIO_ENDPOINT. In local Docker dev set host.docker.internal:9000.
+  MINIO_PUBLIC_ENDPOINT: z.string().min(1).optional(),
   MINIO_ACCESS_KEY: z.string().min(1),
   MINIO_SECRET_KEY: z.string().min(1),
   MINIO_BUCKET: z.string().min(1).default('waos-media'),

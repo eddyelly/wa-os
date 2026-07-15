@@ -24,6 +24,25 @@ export const minioClient = new Client({
   secretKey: config.MINIO_SECRET_KEY,
 });
 
+// A separate presign client for URLs handed to an external service (the
+// WhatsApp provider container). The provider cannot reach the host's
+// localhost, so its media URLs must presign against a container-reachable
+// host. Defaults to MINIO_ENDPOINT (correct when the API and provider already
+// share a network, e.g. production).
+const publicEndpoint = parseEndpoint(config.MINIO_PUBLIC_ENDPOINT ?? config.MINIO_ENDPOINT);
+const providerMinioClient = new Client({
+  endPoint: publicEndpoint.host,
+  port: publicEndpoint.port,
+  useSSL: publicEndpoint.useSSL,
+  accessKey: config.MINIO_ACCESS_KEY,
+  secretKey: config.MINIO_SECRET_KEY,
+  // Pin the region so presigning is a pure local computation. Without it the
+  // client resolves the endpoint to look up the bucket region, which fails
+  // when the API host cannot resolve a container-only name like
+  // host.docker.internal. MinIO's default region is us-east-1.
+  region: 'us-east-1',
+});
+
 export async function ensureBucket(): Promise<void> {
   try {
     const exists = await minioClient.bucketExists(config.MINIO_BUCKET);
@@ -48,9 +67,18 @@ export async function putMediaObject(
   return key;
 }
 
-/** Short-lived download URL the dashboard can use directly. */
+/** Short-lived download URL the dashboard (host browser) can use directly. */
 export function getMediaUrl(key: string): Promise<string> {
   return minioClient.presignedGetObject(config.MINIO_BUCKET, key, 60 * 60);
+}
+
+/**
+ * Short-lived download URL the WhatsApp provider fetches when sending media.
+ * Presigned against MINIO_PUBLIC_ENDPOINT so the provider container can reach
+ * it, unlike the host-facing getMediaUrl above.
+ */
+export function getProviderMediaUrl(key: string): Promise<string> {
+  return providerMinioClient.presignedGetObject(config.MINIO_BUCKET, key, 60 * 60);
 }
 
 /**
