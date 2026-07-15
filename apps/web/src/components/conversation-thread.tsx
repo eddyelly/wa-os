@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ConversationListItem, MessageDto } from '@waos/shared';
@@ -45,7 +45,10 @@ export function ConversationThread({
   const [draft, setDraft] = useState('');
   const [sendError, setSendError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<MessageDto | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     data: messages,
@@ -120,9 +123,13 @@ export function ConversationThread({
     try {
       await apiFetch(`/api/v1/conversations/${id}/messages`, {
         method: 'POST',
-        body: { body: draft.trim() },
+        body: {
+          body: draft.trim(),
+          ...(replyingTo ? { replyToMessageId: replyingTo.id } : {}),
+        },
       });
       setDraft('');
+      setReplyingTo(null);
       await invalidateThread();
     } catch (err) {
       setSendError(err instanceof ApiError ? err.message : t('sendError'));
@@ -159,12 +166,49 @@ export function ConversationThread({
 
   const bubbleFor = (message: MessageDto): string => {
     if (message.direction === 'IN') {
-      return 'self-start bg-white text-brand-950';
+      return 'bg-white text-brand-950';
     }
     if (message.authorType === 'AI') {
-      return 'self-end bg-violet-50 text-brand-950 border border-violet-200';
+      return 'bg-violet-50 text-brand-950 border border-violet-200';
     }
-    return 'self-end bg-brand-100 text-brand-950';
+    return 'bg-brand-100 text-brand-950';
+  };
+
+  const messageById = useMemo(
+    () => new Map((messages ?? []).map((m) => [m.id, m])),
+    [messages],
+  );
+  const excerpt = (m: MessageDto): string => (m.body ?? '').slice(0, 80) || t('quotedUnavailable');
+  const quotedFor = (message: MessageDto): { id: string; label: string } | null => {
+    if (!message.replyToMessageId) {
+      return null;
+    }
+    const target = messageById.get(message.replyToMessageId);
+    return {
+      id: message.replyToMessageId,
+      label: target ? excerpt(target) : t('quotedUnavailable'),
+    };
+  };
+
+  useEffect(
+    () => () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  const scrollToMessage = (targetId: string): void => {
+    const el = document.querySelector(`[data-message-id="${targetId}"]`);
+    el?.scrollIntoView({ block: 'center' });
+    setHighlightedId(targetId);
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedId(null);
+    }, 1500);
   };
 
   return (
@@ -286,48 +330,81 @@ export function ConversationThread({
           ) : messages.length === 0 ? (
             <p className="py-10 text-center text-sm text-brand-600">{t('emptyThread')}</p>
           ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex max-w-[85%] flex-col rounded-2xl px-4 py-2.5 shadow-sm ${bubbleFor(message)}`}
-              >
-                {message.authorType === 'AI' ? (
-                  <span className="mb-0.5 text-[10px] font-bold tracking-wide text-violet-700 uppercase">
-                    {t('aiBadge')}
-                  </span>
-                ) : null}
-                {message.mediaUrl ? (
-                  message.type === 'IMAGE' ? (
-                    <img
-                      src={message.mediaUrl}
-                      alt={t('mediaAlt')}
-                      className="mb-1 max-h-64 rounded-lg"
-                    />
-                  ) : (
-                    <a
-                      href={message.mediaUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mb-1 text-sm font-medium text-brand-700 underline"
+            messages.map((message) => {
+              const quoted = quotedFor(message);
+              return (
+                <div
+                  key={message.id}
+                  data-message-id={message.id}
+                  className={`group flex flex-col gap-0.5 ${
+                    message.direction === 'IN' ? 'items-start' : 'items-end'
+                  }`}
+                >
+                  {quoted ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        scrollToMessage(quoted.id);
+                      }}
+                      className="block w-full max-w-[85%] truncate rounded-lg border-l-2 border-brand-400 bg-brand-50 px-2 py-1 text-left text-xs text-brand-700"
                     >
-                      {t('downloadMedia')}
-                    </a>
-                  )
-                ) : null}
-                {message.body ? (
-                  <p className="text-sm whitespace-pre-wrap">{message.body}</p>
-                ) : null}
-                <span className="mt-1 self-end text-[10px] text-brand-500">
-                  {new Date(message.createdAt).toLocaleTimeString(locale, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                  {message.direction === 'OUT' ? ` ${tickmarks(message.status)}` : ''}
-                  {message.status === 'BLOCKED' ? ` ${t('blocked')}` : ''}
-                  {message.status === 'FAILED' ? ` ${t('failed')}` : ''}
-                </span>
-              </div>
-            ))
+                      {quoted.label}
+                    </button>
+                  ) : null}
+                  <div
+                    className={`flex max-w-[85%] flex-col rounded-2xl px-4 py-2.5 shadow-sm transition-colors ${bubbleFor(message)} ${
+                      highlightedId === message.id ? 'ring-2 ring-accent-500' : ''
+                    }`}
+                  >
+                    {message.authorType === 'AI' ? (
+                      <span className="mb-0.5 text-[10px] font-bold tracking-wide text-violet-700 uppercase">
+                        {t('aiBadge')}
+                      </span>
+                    ) : null}
+                    {message.mediaUrl ? (
+                      message.type === 'IMAGE' ? (
+                        <img
+                          src={message.mediaUrl}
+                          alt={t('mediaAlt')}
+                          className="mb-1 max-h-64 rounded-lg"
+                        />
+                      ) : (
+                        <a
+                          href={message.mediaUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mb-1 text-sm font-medium text-brand-700 underline"
+                        >
+                          {t('downloadMedia')}
+                        </a>
+                      )
+                    ) : null}
+                    {message.body ? (
+                      <p className="text-sm whitespace-pre-wrap">{message.body}</p>
+                    ) : null}
+                    <span className="mt-1 self-end text-[10px] text-brand-500">
+                      {new Date(message.createdAt).toLocaleTimeString(locale, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                      {message.direction === 'OUT' ? ` ${tickmarks(message.status)}` : ''}
+                      {message.status === 'BLOCKED' ? ` ${t('blocked')}` : ''}
+                      {message.status === 'FAILED' ? ` ${t('failed')}` : ''}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={t('reply')}
+                    onClick={() => {
+                      setReplyingTo(message);
+                    }}
+                    className="px-1 text-xs font-medium text-brand-500 transition-opacity hover:text-brand-700 sm:opacity-0 sm:group-hover:opacity-100"
+                  >
+                    {t('reply')}
+                  </button>
+                </div>
+              );
+            })
           )}
           <div ref={bottomRef} />
         </div>
@@ -335,6 +412,23 @@ export function ConversationThread({
 
       <footer className="border-t border-brand-100 bg-white px-4 py-3">
         <div className="mx-auto max-w-3xl">
+          {replyingTo ? (
+            <div className="mb-2 flex items-center justify-between gap-2 border-l-2 border-brand-400 bg-brand-50 px-3 py-1.5 text-xs text-brand-700">
+              <span className="truncate">
+                {t('replyingTo')}: {excerpt(replyingTo)}
+              </span>
+              <button
+                type="button"
+                aria-label={t('cancelReply')}
+                onClick={() => {
+                  setReplyingTo(null);
+                }}
+                className="font-bold text-brand-500"
+              >
+                {'×'}
+              </button>
+            </div>
+          ) : null}
           {sendError ? <p className="mb-2 text-xs text-red-700">{sendError}</p> : null}
           <form onSubmit={(e) => void send(e)} className="flex items-end gap-2">
             <textarea

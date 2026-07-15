@@ -120,7 +120,11 @@
     "retry": "Try again",
     "optIn": "Customer agreed to receive reminders",
     "bookAppointment": "Book appointment",
-    "ordersChip": "Orders ({count})"
+    "ordersChip": "Orders ({count})",
+    "reply": "Reply",
+    "replyingTo": "Replying to",
+    "quotedUnavailable": "Quoted a message",
+    "cancelReply": "Cancel reply"
   },
   "knowledge": {
     "title": "Add your business info",

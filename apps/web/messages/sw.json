@@ -120,7 +120,11 @@
     "retry": "Jaribu tena",
     "optIn": "Mteja amekubali kupokea vikumbusho",
     "bookAppointment": "Weka miadi",
-    "ordersChip": "Oda ({count})"
+    "ordersChip": "Oda ({count})",
+    "reply": "Jibu",
+    "replyingTo": "Unajibu",
+    "quotedUnavailable": "Amenukuu ujumbe",
+    "cancelReply": "Ghairi jibu"
   },
   "knowledge": {
     "title": "Ongeza taarifa za biashara yako",
