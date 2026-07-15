@@ -50,6 +50,18 @@ export function useSocketInvalidation(): void {
         queryKeys.productsRoot,
         queryKeys.dashboard,
       ),
+      // On every (re)connect, refetch everything realtime so events missed
+      // while the socket was down (an API restart, a network blip, the tab
+      // sleeping) are caught up, instead of the screen staying stale until a
+      // manual navigation. Socket.IO fires 'connect' on reconnects too.
+      connect: invalidate(
+        queryKeys.messagesRoot,
+        queryKeys.conversationsRoot,
+        queryKeys.dashboard,
+        queryKeys.notificationsRoot,
+        queryKeys.ordersRoot,
+        queryKeys.productsRoot,
+      ),
     };
 
     for (const [event, handler] of Object.entries(handlers)) {
