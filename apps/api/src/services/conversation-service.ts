@@ -72,11 +72,16 @@ export const conversationService = {
     return Promise.all(rows.map(toMessageDto));
   },
 
-  async sendFromAgent(conversationId: string, body: string): Promise<MessageDto> {
+  async sendFromAgent(
+    conversationId: string,
+    body: string,
+    replyToMessageId?: string,
+  ): Promise<MessageDto> {
     const message = await outboundService.sendText({
       conversationId,
       body,
       authorType: 'HUMAN_AGENT',
+      replyToMessageId,
     });
     return toMessageDto(message);
   },

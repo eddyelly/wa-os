@@ -20,6 +20,7 @@ export const outboundService = {
     body: string;
     authorType: AuthorType;
     action?: PolicyAction;
+    replyToMessageId?: string;
   }): Promise<Message> {
     const { organizationId } = requireRequestContext();
     const conversation = await conversationRepository.findById(params.conversationId);
@@ -44,6 +45,7 @@ export const outboundService = {
         authorType: params.authorType,
         status: 'BLOCKED',
         blockedReason: decision.reason,
+        replyToMessageId: params.replyToMessageId,
       });
       emitToOrg(organizationId, 'message.new', {
         messageId: blocked.id,
@@ -57,6 +59,7 @@ export const outboundService = {
       body: params.body,
       type: 'TEXT',
       authorType: params.authorType,
+      replyToMessageId: params.replyToMessageId,
     });
     await conversationRepository.touchLastMessage(conversation.id);
     await enqueueOutboundSend({
@@ -83,6 +86,7 @@ export const outboundService = {
     caption?: string;
     authorType: AuthorType;
     action?: PolicyAction;
+    replyToMessageId?: string;
   }): Promise<Message> {
     const { organizationId } = requireRequestContext();
     const conversation = await conversationRepository.findById(params.conversationId);
@@ -108,6 +112,7 @@ export const outboundService = {
         authorType: params.authorType,
         status: 'BLOCKED',
         blockedReason: decision.reason,
+        replyToMessageId: params.replyToMessageId,
       });
       emitToOrg(organizationId, 'message.new', {
         messageId: blocked.id,
@@ -122,6 +127,7 @@ export const outboundService = {
       type: 'IMAGE',
       mediaKey: params.mediaKey,
       authorType: params.authorType,
+      replyToMessageId: params.replyToMessageId,
     });
     await conversationRepository.touchLastMessage(conversation.id);
     await enqueueOutboundSend({

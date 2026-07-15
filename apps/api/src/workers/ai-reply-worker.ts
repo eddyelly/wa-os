@@ -23,6 +23,7 @@ import {
   decideAiAction,
   parseOrgAiSettings,
   parseOrgShopSettings,
+  replyTargetForAi,
 } from '../services/ai-reply.js';
 import { outboundService } from '../services/outbound-service.js';
 import { buildShopTools } from '../services/shop-tools.js';
@@ -162,6 +163,7 @@ export async function processAiReplyJob(
       const output = result.output;
       const decision = decideAiAction(output, threshold);
       const isBooking = output?.intent === 'booking';
+      const replyToMessageId = replyTargetForAi(inbound, payload.inboundMessageId);
 
       if (decision === 'REPLY' && output) {
         // Double-send guard: a BullMQ retry after a successful send must
@@ -195,12 +197,14 @@ export async function processAiReplyJob(
                   mediaKey,
                   caption: output.reply,
                   authorType: 'AI',
+                  replyToMessageId,
                 });
               } else {
                 await outboundService.sendText({
                   conversationId: conversation.id,
                   body: output.reply,
                   authorType: 'AI',
+                  replyToMessageId,
                 });
               }
             },

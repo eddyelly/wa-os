@@ -25,7 +25,11 @@ export const messages = async (req: Request, res: Response): Promise<void> => {
 
 export const send = async (req: Request, res: Response): Promise<void> => {
   const input = sendMessageRequestSchema.parse(req.body);
-  const message = await conversationService.sendFromAgent(routeParam(req.params.id), input.body);
+  const message = await conversationService.sendFromAgent(
+    routeParam(req.params.id),
+    input.body,
+    input.replyToMessageId,
+  );
   res.status(201).json({ message });
 };
 

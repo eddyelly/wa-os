@@ -9,6 +9,7 @@ import {
   parseAiOutput,
   parseOrgAiSettings,
   parseOrgShopSettings,
+  replyTargetForAi,
 } from './ai-reply.js';
 
 const goodJson = '{"reply": "Tunafungua saa tatu asubuhi.", "confidence": 0.9, "intent": "question"}';
@@ -313,6 +314,26 @@ describe('parseOrgAiSettings', () => {
       aiConfidenceThreshold: 0.5,
       toneNotes: 'warm and brief',
     });
+  });
+});
+
+describe('replyTargetForAi', () => {
+  const inbound = (id: string) => ({ id, direction: 'IN' as const });
+  const outbound = (id: string) => ({ id, direction: 'OUT' as const });
+
+  it('returns the inbound id when 2+ messages are unanswered since the last outbound', () => {
+    const messages = [outbound('o1'), inbound('i1'), inbound('i2')];
+    expect(replyTargetForAi(messages, 'i2')).toBe('i2');
+  });
+
+  it('returns undefined for a single unanswered message', () => {
+    const messages = [outbound('o1'), inbound('i1')];
+    expect(replyTargetForAi(messages, 'i1')).toBeUndefined();
+  });
+
+  it('returns undefined when the last message is outbound', () => {
+    const messages = [inbound('i1'), outbound('o1')];
+    expect(replyTargetForAi(messages, 'i1')).toBeUndefined();
   });
 });
 

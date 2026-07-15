@@ -162,6 +162,26 @@ export function decideAiAction(output: AiReplyOutput | null, threshold: number):
   return output.confidence >= threshold ? 'REPLY' : 'HANDOFF';
 }
 
+/**
+ * Quote-when-it-helps: the AI attaches a quote only when the customer left 2+
+ * messages unanswered since our last outbound (so the reply points at the one
+ * it addressed). Returns the message id to quote, or undefined for no quote.
+ */
+export function replyTargetForAi(
+  messages: { direction: 'IN' | 'OUT' }[],
+  inboundMessageId: string,
+): string | undefined {
+  let trailingInbound = 0;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i]?.direction === 'IN') {
+      trailingInbound += 1;
+    } else {
+      break;
+    }
+  }
+  return trailingInbound >= 2 ? inboundMessageId : undefined;
+}
+
 export interface OrgAiSettings {
   aiEnabled: boolean;
   aiConfidenceThreshold?: number;

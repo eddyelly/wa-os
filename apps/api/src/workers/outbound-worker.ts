@@ -1,4 +1,5 @@
 import { DelayedError, Worker, type Job } from 'bullmq';
+import type { QuotedRef } from '@waos/ports';
 import { outboundSendJobSchema, type OutboundSendJob } from '@waos/shared';
 import { messagingPortFor } from '../adapters/messaging.js';
 import { config } from '../lib/config.js';
@@ -85,6 +86,18 @@ async function process(job: Job<OutboundSendJob>, token: string | undefined): Pr
         await sleep(delayMs);
       }
 
+      let quoted: QuotedRef | undefined;
+      if (message.replyToMessageId) {
+        const target = await messageRepository.findById(message.replyToMessageId);
+        if (target?.providerMessageId) {
+          quoted = {
+            providerMessageId: target.providerMessageId,
+            fromMe: target.direction === 'OUT',
+            text: target.body ?? undefined,
+          };
+        }
+      }
+
       const to = conversation.contact.phone;
       let providerMessageId: string;
       if (message.mediaKey) {
@@ -97,10 +110,11 @@ async function process(job: Job<OutboundSendJob>, token: string | undefined): Pr
           to,
           { kind: 'url', url, mimeType },
           message.body ?? undefined,
+          quoted,
         );
         providerMessageId = result.providerMessageId;
       } else {
-        const result = await port.sendText(channel.id, to, message.body ?? '');
+        const result = await port.sendText(channel.id, to, message.body ?? '', quoted);
         providerMessageId = result.providerMessageId;
       }
 
