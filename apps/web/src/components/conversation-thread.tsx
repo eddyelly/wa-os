@@ -398,7 +398,7 @@ export function ConversationThread({
                     onClick={() => {
                       setReplyingTo(message);
                     }}
-                    className="px-1 text-xs font-medium text-brand-500 transition-opacity hover:text-brand-700 sm:opacity-0 sm:group-hover:opacity-100"
+                    className="px-1 text-xs font-medium text-brand-500 transition-opacity hover:text-brand-700 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
                   >
                     {t('reply')}
                   </button>
