@@ -98,7 +98,10 @@ services:
       DATABASE_CONNECTION_CLIENT_NAME: waos
       # Session persistence: instances must survive restarts (CLAUDE.md 3.4).
       DATABASE_SAVE_DATA_INSTANCE: 'true'
-      DATABASE_SAVE_DATA_NEW_MESSAGE: 'false'
+      # New messages must be saved so getBase64FromMediaMessage can decrypt and
+      # fetch inbound media (customer photos). Without this, media download
+      # returns "Message not found" and inbound images never download.
+      DATABASE_SAVE_DATA_NEW_MESSAGE: 'true'
       DATABASE_SAVE_MESSAGE_UPDATE: 'false'
       DATABASE_SAVE_DATA_CONTACTS: 'false'
       DATABASE_SAVE_DATA_CHATS: 'false'
