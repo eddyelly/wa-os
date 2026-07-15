@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import type { QuotedRef } from '@waos/ports';
 import { AppError } from '../../lib/errors.js';
 import { config } from '../../lib/config.js';
 import { logger } from '../../lib/logger.js';
@@ -62,6 +63,27 @@ export function toProviderNumber(phone: string): string {
   return phone.replace(/[^0-9]/g, '');
 }
 
+/**
+ * Evolution's `quoted` reply payload (v2.3.7): a `key` identifying the quoted
+ * message and a minimal `message` echo. `number` is already digits-only here.
+ */
+function buildQuoted(
+  number: string,
+  quoted: QuotedRef,
+): {
+  key: { id: string; fromMe: boolean; remoteJid: string };
+  message: { conversation: string } | Record<string, never>;
+} {
+  return {
+    key: {
+      id: quoted.providerMessageId,
+      fromMe: quoted.fromMe,
+      remoteJid: `${number}@s.whatsapp.net`,
+    },
+    message: quoted.text ? { conversation: quoted.text } : {},
+  };
+}
+
 export const evolutionClient = {
   // POST /instance/create (instance.router.ts): instanceName, integration,
   // qrcode, webhook { enabled, url, events, byEvents, base64 }.
@@ -104,25 +126,31 @@ export const evolutionClient = {
     await request('DELETE', `/instance/delete/${instanceName}`, qrPayloadSchema.partial());
   },
 
-  // POST /message/sendText/:instanceName { number, text }
-  async sendText(instanceName: string, number: string, text: string): Promise<string> {
+  // POST /message/sendText/:instanceName { number, text, quoted? }
+  async sendText(
+    instanceName: string,
+    number: string,
+    text: string,
+    quoted?: QuotedRef,
+  ): Promise<string> {
     const data = await request(
       'POST',
       `/message/sendText/${instanceName}`,
       sendMessageResponseSchema,
-      { number, text },
+      { number, text, ...(quoted ? { quoted: buildQuoted(number, quoted) } : {}) },
     );
     return data.key.id;
   },
 
   // POST /message/sendMedia/:instanceName { number, mediatype, mimetype,
-  // caption, fileName, media (url or base64) }
+  // caption, fileName, media (url or base64), quoted? }
   async sendMedia(
     instanceName: string,
     number: string,
     media: { mediatype: 'image' | 'document' | 'audio'; mimetype: string; url: string },
     caption?: string,
     fileName?: string,
+    quoted?: QuotedRef,
   ): Promise<string> {
     const data = await request(
       'POST',
@@ -135,6 +163,7 @@ export const evolutionClient = {
         media: media.url,
         ...(caption ? { caption } : {}),
         ...(fileName ? { fileName } : {}),
+        ...(quoted ? { quoted: buildQuoted(number, quoted) } : {}),
       },
     );
     return data.key.id;

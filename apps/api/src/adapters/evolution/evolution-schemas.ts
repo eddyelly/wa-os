@@ -56,25 +56,44 @@ export const webhookEnvelopeSchema = z
   .passthrough();
 export type WebhookEnvelope = z.infer<typeof webhookEnvelopeSchema>;
 
+const contextInfoSchema = z
+  .object({ stanzaId: z.string().optional(), participant: z.string().optional() })
+  .passthrough();
+
 const messageContentSchema = z
   .object({
     conversation: z.string().optional(),
-    extendedTextMessage: z.object({ text: z.string().optional() }).passthrough().optional(),
-    imageMessage: z
-      .object({ caption: z.string().optional(), mimetype: z.string().optional() })
+    extendedTextMessage: z
+      .object({ text: z.string().optional(), contextInfo: contextInfoSchema.optional() })
       .passthrough()
       .optional(),
-    audioMessage: z.object({ mimetype: z.string().optional() }).passthrough().optional(),
+    imageMessage: z
+      .object({
+        caption: z.string().optional(),
+        mimetype: z.string().optional(),
+        contextInfo: contextInfoSchema.optional(),
+      })
+      .passthrough()
+      .optional(),
+    audioMessage: z
+      .object({ mimetype: z.string().optional(), contextInfo: contextInfoSchema.optional() })
+      .passthrough()
+      .optional(),
     documentMessage: z
       .object({
         fileName: z.string().optional(),
         mimetype: z.string().optional(),
         caption: z.string().optional(),
+        contextInfo: contextInfoSchema.optional(),
       })
       .passthrough()
       .optional(),
     videoMessage: z
-      .object({ caption: z.string().optional(), mimetype: z.string().optional() })
+      .object({
+        caption: z.string().optional(),
+        mimetype: z.string().optional(),
+        contextInfo: contextInfoSchema.optional(),
+      })
       .passthrough()
       .optional(),
     locationMessage: z

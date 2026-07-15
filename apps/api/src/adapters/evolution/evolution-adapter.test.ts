@@ -1,4 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { sendText } = vi.hoisted(() => ({ sendText: vi.fn() }));
+
+vi.mock('./evolution-client.js', () => ({
+  evolutionClient: { sendText },
+  toProviderNumber: (phone: string) => phone.replace(/[^0-9]/g, ''),
+}));
+
 import { evolutionAdapter } from './evolution-adapter.js';
 
 const CHANNEL = 'channel-1';
@@ -131,5 +139,59 @@ describe('evolution webhook normalization', () => {
       evolutionAdapter.normalizeWebhookEvent(envelope('contacts.update', {}))?.event.kind,
     ).toBe('ignored');
     expect(evolutionAdapter.normalizeWebhookEvent({ nonsense: true })).toBeNull();
+  });
+
+  it('captures the quoted message id from an inbound reply', () => {
+    const result = evolutionAdapter.normalizeWebhookEvent({
+      event: 'messages.upsert',
+      instance: 'chan1',
+      data: {
+        key: { remoteJid: '255700000000@s.whatsapp.net', fromMe: false, id: 'WAMSG2' },
+        message: {
+          extendedTextMessage: {
+            text: 'yes that one',
+            contextInfo: { stanzaId: 'WAMSG1' },
+          },
+        },
+      },
+    });
+    expect(result?.event.kind).toBe('message');
+    if (result?.event.kind === 'message') {
+      expect(result.event.message.quotedProviderMessageId).toBe('WAMSG1');
+    }
+  });
+
+  it('leaves quotedProviderMessageId undefined for a non-reply message', () => {
+    const result = evolutionAdapter.normalizeWebhookEvent({
+      event: 'messages.upsert',
+      instance: 'chan1',
+      data: {
+        key: { remoteJid: '255700000000@s.whatsapp.net', fromMe: false, id: 'WAMSG3' },
+        message: { conversation: 'hello' },
+      },
+    });
+    if (result?.event.kind === 'message') {
+      expect(result.event.message.quotedProviderMessageId).toBeUndefined();
+    }
+  });
+});
+
+describe('evolution outbound quoted replies', () => {
+  beforeEach(() => {
+    sendText.mockReset();
+    sendText.mockResolvedValue('WAMSG9');
+  });
+
+  it('forwards the quoted ref to the client on sendText', async () => {
+    await evolutionAdapter.sendText('chan1', '+255700000000', 'hi', {
+      providerMessageId: 'WAMSG1',
+      fromMe: false,
+      text: 'q',
+    });
+    expect(sendText).toHaveBeenCalledWith('chan1', '255700000000', 'hi', {
+      providerMessageId: 'WAMSG1',
+      fromMe: false,
+      text: 'q',
+    });
   });
 });

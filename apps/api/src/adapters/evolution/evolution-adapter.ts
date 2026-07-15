@@ -4,6 +4,7 @@ import type {
   IncomingMessageType,
   MediaRef,
   MessagingPort,
+  QuotedRef,
   SendResult,
   SessionStatus,
 } from '@waos/ports';
@@ -64,11 +65,17 @@ function jidToPhone(jid: string): string {
 }
 
 export class EvolutionAdapter implements MessagingPort {
-  async sendText(channelId: string, to: string, text: string): Promise<SendResult> {
+  async sendText(
+    channelId: string,
+    to: string,
+    text: string,
+    quoted?: QuotedRef,
+  ): Promise<SendResult> {
     const providerMessageId = await evolutionClient.sendText(
       channelId,
       toProviderNumber(to),
       text,
+      quoted,
     );
     return { providerMessageId };
   }
@@ -78,6 +85,7 @@ export class EvolutionAdapter implements MessagingPort {
     to: string,
     media: MediaRef,
     caption?: string,
+    quoted?: QuotedRef,
   ): Promise<SendResult> {
     if (media.kind !== 'url') {
       throw new NotImplementedError('Only URL media sends are supported on the entry tier.');
@@ -93,6 +101,7 @@ export class EvolutionAdapter implements MessagingPort {
       { mediatype, mimetype: media.mimeType, url: media.url },
       caption,
       media.fileName,
+      quoted,
     );
     return { providerMessageId };
   }
@@ -242,6 +251,14 @@ export class EvolutionAdapter implements MessagingPort {
           text = content.videoMessage.caption;
         }
 
+        const quotedProviderMessageId =
+          content.extendedTextMessage?.contextInfo?.stanzaId ??
+          content.imageMessage?.contextInfo?.stanzaId ??
+          content.audioMessage?.contextInfo?.stanzaId ??
+          content.documentMessage?.contextInfo?.stanzaId ??
+          content.videoMessage?.contextInfo?.stanzaId ??
+          undefined;
+
         const timestamp =
           msg.messageTimestamp !== undefined ? Number(msg.messageTimestamp) * 1000 : NaN;
         const message: IncomingMessage = {
@@ -253,6 +270,7 @@ export class EvolutionAdapter implements MessagingPort {
           text,
           media,
           sentAt: Number.isFinite(timestamp) ? new Date(timestamp) : new Date(),
+          quotedProviderMessageId,
         };
         return { channelId, event: { kind: 'message', message } };
       }
