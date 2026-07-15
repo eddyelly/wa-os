@@ -47,6 +47,7 @@ async function toMessageDto(message: Message): Promise<MessageDto> {
     authorType: message.authorType,
     status: message.status,
     blockedReason: message.blockedReason,
+    replyToMessageId: message.replyToMessageId,
     createdAt: message.createdAt,
   };
 }

@@ -99,12 +99,24 @@ async function handleIncomingMessage(channel: Channel, incoming: IncomingMessage
     }
   }
 
+  // Resolve a replied-to message to a local row, scoped to this conversation
+  // (and therefore this tenant): a quote that predates the connection or
+  // belongs to another conversation is left unresolved.
+  let replyToMessageId: string | undefined;
+  if (incoming.quotedProviderMessageId) {
+    const quoted = await messageRepository.findByProviderId(incoming.quotedProviderMessageId);
+    if (quoted && quoted.conversationId === conversation.id) {
+      replyToMessageId = quoted.id;
+    }
+  }
+
   const message = await messageRepository.createInbound({
     conversationId: conversation.id,
     providerMessageId: incoming.providerMessageId,
     type: incoming.type,
     body: incoming.text ?? null,
     mediaKey,
+    replyToMessageId,
   });
 
   emitToOrg(channel.organizationId, 'message.new', {
