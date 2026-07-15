@@ -32,6 +32,7 @@ export const messageSchema = z.object({
   authorType: authorTypeSchema,
   status: messageStatusSchema,
   blockedReason: z.string().nullable().optional(),
+  replyToMessageId: z.string().nullable().optional(),
   createdAt: z.coerce.date(),
 });
 export type MessageDto = z.infer<typeof messageSchema>;
@@ -58,6 +59,7 @@ export type ConversationListItem = z.infer<typeof conversationListItemSchema>;
 
 export const sendMessageRequestSchema = z.object({
   body: z.string().trim().min(1).max(4096),
+  replyToMessageId: z.string().optional(),
 });
 export type SendMessageRequest = z.infer<typeof sendMessageRequestSchema>;
 

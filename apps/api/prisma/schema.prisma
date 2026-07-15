@@ -230,12 +230,16 @@ model Message {
   mediaKey          String?
   authorType        AuthorType
   providerMessageId String?
+  replyToMessageId  String?
   status            MessageStatus    @default(QUEUED)
   // Populated when the policy engine blocks the send (PolicyDecision reason)
   blockedReason     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  replyTo Message?  @relation("MessageReplies", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replies Message[] @relation("MessageReplies")
 
   // Inbound idempotency guard: re-delivered webhooks must not duplicate rows.
   @@unique([organizationId, providerMessageId])

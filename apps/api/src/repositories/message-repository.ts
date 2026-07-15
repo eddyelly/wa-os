@@ -23,6 +23,7 @@ export const messageRepository = {
     mediaKey?: string;
     status?: MessageStatus;
     blockedReason?: string;
+    replyToMessageId?: string;
   }): Promise<Message> {
     return prisma.message.create({
       data: {
@@ -35,6 +36,7 @@ export const messageRepository = {
         authorType: data.authorType,
         status: data.status ?? 'QUEUED',
         blockedReason: data.blockedReason ?? null,
+        replyToMessageId: data.replyToMessageId ?? null,
       },
     });
   },
@@ -46,6 +48,7 @@ export const messageRepository = {
     body: string | null;
     mediaKey?: string;
     createdAt?: Date;
+    replyToMessageId?: string;
   }): Promise<Message> {
     return prisma.message.create({
       data: {
@@ -58,12 +61,17 @@ export const messageRepository = {
         authorType: 'CONTACT',
         providerMessageId: data.providerMessageId,
         status: 'DELIVERED',
+        replyToMessageId: data.replyToMessageId ?? null,
       },
     });
   },
 
   findByProviderId(providerMessageId: string): Promise<Message | null> {
     return prisma.message.findFirst({ where: { providerMessageId } });
+  },
+
+  findById(id: string): Promise<Message | null> {
+    return prisma.message.findUnique({ where: { id } });
   },
 
   findByIdWithThread(id: string): Promise<MessageWithThread | null> {

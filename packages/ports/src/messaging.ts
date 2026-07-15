@@ -44,11 +44,29 @@ export interface IncomingMessage {
   text?: string;
   media?: IncomingMedia;
   sentAt: Date;
+  /** Provider id of the message this one quotes, when the sender replied to one. */
+  quotedProviderMessageId?: string;
+}
+
+/** A reference to the message a send is replying to (quoting). */
+export interface QuotedRef {
+  /** The quoted message's provider id (WhatsApp message id). */
+  providerMessageId: string;
+  /** True when we sent the quoted message (direction OUT); false for the contact's. */
+  fromMe: boolean;
+  /** Quoted body/caption excerpt, for providers that want the quoted content. */
+  text?: string;
 }
 
 export interface MessagingPort {
-  sendText(channelId: string, to: string, text: string): Promise<SendResult>;
-  sendMedia(channelId: string, to: string, media: MediaRef, caption?: string): Promise<SendResult>;
+  sendText(channelId: string, to: string, text: string, quoted?: QuotedRef): Promise<SendResult>;
+  sendMedia(
+    channelId: string,
+    to: string,
+    media: MediaRef,
+    caption?: string,
+    quoted?: QuotedRef,
+  ): Promise<SendResult>;
   /** Cloud API only; the entry tier adapter rejects this. */
   sendTemplate(
     channelId: string,

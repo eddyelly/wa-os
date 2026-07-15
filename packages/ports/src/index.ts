@@ -5,6 +5,7 @@ export type {
   IncomingMessageType,
   MediaRef,
   MessagingPort,
+  QuotedRef,
   SendResult,
   SessionStatus,
 } from './messaging.js';
