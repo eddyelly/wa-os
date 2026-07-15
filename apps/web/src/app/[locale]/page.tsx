@@ -74,11 +74,12 @@ function AiTurn({ typingDelay, replyDelay, children }: { typingDelay: number; re
 
 /** An inbound "photo" message: a stylized product thumbnail (inline SVG, no
  *  network asset) above a short caption, shown inside an inbound bubble. */
-function PhotoMessage({ caption }: { caption: string }) {
+function PhotoMessage({ caption, label }: { caption: string; label: string }) {
   return (
     <div className="w-40">
       <div
-        aria-hidden
+        role="img"
+        aria-label={label}
         className="mb-1 flex aspect-square w-full items-center justify-center rounded-lg bg-gradient-to-br from-amber-100 to-brand-100"
       >
         <svg viewBox="0 0 64 64" className="h-3/4 w-3/4" aria-hidden>
@@ -170,7 +171,7 @@ function PhoneDemo() {
           {cycle % 2 === 1 ? (
             <>
               <Bubble side="in" delay={500}>
-                <PhotoMessage caption={t('sellMsg1')} />
+                <PhotoMessage caption={t('sellMsg1')} label={t('photoLabel')} />
               </Bubble>
               <AiTurn typingDelay={1200} replyDelay={2550}>
                 {t('sellMsg2')}
