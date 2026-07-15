@@ -65,5 +65,13 @@ export default tseslint.config(
     files: ['**/*.{js,mjs,cjs}'],
     ...tseslint.configs.disableTypeChecked,
   },
+  {
+    // Repo tooling scripts (e.g. the i18n parity check) run under Node;
+    // declare the host globals they use so no-undef does not flag them.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
+    },
+  },
   prettier,
 );
