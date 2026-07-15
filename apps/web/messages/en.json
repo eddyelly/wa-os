@@ -383,7 +383,14 @@
       "msg4": "Yes! I have noted tomorrow at 10:00 for braiding. The team will confirm your slot shortly.",
       "inputPlaceholder": "Message",
       "bookingChipTitle": "Booking saved",
-      "bookingChipBody": "Tomorrow, 10:00. Braiding"
+      "bookingChipBody": "Tomorrow, 10:00. Braiding",
+      "sellMsg1": "Do you have this one?",
+      "sellMsg2": "Yes! That is our Shea Hair Butter, TZS 20,000.",
+      "sellMsg3": "Can you do 15,000?",
+      "sellMsg4": "I can do 17,000, and that is my best price.",
+      "photoLabel": "Customer photo of a product",
+      "orderChipTitle": "Order recorded",
+      "orderChipBody": "Shea Hair Butter, TZS 17,000"
     },
     "verticals": {
       "v1": "Salons",

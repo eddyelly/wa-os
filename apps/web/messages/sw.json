@@ -383,7 +383,14 @@
       "msg4": "Ndiyo! Nimeweka kesho saa 4:00 kwa kusuka rasta. Timu itathibitisha nafasi yako muda mfupi.",
       "inputPlaceholder": "Andika meseji",
       "bookingChipTitle": "Miadi imehifadhiwa",
-      "bookingChipBody": "Kesho, saa 4:00. Kusuka rasta"
+      "bookingChipBody": "Kesho, saa 4:00. Kusuka rasta",
+      "sellMsg1": "Unayo hii?",
+      "sellMsg2": "Ndiyo! Hiyo ni Shea Hair Butter yetu, TZS 20,000.",
+      "sellMsg3": "Unaweza 15,000?",
+      "sellMsg4": "Naweza 17,000, na hiyo ni bei yangu ya mwisho.",
+      "photoLabel": "Picha ya bidhaa kutoka kwa mteja",
+      "orderChipTitle": "Oda imehifadhiwa",
+      "orderChipBody": "Shea Hair Butter, TZS 17,000"
     },
     "verticals": {
       "v1": "Saluni",

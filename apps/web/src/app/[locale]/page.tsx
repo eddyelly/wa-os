@@ -72,6 +72,50 @@ function AiTurn({ typingDelay, replyDelay, children }: { typingDelay: number; re
   );
 }
 
+/** An inbound "photo" message: a stylized product thumbnail (inline SVG, no
+ *  network asset) above a short caption, shown inside an inbound bubble. */
+function PhotoMessage({ caption }: { caption: string }) {
+  return (
+    <div className="w-40">
+      <div
+        aria-hidden
+        className="mb-1 flex aspect-square w-full items-center justify-center rounded-lg bg-gradient-to-br from-amber-100 to-brand-100"
+      >
+        <svg viewBox="0 0 64 64" className="h-3/4 w-3/4" aria-hidden>
+          <rect x="16" y="7" width="32" height="8" rx="2" className="fill-amber-300" />
+          <rect x="12" y="15" width="40" height="42" rx="7" className="fill-amber-200" />
+          <rect x="21" y="29" width="22" height="16" rx="3" className="fill-white/80" />
+        </svg>
+      </div>
+      <span>{caption}</span>
+    </div>
+  );
+}
+
+/** The selling scene's closing chip: mirrors the booking chip's treatment,
+ *  in the amber accent, with an order/bag icon and a done badge. */
+function OrderChip({ title, body }: { title: string; body: string }) {
+  return (
+    <div
+      className="animate-pop-in mx-auto mt-1.5 flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-3 py-2 shadow-sm"
+      style={{ animationDelay: '7400ms' }}
+    >
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z M3 6h18 M16 10a4 4 0 0 1-8 0" />
+        </svg>
+      </span>
+      <div className="leading-tight">
+        <p className="text-[11px] font-bold text-brand-950">{title}</p>
+        <p className="text-[10px] text-brand-600">{body}</p>
+      </div>
+      <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700" aria-hidden>
+        {'✓'}
+      </span>
+    </div>
+  );
+}
+
 function PhoneDemo() {
   const t = useTranslations('landing.demo');
   // Replay the conversation every few seconds so the demo keeps living.
@@ -123,35 +167,55 @@ function PhoneDemo() {
 
         {/* Conversation */}
         <div key={cycle} className="flex min-h-[350px] flex-col gap-2 px-3 py-4">
-          <Bubble side="in" delay={500}>
-            {t('msg1')}
-          </Bubble>
-          <AiTurn typingDelay={1200} replyDelay={2550}>
-            {t('msg2')}
-          </AiTurn>
-          <Bubble side="in" delay={4000}>
-            {t('msg3')}
-          </Bubble>
-          <AiTurn typingDelay={4800} replyDelay={6150}>
-            {t('msg4')}
-          </AiTurn>
-          <div
-            className="animate-pop-in mx-auto mt-1.5 flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-3 py-2 shadow-sm"
-            style={{ animationDelay: '7400ms' }}
-          >
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-800">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v3m8-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
-              </svg>
-            </span>
-            <div className="leading-tight">
-              <p className="text-[11px] font-bold text-brand-950">{t('bookingChipTitle')}</p>
-              <p className="text-[10px] text-brand-600">{t('bookingChipBody')}</p>
-            </div>
-            <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700" aria-hidden>
-              {'✓'}
-            </span>
-          </div>
+          {cycle % 2 === 1 ? (
+            <>
+              <Bubble side="in" delay={500}>
+                <PhotoMessage caption={t('sellMsg1')} />
+              </Bubble>
+              <AiTurn typingDelay={1200} replyDelay={2550}>
+                {t('sellMsg2')}
+              </AiTurn>
+              <Bubble side="in" delay={4000}>
+                {t('sellMsg3')}
+              </Bubble>
+              <AiTurn typingDelay={4800} replyDelay={6150}>
+                {t('sellMsg4')}
+              </AiTurn>
+              <OrderChip title={t('orderChipTitle')} body={t('orderChipBody')} />
+            </>
+          ) : (
+            <>
+              <Bubble side="in" delay={500}>
+                {t('msg1')}
+              </Bubble>
+              <AiTurn typingDelay={1200} replyDelay={2550}>
+                {t('msg2')}
+              </AiTurn>
+              <Bubble side="in" delay={4000}>
+                {t('msg3')}
+              </Bubble>
+              <AiTurn typingDelay={4800} replyDelay={6150}>
+                {t('msg4')}
+              </AiTurn>
+              <div
+                className="animate-pop-in mx-auto mt-1.5 flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-3 py-2 shadow-sm"
+                style={{ animationDelay: '7400ms' }}
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-800">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v3m8-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+                  </svg>
+                </span>
+                <div className="leading-tight">
+                  <p className="text-[11px] font-bold text-brand-950">{t('bookingChipTitle')}</p>
+                  <p className="text-[10px] text-brand-600">{t('bookingChipBody')}</p>
+                </div>
+                <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700" aria-hidden>
+                  {'✓'}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Composer */}
