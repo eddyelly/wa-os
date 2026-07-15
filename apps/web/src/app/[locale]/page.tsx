@@ -294,10 +294,10 @@ function HeroShowcase() {
         floatDuration="9s"
         className="bottom-24 -left-6 hidden max-w-56 md:block xl:-left-24"
       >
-        <CardIcon tone="amber" path="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9" />
+        <CardIcon tone="amber" path="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z M3 6h18 M16 10a4 4 0 0 1-8 0" />
         <div className="leading-tight">
-          <p className="text-[13px] font-bold text-brand-950">{t('reminder.title')}</p>
-          <p className="mt-0.5 text-[11px] text-brand-600">{t('reminder.body')}</p>
+          <p className="text-[13px] font-bold text-brand-950">{t('sale.title')}</p>
+          <p className="mt-0.5 text-[11px] text-brand-600">{t('sale.body')}</p>
         </div>
       </FloatingCard>
       <FloatingCard
@@ -341,11 +341,11 @@ export default function LandingPage() {
   const features = [
     { key: 'answers', icon: 'M8 10h8m-8 4h5m-8.7 6.3L3 21l1.3-3.9A8.96 8.96 0 0 1 3 12a9 9 0 1 1 9 9 8.96 8.96 0 0 1-4.7-1.3Z' },
     { key: 'bookings', icon: 'M8 3v3m8-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm4 9 2 2 4-4' },
-    { key: 'handoff', icon: 'M16 11a4 4 0 1 0-8 0m8 0a4 4 0 0 1-8 0m8 0h4m-12 0H4m8 4v6m-4-2.5L12 21l4-2.5' },
+    { key: 'sells', icon: 'm20.6 13.4-8.2 8.2a2 2 0 0 1-2.8 0l-7.4-7.4A2 2 0 0 1 1.6 12.6V4a2 2 0 0 1 2-2h8.6a2 2 0 0 1 1.4.6l7 7a2 2 0 0 1 0 2.8ZM7.5 7.5h.01' },
     { key: 'language', icon: 'M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Zm1 -3h16M4 15h16M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18' },
   ] as const;
 
-  const verticals = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'] as const;
+  const verticals = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'] as const;
   // One half must always be wider than the viewport so the loop never shows
   // a gap, even on very wide monitors. The track renders two halves.
   const marqueeHalf = Array.from({ length: 4 }, () => verticals).flat();

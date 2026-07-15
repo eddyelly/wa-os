@@ -364,11 +364,11 @@
     "stepTest": "Test"
   },
   "landing": {
-    "kicker": "For salons, clinics, spas, tutors, and garages",
+    "kicker": "For salons, clinics, spas, tutors, garages, and shops",
     "heroTitle1": "Your business",
-    "heroTitleAccent": "answers on WhatsApp",
-    "heroTitle2": "even while you work.",
-    "heroSubtitle": "An AI assistant that replies to your customers in Swahili or English, books appointments, sends reminders, and calls you in when a human touch is needed.",
+    "heroTitleAccent": "answers, books, and sells",
+    "heroTitle2": "on WhatsApp, even while you work.",
+    "heroSubtitle": "An AI assistant that replies to your customers in Swahili or English, books their appointments, sells your products (bargaining down to the price you set), and calls you in when a human touch is needed.",
     "ctaPrimary": "Get started free",
     "ctaSecondary": "See how it works",
     "openInbox": "Open your Inbox",
@@ -398,7 +398,8 @@
       "v3": "Spas",
       "v4": "Tutors",
       "v5": "Garages",
-      "v6": "Barbershops"
+      "v6": "Barbershops",
+      "v7": "Shops"
     },
     "featuresTitle": "Everything a busy owner needs",
     "featuresSubtitle": "Built for people who run their business from a phone, between customers.",
@@ -411,9 +412,9 @@
         "title": "Bookings and reminders",
         "body": "Appointments get automatic reminders before the visit, so fewer customers forget to show up."
       },
-      "handoff": {
-        "title": "You stay in control",
-        "body": "Anything the AI is unsure about lands in your Inbox for a person to answer. One tap takes over."
+      "sells": {
+        "title": "Sells and bargains",
+        "body": "It recognizes a product from a photo, quotes your price, and haggles down to the floor you set, never below it."
       },
       "language": {
         "title": "Swahili and English",
@@ -424,7 +425,7 @@
     "how": {
       "step1": {
         "title": "Tell it about your business",
-        "body": "Paste your services, prices, and opening hours, or upload a file. That becomes the AI's only source of truth."
+        "body": "Paste your services, prices, catalog, and opening hours, or upload a file. That becomes the AI's only source of truth."
       },
       "step2": {
         "title": "Connect your WhatsApp",
@@ -432,7 +433,7 @@
       },
       "step3": {
         "title": "Watch it work",
-        "body": "Customers get instant answers, bookings get reminders, and tricky questions come to you."
+        "body": "Customers get instant answers, appointments get reminders, products get sold, and tricky questions come to you."
       }
     },
     "stats": {
@@ -454,16 +455,16 @@
       }
     },
     "finalTitle": "Give your customers an answer today",
-    "finalSubtitle": "Sign up, connect your WhatsApp, and let the assistant handle the routine questions while you do the real work.",
-    "footerTagline": "The WhatsApp operating system for appointment-based local businesses in Tanzania.",
+    "finalSubtitle": "Sign up, connect your WhatsApp, and let the assistant handle the routine questions and the sales while you do the real work.",
+    "footerTagline": "The operating system for local service and retail businesses in Tanzania, right inside WhatsApp.",
     "cards": {
       "booking": {
         "title": "Booking confirmed",
         "body": "Reminder scheduled automatically"
       },
-      "reminder": {
-        "title": "Reminder sent",
-        "body": "24 hours before the visit"
+      "sale": {
+        "title": "Sale closed",
+        "body": "Order recorded, you're notified"
       },
       "ai": {
         "title": "AI replies",

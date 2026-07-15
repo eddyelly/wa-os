@@ -364,11 +364,11 @@
     "stepTest": "Jaribu"
   },
   "landing": {
-    "kicker": "Kwa saluni, kliniki, spa, walimu, na gereji",
+    "kicker": "Kwa saluni, kliniki, spa, wakufunzi, gereji, na maduka",
     "heroTitle1": "Biashara yako",
-    "heroTitleAccent": "inajibu WhatsApp",
-    "heroTitle2": "hata ukiwa kazini.",
-    "heroSubtitle": "Msaidizi wa AI anayejibu wateja wako kwa Kiswahili au Kiingereza, anapanga miadi, anatuma vikumbusho, na kukuita pale mtu anapohitajika.",
+    "heroTitleAccent": "hujibu, huweka miadi, na huuza",
+    "heroTitle2": "kwenye WhatsApp, hata ukiwa kazini.",
+    "heroSubtitle": "Msaidizi wa AI anayewajibu wateja wako kwa Kiswahili au Kiingereza, anaweka miadi yao, anauza bidhaa zako (akipatana bei hadi kiwango unachoweka), na anakuita pale mguso wa binadamu unapohitajika.",
     "ctaPrimary": "Anza bure",
     "ctaSecondary": "Ona jinsi inavyofanya kazi",
     "openInbox": "Fungua Meseji zako",
@@ -398,7 +398,8 @@
       "v3": "Spa",
       "v4": "Walimu",
       "v5": "Gereji",
-      "v6": "Vinyozi"
+      "v6": "Vinyozi",
+      "v7": "Maduka"
     },
     "featuresTitle": "Kila kitu anachohitaji mmiliki mwenye shughuli",
     "featuresSubtitle": "Imetengenezwa kwa watu wanaoendesha biashara kwa simu, katikati ya wateja.",
@@ -411,9 +412,9 @@
         "title": "Miadi na vikumbusho",
         "body": "Miadi hupata vikumbusho vya kiotomatiki kabla ya ziara, hivyo wateja wachache husahau kufika."
       },
-      "handoff": {
-        "title": "Wewe ndiye msimamizi",
-        "body": "Chochote AI isichokuwa na uhakika nacho huingia kwenye Meseji zako mtu ajibu. Gusa mara moja kuchukua."
+      "sells": {
+        "title": "Huuza na kupatana bei",
+        "body": "Hutambua bidhaa kutoka kwenye picha, hutoa bei yako, na hupatana hadi kiwango cha chini unachoweka, kamwe si chini yake."
       },
       "language": {
         "title": "Kiswahili na Kiingereza",
@@ -424,7 +425,7 @@
     "how": {
       "step1": {
         "title": "Ieleze kuhusu biashara yako",
-        "body": "Bandika huduma, bei, na saa zako za kazi, au pakia faili. Hiyo ndiyo chanzo pekee cha ukweli cha AI."
+        "body": "Weka huduma, bei, katalogi, na saa za kufungua, au pakia faili. Hiyo inakuwa chanzo pekee cha ukweli cha AI."
       },
       "step2": {
         "title": "Unganisha WhatsApp yako",
@@ -432,7 +433,7 @@
       },
       "step3": {
         "title": "Iangalie ikifanya kazi",
-        "body": "Wateja hupata majibu papo hapo, miadi hupata vikumbusho, na maswali magumu huja kwako."
+        "body": "Wateja wanapata majibu papo hapo, miadi inapata vikumbusho, bidhaa zinauzwa, na maswali magumu yanakujia wewe."
       }
     },
     "stats": {
@@ -454,16 +455,16 @@
       }
     },
     "finalTitle": "Wape wateja wako jibu leo",
-    "finalSubtitle": "Jisajili, unganisha WhatsApp yako, na umwache msaidizi ashughulikie maswali ya kawaida wakati wewe unafanya kazi halisi.",
-    "footerTagline": "Mfumo wa WhatsApp kwa biashara za huduma zenye miadi Tanzania.",
+    "finalSubtitle": "Jisajili, unganisha WhatsApp yako, na mwache msaidizi ashughulikie maswali ya kawaida na mauzo huku wewe ukifanya kazi halisi.",
+    "footerTagline": "Mfumo wa uendeshaji kwa biashara za huduma na za bidhaa nchini Tanzania, ndani ya WhatsApp.",
     "cards": {
       "booking": {
         "title": "Miadi imethibitishwa",
         "body": "Kikumbusho kimepangwa kiotomatiki"
       },
-      "reminder": {
-        "title": "Kikumbusho kimetumwa",
-        "body": "Saa 24 kabla ya ziara"
+      "sale": {
+        "title": "Mauzo yamekamilika",
+        "body": "Oda imehifadhiwa, umearifiwa"
       },
       "ai": {
         "title": "Majibu ya AI",
