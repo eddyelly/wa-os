@@ -302,7 +302,14 @@
     "emptyTitle": "Hakuna oda bado",
     "emptyHint": "AI ikifunga mauzo, oda inafika hapa ili uithibitishe.",
     "loadError": "Imeshindwa kupakia oda. Angalia muunganisho wako kisha ujaribu tena.",
-    "retry": "Jaribu tena"
+    "retry": "Jaribu tena",
+    "colOrder": "Oda",
+    "colCustomer": "Mteja",
+    "colItems": "Bidhaa",
+    "colTotal": "Jumla",
+    "colDate": "Tarehe",
+    "colStatus": "Hali",
+    "colActions": "Vitendo"
   },
   "notifications": {
     "label": "Arifa",

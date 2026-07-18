@@ -302,7 +302,14 @@
     "emptyTitle": "No orders yet",
     "emptyHint": "When the AI closes a sale, the order lands here for you to confirm.",
     "loadError": "Could not load orders. Check your connection and try again.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "colOrder": "Order",
+    "colCustomer": "Customer",
+    "colItems": "Items",
+    "colTotal": "Total",
+    "colDate": "Date",
+    "colStatus": "Status",
+    "colActions": "Actions"
   },
   "notifications": {
     "label": "Notifications",
