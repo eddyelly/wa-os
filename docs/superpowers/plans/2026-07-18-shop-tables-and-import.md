@@ -216,7 +216,7 @@ git commit -m "feat(web): add Table, RowActions, and SearchInput to the componen
 
 ---
 
-### Task 2: Products page — desktop table, search, and create-with-photo
+### Task 2: Products page: desktop table, search, and create-with-photo
 
 **Files:**
 - Modify: `apps/web/src/app/[locale]/products/page.tsx`
@@ -284,7 +284,7 @@ Add a selection helper and cleanup (object URLs must be revoked):
     });
   };
 ```
-Clear the pending photo in `resetForm` (add `selectPendingPhoto(null); setPhotoWarning(null);`) and in `startEdit` (add `selectPendingPhoto(null);` — edit mode manages existing photos instead).
+Clear the pending photo in `resetForm` (add `selectPendingPhoto(null); setPhotoWarning(null);`) and in `startEdit` (add `selectPendingPhoto(null);` (edit mode manages existing photos instead).
 
 - [ ] **Step 3: Chain the photo upload into submit**
 
@@ -1094,7 +1094,7 @@ git commit -m "feat(shop): CSV product import with template download and per-row
 
 ---
 
-### Task 4: Orders page — desktop table with kebab transitions
+### Task 4: Orders page: desktop table with kebab transitions
 
 **Files:**
 - Modify: `apps/web/src/app/[locale]/orders/page.tsx`
@@ -1218,4 +1218,4 @@ git commit -m "feat(web): orders table with kebab status transitions"
 
 **2. Placeholder scan:** No TBD/TODO. Step 3 of Task 2 originally sketched two alternatives; it now resolves to the concrete `photoFailed` flag flow. The two `{/* existing <ul> card list */}` comments are instructions to keep already-existing code in place (with the stated `filtered` mapping change in Task 2), not omitted content. All copy is concrete in both locales.
 
-**3. Type consistency:** `RowAction { key, label, tone?, disabled?, onSelect }` (Task 1) matches every actions array built in Tasks 2 and 4 (danger tones cast `as const`). `ThumbCell({ src: string | null, alt })` matches `product.images[0]?.mediaUrl ?? null` and `image.mediaUrl` (nullable in the DTO) and the object-URL string in the form. `importProductsCsv(text)` (API) returns the same `{ created, failures: {row, reason}[] }` the shared schema and the web `importProductsCsv(file)` parse. `parseCsv(text): string[][]` is consumed only by the import service. The controller parses nothing extra (multer file + service). Task 3's page code uses `ApiError`, `queryClient`, `queryKeys.productsRoot`, `useRef`, `useState` — all already imported/present in the page. Consistent.
+**3. Type consistency:** `RowAction { key, label, tone?, disabled?, onSelect }` (Task 1) matches every actions array built in Tasks 2 and 4 (danger tones cast `as const`). `ThumbCell({ src: string | null, alt })` matches `product.images[0]?.mediaUrl ?? null` and `image.mediaUrl` (nullable in the DTO) and the object-URL string in the form. `importProductsCsv(text)` (API) returns the same `{ created, failures: {row, reason}[] }` the shared schema and the web `importProductsCsv(file)` parse. `parseCsv(text): string[][]` is consumed only by the import service. The controller parses nothing extra (multer file + service). Task 3's page code uses `ApiError`, `queryClient`, `queryKeys.productsRoot`, `useRef`, `useState`, all already imported/present in the page. Consistent.
