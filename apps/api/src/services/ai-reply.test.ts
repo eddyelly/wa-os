@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Message } from '@prisma/client';
-import type { LLMPort } from '@waos/ports';
+import type { LLMPort, LlmCompletionParams } from '@waos/ports';
 import {
   buildConversationMessages,
   buildSystemPrompt,
@@ -10,6 +10,7 @@ import {
   parseOrgAiSettings,
   parseOrgShopSettings,
   replyTargetForAi,
+  transcribeAudio,
 } from './ai-reply.js';
 
 const goodJson = '{"reply": "Tunafungua saa tatu asubuhi.", "confidence": 0.9, "intent": "question"}';
@@ -362,5 +363,45 @@ describe('parseOrgShopSettings', () => {
       ownerAlertPhone: '+255700000000',
       paymentInstructions: 'Pay via M-Pesa to 0700 000 000.',
     });
+  });
+});
+
+function fakeTranscribeLlm(response: { text: string } | Error) {
+  return {
+    complete: vi.fn((_params: LlmCompletionParams) =>
+      response instanceof Error ? Promise.reject(response) : Promise.resolve({ text: response.text }),
+    ),
+  };
+}
+
+describe('transcribeAudio', () => {
+  const audio = { mimeType: 'audio/ogg', data: 'BASE64BYTES' };
+
+  it('returns the trimmed transcript and passes the audio as a media part with no tools', async () => {
+    const llm = fakeTranscribeLlm({ text: '  Bei ya rasta ni ngapi?  ' });
+    const result = await transcribeAudio(llm, audio);
+    expect(result).toBe('Bei ya rasta ni ngapi?');
+    const params = llm.complete.mock.calls[0]?.[0] as {
+      system: string;
+      messages: { role: string; content: unknown }[];
+      tools?: unknown;
+    };
+    expect(params.tools).toBeUndefined();
+    expect(params.messages[0]?.content).toEqual([
+      { type: 'media', mimeType: 'audio/ogg', data: 'BASE64BYTES' },
+      { type: 'text', text: expect.stringContaining('Transcribe') as unknown as string },
+    ]);
+  });
+
+  it('returns null for the EMPTY sentinel', async () => {
+    expect(await transcribeAudio(fakeTranscribeLlm({ text: 'EMPTY' }), audio)).toBeNull();
+  });
+
+  it('returns null for a blank transcript', async () => {
+    expect(await transcribeAudio(fakeTranscribeLlm({ text: '   ' }), audio)).toBeNull();
+  });
+
+  it('returns null when the model call throws', async () => {
+    expect(await transcribeAudio(fakeTranscribeLlm(new Error('down')), audio)).toBeNull();
   });
 });

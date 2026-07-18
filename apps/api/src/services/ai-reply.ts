@@ -1,6 +1,7 @@
 import type { Message } from '@prisma/client';
 import type { LLMPort, LlmMessage } from '@waos/ports';
 import { aiReplyOutputSchema, type AiReplyOutput } from '@waos/shared';
+import { logger } from '../lib/logger.js';
 import type { RetrievedChunk } from '../repositories/knowledge-repository.js';
 
 /**
@@ -236,4 +237,43 @@ export function parseOrgShopSettings(settings: unknown): OrgShopSettings {
     ...(hasPhone ? { ownerAlertPhone: record.ownerAlertPhone as string } : {}),
     ownerAlertsEnabled: record.ownerAlertsEnabled === true && hasPhone,
   };
+}
+
+const TRANSCRIBE_SYSTEM = [
+  'You transcribe WhatsApp voice notes for a business inbox.',
+  'Return ONLY the verbatim transcript, in the language actually spoken (Swahili or English). No translation, no commentary, no quotes.',
+  'If the audio is silent, unintelligible, or contains no speech, return exactly: EMPTY',
+].join('\n');
+
+/**
+ * One-shot voice note transcription (spec: transcribe-then-answer). Returns
+ * the transcript, or null when the audio is unusable so the caller can hand
+ * off. Never logs the transcript or the bytes (ids/metadata only upstream).
+ */
+export async function transcribeAudio(
+  llm: LLMPort,
+  audio: { mimeType: string; data: string },
+): Promise<string | null> {
+  try {
+    const completion = await llm.complete({
+      system: TRANSCRIBE_SYSTEM,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'media', mimeType: audio.mimeType, data: audio.data },
+            { type: 'text', text: 'Transcribe this voice note.' },
+          ],
+        },
+      ],
+    });
+    const text = completion.text.trim();
+    if (text.length === 0 || text === 'EMPTY') {
+      return null;
+    }
+    return text;
+  } catch (error) {
+    logger.warn({ err: error }, 'voice note transcription failed');
+    return null;
+  }
 }

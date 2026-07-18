@@ -23,6 +23,7 @@ function toParts(message: LlmMessage): GeminiPart[] {
       case 'text':
         return { text: part.text };
       case 'image':
+      case 'media':
         return { inlineData: { mimeType: part.mimeType, data: part.data } };
       case 'tool_result':
         return { functionResponse: { name: part.name, response: { output: part.response } } };
