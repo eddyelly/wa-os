@@ -249,7 +249,17 @@
     "loadError": "Could not load products. Check your connection and try again.",
     "saveError": "Could not save. Check the values and try again.",
     "retry": "Try again",
-    "invalidNumbers": "Prices must be whole numbers above zero."
+    "invalidNumbers": "Prices must be whole numbers above zero.",
+    "searchPlaceholder": "Search products",
+    "active": "Active",
+    "colProduct": "Product",
+    "colPrice": "Price",
+    "colStock": "Stock",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "photoLabel": "Photo (optional)",
+    "photoHint": "Customers see this photo when the AI sells this product.",
+    "photoUploadFailed": "Product saved, but the photo failed to upload. Add it from the list."
   },
   "onboardingProducts": {
     "title": "Add your first products",

@@ -249,7 +249,17 @@
     "loadError": "Imeshindwa kupakia bidhaa. Angalia muunganisho wako kisha ujaribu tena.",
     "saveError": "Imeshindwa kuhifadhi. Angalia thamani kisha ujaribu tena.",
     "retry": "Jaribu tena",
-    "invalidNumbers": "Bei lazima ziwe namba nzima zaidi ya sifuri."
+    "invalidNumbers": "Bei lazima ziwe namba nzima zaidi ya sifuri.",
+    "searchPlaceholder": "Tafuta bidhaa",
+    "active": "Inatumika",
+    "colProduct": "Bidhaa",
+    "colPrice": "Bei",
+    "colStock": "Akiba",
+    "colStatus": "Hali",
+    "colActions": "Vitendo",
+    "photoLabel": "Picha (hiari)",
+    "photoHint": "Wateja wataiona picha hii AI inapouza bidhaa hii.",
+    "photoUploadFailed": "Bidhaa imehifadhiwa, lakini picha imeshindwa kupakiwa. Iongeze kutoka kwenye orodha."
   },
   "onboardingProducts": {
     "title": "Ongeza bidhaa zako za kwanza",

@@ -16,7 +16,10 @@ import {
 } from '@/lib/shop-api';
 import { queryKeys } from '@/lib/query-keys';
 import { AppShell } from '@/components/app-shell';
-import { Badge, Button, Card, EmptyState, ErrorBox, Field, Input, Skeleton } from '@/components/ui';
+import {
+  Badge, Button, Card, EmptyState, ErrorBox, Field, Input, SearchInput, Skeleton,
+  Table, TableHeader, Th, TableBody, TableRow, Td, ThumbCell, RowActions,
+} from '@/components/ui';
 
 const DEFAULT_STOCK_QTY = '0';
 const DEFAULT_LOW_STOCK_THRESHOLD = '5';
@@ -41,6 +44,11 @@ export default function ProductsPage() {
   const [minPrice, setMinPrice] = useState('');
   const [stockQty, setStockQty] = useState(DEFAULT_STOCK_QTY);
   const [lowStockThreshold, setLowStockThreshold] = useState(DEFAULT_LOW_STOCK_THRESHOLD);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [pendingPhotoUrl, setPendingPhotoUrl] = useState<string | null>(null);
+  const [photoWarning, setPhotoWarning] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const formPhotoRef = useRef<HTMLInputElement | null>(null);
 
   const {
     data: products,
@@ -61,6 +69,16 @@ export default function ProductsPage() {
     return null;
   }
 
+  const selectPendingPhoto = (file: File | null): void => {
+    setPendingPhoto(file);
+    setPendingPhotoUrl((previous) => {
+      if (previous) {
+        URL.revokeObjectURL(previous);
+      }
+      return file ? URL.createObjectURL(file) : null;
+    });
+  };
+
   const resetForm = (): void => {
     setEditingId(null);
     setName('');
@@ -70,6 +88,8 @@ export default function ProductsPage() {
     setStockQty(DEFAULT_STOCK_QTY);
     setLowStockThreshold(DEFAULT_LOW_STOCK_THRESHOLD);
     setFormError(null);
+    selectPendingPhoto(null);
+    setPhotoWarning(null);
   };
 
   const startEdit = (product: ProductDto): void => {
@@ -81,6 +101,7 @@ export default function ProductsPage() {
     setStockQty(String(product.stockQty));
     setLowStockThreshold(String(product.lowStockThreshold));
     setFormError(null);
+    selectPendingPhoto(null);
   };
 
   const submit = async (event: SyntheticEvent): Promise<void> => {
@@ -120,7 +141,7 @@ export default function ProductsPage() {
           lowStockThreshold: lowStockThresholdNum,
         });
       } else {
-        await createProduct({
+        const created = await createProduct({
           name,
           description: trimmedDescription === '' ? undefined : trimmedDescription,
           price: priceNum,
@@ -128,6 +149,22 @@ export default function ProductsPage() {
           stockQty: stockQtyNum,
           lowStockThreshold: lowStockThresholdNum,
         });
+        let photoFailed = false;
+        if (pendingPhoto) {
+          try {
+            await uploadProductImage(created.id, pendingPhoto);
+          } catch {
+            // The product is saved; only the photo failed. Say so honestly
+            // instead of reporting the whole save as failed.
+            photoFailed = true;
+          }
+        }
+        resetForm();
+        if (photoFailed) {
+          setPhotoWarning(t('photoUploadFailed'));
+        }
+        await queryClient.invalidateQueries({ queryKey: queryKeys.productsRoot });
+        return;
       }
       resetForm();
       await queryClient.invalidateQueries({ queryKey: queryKeys.productsRoot });
@@ -198,6 +235,14 @@ export default function ProductsPage() {
       setUploadingId(null);
     }
   };
+
+  const query = search.trim().toLowerCase();
+  const filtered = (products ?? []).filter(
+    (p) =>
+      query === '' ||
+      p.name.toLowerCase().includes(query) ||
+      p.tags.some((tag) => tag.toLowerCase().includes(query)),
+  );
 
   return (
     <AppShell title={t('title')}>
@@ -277,7 +322,76 @@ export default function ProductsPage() {
               />
             </Field>
           </div>
+          <Field label={t('photoLabel')} hint={t('photoHint')}>
+            {editingId ? (
+              <div className="flex flex-wrap items-center gap-3">
+                {(products?.find((p) => p.id === editingId)?.images ?? []).map((image) => (
+                  <div key={image.id} className="flex flex-col items-center gap-1">
+                    <ThumbCell src={image.mediaUrl} alt={image.description} />
+                    <button
+                      type="button"
+                      onClick={() => void removeImage(editingId, image.id)}
+                      className="text-[11px] font-medium text-red-700 hover:underline"
+                    >
+                      {t('removeImage')}
+                    </button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={uploadingId !== null}
+                  onClick={() => {
+                    triggerUpload(editingId);
+                  }}
+                >
+                  {uploadingId !== null ? t('uploading') : t('addImage')}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                {pendingPhotoUrl ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <ThumbCell src={pendingPhotoUrl} alt={t('photoLabel')} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        selectPendingPhoto(null);
+                      }}
+                      className="text-[11px] font-medium text-red-700 hover:underline"
+                    >
+                      {t('removeImage')}
+                    </button>
+                  </div>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    formPhotoRef.current?.click();
+                  }}
+                >
+                  {t('addImage')}
+                </Button>
+                <input
+                  ref={formPhotoRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    selectPendingPhoto(e.target.files?.[0] ?? null);
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+            )}
+          </Field>
           {formError ? <ErrorBox message={formError} /> : null}
+          {photoWarning ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              {photoWarning}
+            </div>
+          ) : null}
           <div className="flex gap-2">
             <Button type="submit" disabled={busy} className="flex-1">
               {busy ? t('saving') : t('save')}
@@ -305,6 +419,16 @@ export default function ProductsPage() {
         }}
       />
 
+      <div className="mb-3">
+        <SearchInput
+          placeholder={t('searchPlaceholder')}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+        />
+      </div>
+
       {isError ? (
         <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
       ) : products === undefined ? (
@@ -313,107 +437,186 @@ export default function ProductsPage() {
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
         </div>
-      ) : products.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <EmptyState title={t('emptyTitle')} hint={t('emptyHint')} />
       ) : (
         <>
           {actionError ? <div className="mb-3"><ErrorBox message={actionError} /></div> : null}
-          <ul className="space-y-2">
-            {products.map((product) => (
-              <li key={product.id} className="rounded-2xl bg-white p-4 shadow-sm">
-                <div className="flex gap-3">
-                  {product.images[0]?.mediaUrl ? (
-                    <img
-                      src={product.images[0].mediaUrl}
-                      alt={product.name}
-                      className="h-16 w-16 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="h-16 w-16 shrink-0 rounded-xl bg-brand-100" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate font-semibold text-brand-950">{product.name}</p>
-                      {!product.isActive ? <Badge tone="neutral">{t('inactive')}</Badge> : null}
-                    </div>
-                    <p className="text-sm text-brand-700">
-                      {product.price.toLocaleString(locale)} TZS
-                    </p>
-                    <p className="text-xs text-brand-600">
-                      {t('floorLabel')}:{' '}
-                      {product.minPrice !== null
-                        ? `${product.minPrice.toLocaleString(locale)} TZS`
-                        : t('noFloor')}
-                    </p>
-                    <div className="mt-1">
-                      <Badge tone={product.stockQty <= product.lowStockThreshold ? 'danger' : 'neutral'}>
-                        {t('stockBadge', { count: product.stockQty })}
-                      </Badge>
-                    </div>
-                    {product.tags.length > 0 ? (
-                      <p className="mt-1 truncate text-xs text-brand-500">{product.tags.join(', ')}</p>
-                    ) : null}
-                  </div>
-                </div>
-
-                {product.images.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {product.images.map((image) => (
-                      <div key={image.id} className="flex flex-col items-center gap-1">
-                        {image.mediaUrl ? (
-                          <img
-                            src={image.mediaUrl}
-                            alt={image.description || product.name}
-                            className="h-12 w-12 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 rounded-lg bg-brand-100" />
-                        )}
-                        <button
-                          onClick={() => void removeImage(product.id, image.id)}
-                          className="text-[11px] font-medium text-red-700 hover:underline"
-                        >
-                          {t('removeImage')}
-                        </button>
+          <Table>
+            <TableHeader>
+              <Th>{t('colProduct')}</Th>
+              <Th>{t('colPrice')}</Th>
+              <Th>{t('colStock')}</Th>
+              <Th>{t('colStatus')}</Th>
+              <Th className="text-right">{t('colActions')}</Th>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((product) => (
+                <TableRow key={product.id}>
+                  <Td>
+                    <div className="flex items-center gap-3">
+                      <ThumbCell src={product.images[0]?.mediaUrl ?? null} alt={product.name} />
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-brand-950">{product.name}</p>
+                        {product.description ? (
+                          <p className="max-w-[28rem] truncate text-xs text-brand-500">
+                            {product.description}
+                          </p>
+                        ) : null}
                       </div>
-                    ))}
+                    </div>
+                  </Td>
+                  <Td className="whitespace-nowrap">{product.price.toLocaleString(locale)} TZS</Td>
+                  <Td>
+                    <span className="mr-2">{product.stockQty}</span>
+                    {product.stockQty === 0 ? (
+                      <Badge tone="danger">{t('stockBadge', { count: product.stockQty })}</Badge>
+                    ) : product.stockQty <= product.lowStockThreshold ? (
+                      <Badge tone="warning">{t('stockBadge', { count: product.stockQty })}</Badge>
+                    ) : null}
+                  </Td>
+                  <Td>
+                    <Badge tone={product.isActive ? 'success' : 'neutral'}>
+                      {product.isActive ? t('active') : t('inactive')}
+                    </Badge>
+                  </Td>
+                  <Td className="text-right">
+                    <div className="flex justify-end">
+                      <RowActions
+                        label={t('colActions')}
+                        actions={[
+                          { key: 'edit', label: t('edit'), onSelect: () => { startEdit(product); } },
+                          {
+                            key: 'photo',
+                            label: uploadingId !== null ? t('uploading') : t('addImage'),
+                            disabled: uploadingId !== null,
+                            onSelect: () => { triggerUpload(product.id); },
+                          },
+                          ...product.images.map((image, index) => ({
+                            key: `rm-${image.id}`,
+                            label:
+                              product.images.length > 1
+                                ? `${t('removeImage')} ${index + 1}`
+                                : t('removeImage'),
+                            onSelect: () => void removeImage(product.id, image.id),
+                          })),
+                          {
+                            key: 'toggle',
+                            label: product.isActive ? t('deactivate') : t('activate'),
+                            onSelect: () => void toggleActive(product),
+                          },
+                          {
+                            key: 'delete',
+                            label: t('delete'),
+                            tone: 'danger' as const,
+                            onSelect: () => void remove(product.id),
+                          },
+                        ]}
+                      />
+                    </div>
+                  </Td>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="lg:hidden">
+            <ul className="space-y-2">
+              {filtered.map((product) => (
+                <li key={product.id} className="rounded-2xl bg-white p-4 shadow-sm">
+                  <div className="flex gap-3">
+                    {product.images[0]?.mediaUrl ? (
+                      <img
+                        src={product.images[0].mediaUrl}
+                        alt={product.name}
+                        className="h-16 w-16 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 shrink-0 rounded-xl bg-brand-100" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate font-semibold text-brand-950">{product.name}</p>
+                        {!product.isActive ? <Badge tone="neutral">{t('inactive')}</Badge> : null}
+                      </div>
+                      <p className="text-sm text-brand-700">
+                        {product.price.toLocaleString(locale)} TZS
+                      </p>
+                      <p className="text-xs text-brand-600">
+                        {t('floorLabel')}:{' '}
+                        {product.minPrice !== null
+                          ? `${product.minPrice.toLocaleString(locale)} TZS`
+                          : t('noFloor')}
+                      </p>
+                      <div className="mt-1">
+                        <Badge tone={product.stockQty <= product.lowStockThreshold ? 'danger' : 'neutral'}>
+                          {t('stockBadge', { count: product.stockQty })}
+                        </Badge>
+                      </div>
+                      {product.tags.length > 0 ? (
+                        <p className="mt-1 truncate text-xs text-brand-500">{product.tags.join(', ')}</p>
+                      ) : null}
+                    </div>
                   </div>
-                ) : null}
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => {
-                      startEdit(product);
-                    }}
-                    className="rounded-lg bg-brand-100 px-3 py-1.5 text-xs font-semibold text-brand-900 hover:bg-brand-200"
-                  >
-                    {t('edit')}
-                  </button>
-                  <button
-                    onClick={() => void toggleActive(product)}
-                    className="rounded-lg bg-brand-100 px-3 py-1.5 text-xs font-semibold text-brand-900 hover:bg-brand-200"
-                  >
-                    {product.isActive ? t('deactivate') : t('activate')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      triggerUpload(product.id);
-                    }}
-                    disabled={uploadingId !== null}
-                    className="rounded-lg bg-brand-100 px-3 py-1.5 text-xs font-semibold text-brand-900 hover:bg-brand-200 disabled:opacity-50"
-                  >
-                    {uploadingId !== null ? t('uploading') : t('addImage')}
-                  </button>
-                  <button
-                    onClick={() => void remove(product.id)}
-                    className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100"
-                  >
-                    {t('delete')}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  {product.images.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {product.images.map((image) => (
+                        <div key={image.id} className="flex flex-col items-center gap-1">
+                          {image.mediaUrl ? (
+                            <img
+                              src={image.mediaUrl}
+                              alt={image.description || product.name}
+                              className="h-12 w-12 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-lg bg-brand-100" />
+                          )}
+                          <button
+                            onClick={() => void removeImage(product.id, image.id)}
+                            className="text-[11px] font-medium text-red-700 hover:underline"
+                          >
+                            {t('removeImage')}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => {
+                        startEdit(product);
+                      }}
+                      className="rounded-lg bg-brand-100 px-3 py-1.5 text-xs font-semibold text-brand-900 hover:bg-brand-200"
+                    >
+                      {t('edit')}
+                    </button>
+                    <button
+                      onClick={() => void toggleActive(product)}
+                      className="rounded-lg bg-brand-100 px-3 py-1.5 text-xs font-semibold text-brand-900 hover:bg-brand-200"
+                    >
+                      {product.isActive ? t('deactivate') : t('activate')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        triggerUpload(product.id);
+                      }}
+                      disabled={uploadingId !== null}
+                      className="rounded-lg bg-brand-100 px-3 py-1.5 text-xs font-semibold text-brand-900 hover:bg-brand-200 disabled:opacity-50"
+                    >
+                      {uploadingId !== null ? t('uploading') : t('addImage')}
+                    </button>
+                    <button
+                      onClick={() => void remove(product.id)}
+                      className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100"
+                    >
+                      {t('delete')}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </>
       )}
     </AppShell>
