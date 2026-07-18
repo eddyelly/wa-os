@@ -368,6 +368,10 @@ export function ConversationThread({
                           alt={t('mediaAlt')}
                           className="mb-1 max-h-64 rounded-lg"
                         />
+                      ) : message.type === 'AUDIO' ? (
+                        <audio controls preload="metadata" src={message.mediaUrl} className="mb-1 w-56 max-w-full" />
+                      ) : message.type === 'VIDEO' ? (
+                        <video controls preload="metadata" src={message.mediaUrl} className="mb-1 max-h-64 rounded-lg" />
                       ) : (
                         <a
                           href={message.mediaUrl}
