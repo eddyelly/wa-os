@@ -93,7 +93,17 @@ export const productService = {
     }
   },
 
-  async create(input: CreateProductRequest): Promise<ProductDto> {
+  /**
+   * `deferEmbedding` skips the inline embedding refresh so the caller can
+   * batch it in the background (the CSV import path: awaiting a Gemini call
+   * per row would keep a 200-row request open well past a typical proxy
+   * timeout). Manual single-product creation never sets it, so its
+   * behavior is unchanged.
+   */
+  async create(
+    input: CreateProductRequest,
+    options?: { deferEmbedding?: boolean },
+  ): Promise<ProductDto> {
     const product = await productRepository.create({
       name: input.name,
       description: input.description,
@@ -103,7 +113,9 @@ export const productService = {
       lowStockThreshold: input.lowStockThreshold,
       tags: input.tags,
     });
-    await this.refreshEmbedding(product.id);
+    if (!options?.deferEmbedding) {
+      await this.refreshEmbedding(product.id);
+    }
     return this.toDto(product);
   },
 

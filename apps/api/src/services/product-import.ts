@@ -1,6 +1,7 @@
 import { createProductRequestSchema, type ImportProductsResponse } from '@waos/shared';
 import { parseCsv } from '../lib/csv.js';
 import { ValidationError } from '../lib/errors.js';
+import { logger } from '../lib/logger.js';
 import { productService } from './product-service.js';
 
 export const IMPORT_HEADER = [
@@ -52,11 +53,32 @@ function toRowPayload(cells: string[]): Record<string, unknown> {
 }
 
 /**
+ * Refreshes embeddings for freshly imported products off the request path.
+ * Sequential, not parallel: a 200-row file must not fire 200 concurrent
+ * Gemini calls. refreshEmbedding already catches and logs its own failures,
+ * so this loop cannot produce an unhandled rejection.
+ */
+async function deferEmbeddings(productIds: string[]): Promise<void> {
+  for (const id of productIds) {
+    try {
+      await productService.refreshEmbedding(id);
+    } catch (error) {
+      logger.warn({ err: error, productId: id }, 'deferred product embedding failed');
+    }
+  }
+}
+
+/**
  * Partial import (spec section 6): every valid row is created through the
- * normal productService.create (embeddings and side effects behave exactly
- * like a manual create); invalid rows come back as { row, reason } with
- * 1-based data row numbers. File-level problems (bad header, too many rows)
- * throw a ValidationError instead.
+ * normal productService.create, but with embedding refresh deferred: row
+ * creation stays sequential and awaited (row numbers and failures depend on
+ * it), while the embedding calls themselves run in a single background
+ * chain after the response-shaping loop finishes, so the request never
+ * blocks on Gemini for the whole file. Invalid rows come back as
+ * { row, reason } with 1-based data row numbers. File-level problems (bad
+ * header, too many rows) throw a ValidationError instead. Comma-only
+ * padding rows (Excel's artifact for a deleted row) are skipped entirely:
+ * neither a create nor a failure.
  */
 export async function importProductsCsv(text: string): Promise<ImportProductsResponse> {
   const rows = parseCsv(text);
@@ -75,8 +97,12 @@ export async function importProductsCsv(text: string): Promise<ImportProductsRes
   }
   let created = 0;
   const failures: { row: number; reason: string }[] = [];
+  const createdIds: string[] = [];
   for (const [index, cells] of dataRows.entries()) {
     const rowNumber = index + 1;
+    if (cells.every((cell) => cell.trim() === '')) {
+      continue;
+    }
     if (cells.length !== IMPORT_HEADER.length) {
       failures.push({
         row: rowNumber,
@@ -92,7 +118,8 @@ export async function importProductsCsv(text: string): Promise<ImportProductsRes
       continue;
     }
     try {
-      await productService.create(parsed.data);
+      const product = await productService.create(parsed.data, { deferEmbedding: true });
+      createdIds.push(product.id);
       created += 1;
     } catch (error) {
       failures.push({
@@ -101,5 +128,6 @@ export async function importProductsCsv(text: string): Promise<ImportProductsRes
       });
     }
   }
+  void deferEmbeddings(createdIds);
   return { created, failures };
 }

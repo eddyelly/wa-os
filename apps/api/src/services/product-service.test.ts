@@ -147,6 +147,22 @@ describe('productService', () => {
     warnSpy.mockRestore();
   });
 
+  it('skips the inline embedding refresh when deferEmbedding is set, but refreshEmbedding still works on demand', async () => {
+    embed.mockResolvedValue([[0.1, 0.2, 0.3]]);
+
+    const product = await productService.create(
+      { name: 'Hair oil', description: 'Coconut hair oil', price: 12000, stockQty: 0, lowStockThreshold: 5, tags: [] },
+      { deferEmbedding: true },
+    );
+
+    expect(embed).not.toHaveBeenCalled();
+    expect(repo.setEmbedding).not.toHaveBeenCalled();
+
+    await productService.refreshEmbedding(product.id);
+    expect(embed).toHaveBeenCalledTimes(1);
+    expect(repo.setEmbedding).toHaveBeenCalledWith(product.id, [0.1, 0.2, 0.3]);
+  });
+
   it('re-embeds on a name/description change but not on a stock-only change', async () => {
     embed.mockResolvedValue([[0.5]]);
     const product = await productService.create({

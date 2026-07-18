@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { productServiceMock } = vi.hoisted(() => ({
-  productServiceMock: { create: vi.fn() },
+  productServiceMock: { create: vi.fn(), refreshEmbedding: vi.fn() },
 }));
 vi.mock('./product-service.js', () => ({ productService: productServiceMock }));
 
@@ -12,6 +12,7 @@ const HEADER = 'name,description,price,minPrice,stockQty,lowStockThreshold,tags'
 beforeEach(() => {
   vi.clearAllMocks();
   productServiceMock.create.mockResolvedValue({ id: 'p1' });
+  productServiceMock.refreshEmbedding.mockResolvedValue(undefined);
 });
 
 describe('importProductsCsv', () => {
@@ -19,22 +20,30 @@ describe('importProductsCsv', () => {
     const csv = `${HEADER}\n"Shea Butter","Pure shea",20000,17000,10,5,"hair|butter"\nComb,,3000,,25,5,`;
     const result = await importProductsCsv(csv);
     expect(result).toEqual({ created: 2, failures: [] });
-    expect(productServiceMock.create).toHaveBeenNthCalledWith(1, {
-      name: 'Shea Butter',
-      description: 'Pure shea',
-      price: 20000,
-      minPrice: 17000,
-      stockQty: 10,
-      lowStockThreshold: 5,
-      tags: ['hair', 'butter'],
-    });
-    expect(productServiceMock.create).toHaveBeenNthCalledWith(2, {
-      name: 'Comb',
-      price: 3000,
-      stockQty: 25,
-      lowStockThreshold: 5,
-      tags: [],
-    });
+    expect(productServiceMock.create).toHaveBeenNthCalledWith(
+      1,
+      {
+        name: 'Shea Butter',
+        description: 'Pure shea',
+        price: 20000,
+        minPrice: 17000,
+        stockQty: 10,
+        lowStockThreshold: 5,
+        tags: ['hair', 'butter'],
+      },
+      { deferEmbedding: true },
+    );
+    expect(productServiceMock.create).toHaveBeenNthCalledWith(
+      2,
+      {
+        name: 'Comb',
+        price: 3000,
+        stockQty: 25,
+        lowStockThreshold: 5,
+        tags: [],
+      },
+      { deferEmbedding: true },
+    );
   });
 
   it('reports invalid rows with 1-based data row numbers and keeps creating valid ones', async () => {
@@ -61,6 +70,38 @@ describe('importProductsCsv', () => {
     const result = await importProductsCsv(csv);
     expect(result.created).toBe(1);
     expect(result.failures).toEqual([{ row: 1, reason: 'db down' }]);
+  });
+
+  it('skips comma-only padding rows without creating or failing', async () => {
+    const csv = `${HEADER}\nGood,,1000,,1,5,\n,,,,,,\nAlso Good,,1000,,1,5,`;
+    const result = await importProductsCsv(csv);
+    expect(result).toEqual({ created: 2, failures: [] });
+    expect(productServiceMock.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('defers embedding refresh off the request path and runs it sequentially per created id', async () => {
+    productServiceMock.create.mockResolvedValueOnce({ id: 'p1' }).mockResolvedValueOnce({ id: 'p2' });
+    const csv = `${HEADER}\nFirst,,1000,,1,5,\nSecond,,2000,,1,5,`;
+
+    const result = await importProductsCsv(csv);
+
+    expect(result).toEqual({ created: 2, failures: [] });
+    expect(productServiceMock.create).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ name: 'First' }),
+      { deferEmbedding: true },
+    );
+    expect(productServiceMock.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ name: 'Second' }),
+      { deferEmbedding: true },
+    );
+
+    await vi.waitFor(() => {
+      expect(productServiceMock.refreshEmbedding).toHaveBeenCalledTimes(2);
+    });
+    expect(productServiceMock.refreshEmbedding).toHaveBeenNthCalledWith(1, 'p1');
+    expect(productServiceMock.refreshEmbedding).toHaveBeenNthCalledWith(2, 'p2');
   });
 
   it('rejects a wrong header', async () => {
