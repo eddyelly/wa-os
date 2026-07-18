@@ -284,7 +284,7 @@ Add a selection helper and cleanup (object URLs must be revoked):
     });
   };
 ```
-Clear the pending photo in `resetForm` (add `selectPendingPhoto(null); setPhotoWarning(null);`) and in `startEdit` (add `selectPendingPhoto(null);` (edit mode manages existing photos instead).
+Clear the pending photo in `resetForm` (add `selectPendingPhoto(null); setPhotoWarning(null);`) and in `startEdit` (add `selectPendingPhoto(null);`; edit mode manages existing photos instead).
 
 - [ ] **Step 3: Chain the photo upload into submit**
 
