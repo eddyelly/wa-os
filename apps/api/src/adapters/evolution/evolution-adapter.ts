@@ -247,8 +247,12 @@ export class EvolutionAdapter implements MessagingPort {
           const lng = content.locationMessage.degreesLongitude;
           text = lat !== undefined && lng !== undefined ? `${lat},${lng}` : undefined;
         } else if (content.videoMessage) {
-          type = 'OTHER';
+          type = 'VIDEO';
           text = content.videoMessage.caption;
+          media = {
+            providerRef: msg.key.id,
+            mimeType: content.videoMessage.mimetype ?? 'video/mp4',
+          };
         }
 
         const quotedProviderMessageId =

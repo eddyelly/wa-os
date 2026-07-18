@@ -8,6 +8,7 @@ export const messageTypeSchema = z.enum([
   'TEXT',
   'IMAGE',
   'AUDIO',
+  'VIDEO',
   'DOCUMENT',
   'LOCATION',
   'OTHER',

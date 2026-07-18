@@ -25,7 +25,14 @@ export interface ConnectResult {
   };
 }
 
-export type IncomingMessageType = 'TEXT' | 'IMAGE' | 'AUDIO' | 'DOCUMENT' | 'LOCATION' | 'OTHER';
+export type IncomingMessageType =
+  | 'TEXT'
+  | 'IMAGE'
+  | 'AUDIO'
+  | 'VIDEO'
+  | 'DOCUMENT'
+  | 'LOCATION'
+  | 'OTHER';
 
 export interface IncomingMedia {
   /** provider download reference, resolved and copied to MinIO by the inbound pipeline */

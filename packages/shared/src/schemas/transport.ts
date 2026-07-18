@@ -30,6 +30,7 @@ export const incomingMessageTypeSchema = z.enum([
   'TEXT',
   'IMAGE',
   'AUDIO',
+  'VIDEO',
   'DOCUMENT',
   'LOCATION',
   'OTHER',

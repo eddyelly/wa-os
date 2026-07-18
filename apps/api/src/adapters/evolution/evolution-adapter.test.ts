@@ -174,6 +174,38 @@ describe('evolution webhook normalization', () => {
       expect(result.event.message.quotedProviderMessageId).toBeUndefined();
     }
   });
+
+  it('normalizes a video message with media ref and caption', () => {
+    const result = evolutionAdapter.normalizeWebhookEvent({
+      event: 'messages.upsert',
+      instance: 'chan1',
+      data: {
+        key: { remoteJid: '255700000000@s.whatsapp.net', fromMe: false, id: 'WAVID1' },
+        message: { videoMessage: { caption: 'do you sell this?', mimetype: 'video/mp4' } },
+      },
+    });
+    expect(result?.event.kind).toBe('message');
+    if (result?.event.kind === 'message') {
+      expect(result.event.message.type).toBe('VIDEO');
+      expect(result.event.message.text).toBe('do you sell this?');
+      expect(result.event.message.media).toEqual({ providerRef: 'WAVID1', mimeType: 'video/mp4' });
+    }
+  });
+
+  it('defaults a video message without mimetype to video/mp4', () => {
+    const result = evolutionAdapter.normalizeWebhookEvent({
+      event: 'messages.upsert',
+      instance: 'chan1',
+      data: {
+        key: { remoteJid: '255700000000@s.whatsapp.net', fromMe: false, id: 'WAVID2' },
+        message: { videoMessage: {} },
+      },
+    });
+    if (result?.event.kind === 'message') {
+      expect(result.event.message.type).toBe('VIDEO');
+      expect(result.event.message.media?.mimeType).toBe('video/mp4');
+    }
+  });
 });
 
 describe('evolution outbound quoted replies', () => {
