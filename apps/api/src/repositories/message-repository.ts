@@ -74,6 +74,11 @@ export const messageRepository = {
     return prisma.message.findUnique({ where: { id } });
   },
 
+  /** Persists a derived body (e.g. a voice note transcript) onto a message. */
+  setBody(id: string, body: string): Promise<Message> {
+    return prisma.message.update({ where: { id }, data: { body } });
+  },
+
   findByIdWithThread(id: string): Promise<MessageWithThread | null> {
     return prisma.message.findUnique({
       where: { id },

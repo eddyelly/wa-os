@@ -58,37 +58,57 @@ export function buildSystemPrompt(params: {
 
 const NO_CAPTION_QUESTION = 'What is this? Do you have it?';
 
+const NO_CAPTION_VIDEO =
+  'The customer sent this video with no text. Watch it and respond; if it shows a product, check whether we sell it.';
+
+export interface FinalMedia {
+  messageId: string;
+  mimeType: string;
+  data: string;
+  kind: 'image' | 'video';
+}
+
+export const MAX_AI_MEDIA_BYTES = 14 * 1024 * 1024;
+
+/** Gemini inline requests cap at 20MB; 14MB of raw bytes stays safely under it after base64 inflation. */
+export function isOversizeMedia(byteLength: number): boolean {
+  return byteLength > MAX_AI_MEDIA_BYTES;
+}
+
 /**
- * Builds the LLM transcript from stored messages. When `finalImage` is
+ * Builds the LLM transcript from stored messages. When `finalMedia` is
  * supplied, it is attached to the history entry whose id matches
- * `finalImage.messageId`, wherever that entry sits in the transcript (never
+ * `finalMedia.messageId`, wherever that entry sits in the transcript (never
  * by position): the worker fetches those bytes for one specific trigger
  * message, and with worker concurrency and rapid follow-up messages the
  * positionally-last turn is not reliably that same message. That turn
- * carries the image as a content part alongside its caption (or a generic
- * fallback question when there was none), so the vision-capable model sees
- * the photo directly rather than a blank turn, and it is exempt from the
+ * carries the image or video as a content part alongside its caption (or a
+ * generic fallback question when there was none), so the model sees the
+ * media directly rather than a blank turn, and it is exempt from the
  * empty-body filter below. When no history entry matches (the message has
- * scrolled past the 200-message window), this behaves as if `finalImage`
+ * scrolled past the 200-message window), this behaves as if `finalMedia`
  * were absent.
  */
 export function buildConversationMessages(
   history: Message[],
-  finalImage?: { messageId: string; mimeType: string; data: string },
+  finalMedia?: FinalMedia,
 ): LlmMessage[] {
   const targetMessage =
-    finalImage !== undefined ? history.find((message) => message.id === finalImage.messageId) : undefined;
+    finalMedia !== undefined ? history.find((message) => message.id === finalMedia.messageId) : undefined;
 
   const messages: LlmMessage[] = history
     .filter((message) => message === targetMessage || (message.body ?? '').trim().length > 0)
     .map((message) => {
-      if (message === targetMessage && finalImage !== undefined) {
+      if (message === targetMessage && finalMedia !== undefined) {
         const caption = (message.body ?? '').trim();
+        const fallback = finalMedia.kind === 'video' ? NO_CAPTION_VIDEO : NO_CAPTION_QUESTION;
         return {
           role: 'user' as const,
           content: [
-            { type: 'image' as const, mimeType: finalImage.mimeType, data: finalImage.data },
-            { type: 'text' as const, text: caption.length > 0 ? caption : NO_CAPTION_QUESTION },
+            finalMedia.kind === 'video'
+              ? { type: 'media' as const, mimeType: finalMedia.mimeType, data: finalMedia.data }
+              : { type: 'image' as const, mimeType: finalMedia.mimeType, data: finalMedia.data },
+            { type: 'text' as const, text: caption.length > 0 ? caption : fallback },
           ],
         };
       }

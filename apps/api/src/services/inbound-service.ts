@@ -127,7 +127,13 @@ async function handleIncomingMessage(channel: Channel, incoming: IncomingMessage
     conversationId: conversation.id,
   });
 
-  if (conversation.aiEnabled && (incoming.type === 'TEXT' || incoming.type === 'IMAGE')) {
+  if (
+    conversation.aiEnabled &&
+    (incoming.type === 'TEXT' ||
+      incoming.type === 'IMAGE' ||
+      incoming.type === 'AUDIO' ||
+      incoming.type === 'VIDEO')
+  ) {
     await enqueueAiReply({
       organizationId: channel.organizationId,
       conversationId: conversation.id,

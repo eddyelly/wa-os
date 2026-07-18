@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   normalizeWebhookEvent,
   downloadMedia,
+  putMediaObject,
   channelRepo,
   contactRepo,
   conversationRepo,
@@ -18,6 +19,7 @@ const {
 } = vi.hoisted(() => ({
   normalizeWebhookEvent: vi.fn(),
   downloadMedia: vi.fn(),
+  putMediaObject: vi.fn(),
   channelRepo: { findByIdSystem: vi.fn(), updateStatusSystem: vi.fn() },
   contactRepo: { upsertByPhone: vi.fn() },
   conversationRepo: { upsertForContact: vi.fn() },
@@ -36,6 +38,7 @@ vi.mock('../repositories/contact-repository.js', () => ({ contactRepository: con
 vi.mock('../repositories/conversation-repository.js', () => ({ conversationRepository: conversationRepo }));
 vi.mock('../repositories/message-repository.js', () => ({ messageRepository: messageRepo }));
 vi.mock('../lib/queues.js', () => ({ enqueueAiReply }));
+vi.mock('../lib/minio.js', () => ({ putMediaObject }));
 vi.mock('../sockets/gateway.js', () => ({ emitToOrg }));
 vi.mock('./channel-service.js', () => ({ channelService: { applyStatusEvent } }));
 vi.mock('../lib/logger.js', () => ({ logger }));
@@ -132,5 +135,53 @@ describe('inboundService.processEvolutionWebhook quote resolution', () => {
     );
     // Only the re-delivery idempotency lookup runs, no quote-resolution lookup.
     expect(messageRepo.findByProviderId).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('inboundService.processEvolutionWebhook ai-reply enqueue', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    channelRepo.findByIdSystem.mockResolvedValue(channel);
+    contactRepo.upsertByPhone.mockResolvedValue({ id: 'contact1' });
+    conversationRepo.upsertForContact.mockResolvedValue({ id: 'conv1', aiEnabled: true });
+    messageRepo.findByProviderId.mockResolvedValue(null);
+    downloadMedia.mockResolvedValue({ data: Buffer.from('bytes'), mimeType: 'audio/ogg' });
+    putMediaObject.mockResolvedValue('org1/conv1/wa-in-1');
+  });
+
+  it('enqueues an ai-reply job for an incoming AUDIO message', async () => {
+    const message = incomingMessage({
+      type: 'AUDIO',
+      text: undefined,
+      media: true,
+    });
+    normalizeWebhookEvent.mockReturnValue({ channelId: 'chan1', event: { kind: 'message', message } });
+    messageRepo.createInbound.mockResolvedValue({ id: 'msg-audio', conversationId: 'conv1' });
+
+    await inboundService.processEvolutionWebhook({});
+
+    expect(enqueueAiReply).toHaveBeenCalledWith({
+      organizationId: 'org1',
+      conversationId: 'conv1',
+      inboundMessageId: 'msg-audio',
+    });
+  });
+
+  it('enqueues an ai-reply job for an incoming VIDEO message', async () => {
+    const message = incomingMessage({
+      type: 'VIDEO',
+      text: undefined,
+      media: true,
+    });
+    normalizeWebhookEvent.mockReturnValue({ channelId: 'chan1', event: { kind: 'message', message } });
+    messageRepo.createInbound.mockResolvedValue({ id: 'msg-video', conversationId: 'conv1' });
+
+    await inboundService.processEvolutionWebhook({});
+
+    expect(enqueueAiReply).toHaveBeenCalledWith({
+      organizationId: 'org1',
+      conversationId: 'conv1',
+      inboundMessageId: 'msg-video',
+    });
   });
 });

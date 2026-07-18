@@ -6,6 +6,8 @@ import {
   buildSystemPrompt,
   completeWithRepair,
   decideAiAction,
+  isOversizeMedia,
+  MAX_AI_MEDIA_BYTES,
   parseAiOutput,
   parseOrgAiSettings,
   parseOrgShopSettings,
@@ -212,6 +214,7 @@ describe('conversation transcript', () => {
       messageId: 'img1',
       mimeType: 'image/jpeg',
       data: 'YmFzZTY0',
+      kind: 'image' as const,
     });
     const last = transcript[transcript.length - 1];
     expect(last).toEqual({
@@ -237,6 +240,7 @@ describe('conversation transcript', () => {
       messageId: 'img1',
       mimeType: 'image/jpeg',
       data: 'YmFzZTY0',
+      kind: 'image' as const,
     });
     expect(transcript[transcript.length - 1]).toEqual({
       role: 'user',
@@ -266,6 +270,7 @@ describe('conversation transcript', () => {
       messageId: 'img1',
       mimeType: 'image/jpeg',
       data: 'YmFzZTY0',
+      kind: 'image' as const,
     });
     expect(transcript).toEqual([
       {
@@ -285,8 +290,28 @@ describe('conversation transcript', () => {
       messageId: 'scrolled-out-of-the-200-window',
       mimeType: 'image/jpeg',
       data: 'YmFzZTY0',
+      kind: 'image' as const,
     });
     expect(transcript[transcript.length - 1]).toEqual({ role: 'user', content: 'Habari' });
+  });
+
+  it('attaches a video trigger as a media part with the video fallback question', () => {
+    const history = [{ id: 'm1', direction: 'IN', body: null, type: 'VIDEO' } as Message];
+    const transcript = buildConversationMessages(history, {
+      messageId: 'm1',
+      mimeType: 'video/mp4',
+      data: 'VID64',
+      kind: 'video',
+    });
+    expect(transcript[0]?.content).toEqual([
+      { type: 'media', mimeType: 'video/mp4', data: 'VID64' },
+      { type: 'text', text: expect.stringContaining('video') as unknown as string },
+    ]);
+  });
+
+  it('flags media over the 14MB cap and accepts media at the cap', () => {
+    expect(isOversizeMedia(MAX_AI_MEDIA_BYTES + 1)).toBe(true);
+    expect(isOversizeMedia(MAX_AI_MEDIA_BYTES)).toBe(false);
   });
 });
 

@@ -21,9 +21,12 @@ import {
   buildConversationMessages,
   buildSystemPrompt,
   decideAiAction,
+  isOversizeMedia,
   parseOrgAiSettings,
   parseOrgShopSettings,
   replyTargetForAi,
+  transcribeAudio,
+  type FinalMedia,
 } from '../services/ai-reply.js';
 import { outboundService } from '../services/outbound-service.js';
 import { buildShopTools } from '../services/shop-tools.js';
@@ -100,11 +103,19 @@ export async function processAiReplyJob(
       }
       const inbound = await messageRepository.listByConversation(conversation.id, 200);
       const lastInbound = [...inbound].reverse().find((m) => m.id === payload.inboundMessageId);
-      const question = lastInbound?.body ?? '';
-      // A photo with no caption still triggers the agent (vision trigger):
-      // only bail for an empty turn that carries no image either.
+      let question = lastInbound?.body ?? '';
+      // Media turns trigger the agent even without text: images/videos go to
+      // the model directly, voice notes are transcribed first.
       const isImageTrigger = lastInbound?.type === 'IMAGE' && Boolean(lastInbound.mediaKey);
-      if (question.trim().length === 0 && !isImageTrigger) {
+      const isVideoTrigger = lastInbound?.type === 'VIDEO' && Boolean(lastInbound.mediaKey);
+      const isAudioTrigger = lastInbound?.type === 'AUDIO' && Boolean(lastInbound.mediaKey);
+      // An audio/video message whose media never downloaded has nothing the
+      // AI can work with: hand it to a human instead of staying silent.
+      const mediaLost =
+        (lastInbound?.type === 'AUDIO' || lastInbound?.type === 'VIDEO') &&
+        !lastInbound.mediaKey &&
+        question.trim().length === 0;
+      if (!mediaLost && question.trim().length === 0 && !isImageTrigger && !isVideoTrigger && !isAudioTrigger) {
         return;
       }
       const organizationId = requireRequestContext().organizationId;
@@ -119,6 +130,65 @@ export async function processAiReplyJob(
         return;
       }
       const threshold = settings.aiConfidenceThreshold ?? config.AI_CONFIDENCE_THRESHOLD;
+
+      const handOffUnprocessable = async (): Promise<void> => {
+        await conversationRepository.updateStatus(conversation.id, 'PENDING');
+        try {
+          await notificationService.notify('HANDOFF', buildHandoffNotifyPayload(conversation));
+        } catch (error) {
+          logger.warn(
+            { err: error, conversationId: conversation.id },
+            'handoff notification failed',
+          );
+        }
+        emitToOrg(payload.organizationId, 'conversation.updated', {
+          conversationId: conversation.id,
+        });
+        await aiReplyLogRepository.create({
+          conversationId: conversation.id,
+          retrievedChunkIds: [],
+          confidence: 0,
+          action: 'HANDED_OFF',
+          latencyMs: Date.now() - startedAt,
+          toolsUsed: [],
+        });
+        logger.info(
+          { conversationId: conversation.id, action: 'HANDOFF', latencyMs: Date.now() - startedAt, chunks: 0 },
+          'ai reply decision',
+        );
+      };
+
+      if (mediaLost) {
+        await handOffUnprocessable();
+        return;
+      }
+
+      // Voice note: transcribe first, persist the transcript so the owner
+      // reads it in the thread and future turns carry it, then continue the
+      // normal pipeline with the transcript as the question.
+      if (isAudioTrigger && lastInbound.mediaKey) {
+        const media = await getMediaObject(lastInbound.mediaKey);
+        if (isOversizeMedia(media.data.length)) {
+          await handOffUnprocessable();
+          return;
+        }
+        const transcript = await transcribeAudio(ports.llm, {
+          mimeType: media.mimeType,
+          data: media.data.toString('base64'),
+        });
+        if (transcript === null) {
+          await handOffUnprocessable();
+          return;
+        }
+        await messageRepository.setBody(lastInbound.id, transcript);
+        lastInbound.body = transcript; // the history array holds this same row
+        question = transcript;
+        emitToOrg(payload.organizationId, 'message.updated', {
+          messageId: lastInbound.id,
+          conversationId: conversation.id,
+          status: lastInbound.status,
+        });
+      }
 
       // Nothing to embed for an image-only turn with no caption text.
       const [queryEmbedding] =
@@ -145,16 +215,21 @@ export async function processAiReplyJob(
         shop: { enabled: shopEnabled },
       });
 
-      let finalImage: { messageId: string; mimeType: string; data: string } | undefined;
-      if (isImageTrigger && lastInbound.mediaKey) {
+      let finalMedia: FinalMedia | undefined;
+      if ((isImageTrigger || isVideoTrigger) && lastInbound.mediaKey) {
         const media = await getMediaObject(lastInbound.mediaKey);
-        finalImage = {
+        if (isOversizeMedia(media.data.length)) {
+          await handOffUnprocessable();
+          return;
+        }
+        finalMedia = {
           messageId: lastInbound.id,
           mimeType: media.mimeType,
           data: media.data.toString('base64'),
+          kind: isVideoTrigger ? 'video' : 'image',
         };
       }
-      const messages = buildConversationMessages(inbound, finalImage);
+      const messages = buildConversationMessages(inbound, finalMedia);
       if (messages.length === 0) {
         return;
       }
