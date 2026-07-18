@@ -246,6 +246,8 @@
     "stockBadge": "{count} in stock",
     "emptyTitle": "No products yet",
     "emptyHint": "Add your first product and the AI can start selling it.",
+    "noResultsTitle": "No products match your search.",
+    "noResultsHint": "Try a different name or tag.",
     "loadError": "Could not load products. Check your connection and try again.",
     "saveError": "Could not save. Check the values and try again.",
     "retry": "Try again",

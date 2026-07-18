@@ -209,7 +209,7 @@ export default function OrdersPage() {
                     <Td className="text-right">
                       {actions.length > 0 ? (
                         <div className="flex justify-end">
-                          <RowActions label={t('colActions')} actions={actions} />
+                          <RowActions label={`${t('colActions')}: ${shortId(order.id)}`} actions={actions} />
                         </div>
                       ) : (
                         <span className="text-brand-300">-</span>

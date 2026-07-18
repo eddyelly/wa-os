@@ -104,6 +104,19 @@ describe('importProductsCsv', () => {
     expect(productServiceMock.refreshEmbedding).toHaveBeenNthCalledWith(2, 'p2');
   });
 
+  it('accepts a header row prefixed with a UTF-8 BOM (Excel "CSV UTF-8")', async () => {
+    const csv = `\uFEFF${HEADER}\nGood,,1000,,1,5,`;
+    const result = await importProductsCsv(csv);
+    expect(result).toEqual({ created: 1, failures: [] });
+  });
+
+  it('numbers failures against physical data lines when a blank line precedes them', async () => {
+    const csv = `${HEADER}\n\nBad,,abc,,1,5,`;
+    const result = await importProductsCsv(csv);
+    expect(result.created).toBe(0);
+    expect(result.failures[0]?.row).toBe(2);
+  });
+
   it('rejects a wrong header', async () => {
     await expect(importProductsCsv('nope,price\nx,1')).rejects.toThrow(/header/i);
   });

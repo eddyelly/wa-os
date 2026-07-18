@@ -1,7 +1,10 @@
 /**
  * Minimal RFC 4180 style CSV parser for the product import: quoted fields may
- * contain commas, newlines, and doubled quotes. Rows that are entirely empty
- * are skipped. No streaming: import files are capped at 1MB / 200 rows.
+ * contain commas, newlines, and doubled quotes. Empty physical lines are
+ * preserved as a single-empty-field row (the caller decides whether to skip
+ * them); only the flush at end of input avoids a phantom trailing row for a
+ * file that ends with a newline. No streaming: import files are capped at
+ * 1MB / 200 rows.
  */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
@@ -15,10 +18,7 @@ export function parseCsv(text: string): string[][] {
   };
   const pushRow = (): void => {
     pushField();
-    const isEmpty = row.length === 1 && row[0] === '';
-    if (!isEmpty) {
-      rows.push(row);
-    }
+    rows.push(row);
     row = [];
   };
   while (i < text.length) {
@@ -39,7 +39,12 @@ export function parseCsv(text: string): string[][] {
       continue;
     }
     if (char === '"') {
-      inQuotes = true;
+      if (field === '') {
+        inQuotes = true;
+        i += 1;
+        continue;
+      }
+      field += char;
       i += 1;
       continue;
     }

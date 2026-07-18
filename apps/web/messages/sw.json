@@ -246,6 +246,8 @@
     "stockBadge": "{count} stoki",
     "emptyTitle": "Hakuna bidhaa bado",
     "emptyHint": "Ongeza bidhaa yako ya kwanza ili AI ianze kuiuza.",
+    "noResultsTitle": "Hakuna bidhaa inayolingana na utafutaji wako.",
+    "noResultsHint": "Jaribu jina au lebo nyingine.",
     "loadError": "Imeshindwa kupakia bidhaa. Angalia muunganisho wako kisha ujaribu tena.",
     "saveError": "Imeshindwa kuhifadhi. Angalia thamani kisha ujaribu tena.",
     "retry": "Jaribu tena",

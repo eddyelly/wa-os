@@ -34,10 +34,19 @@ describe('parseCsv', () => {
     ]);
   });
 
-  it('skips fully empty lines', () => {
+  it('preserves empty lines as a single-empty-field row', () => {
     expect(parseCsv('a,b\n\n1,2\n\n')).toEqual([
       ['a', 'b'],
+      [''],
       ['1', '2'],
+      [''],
+    ]);
+  });
+
+  it('treats a mid-field quote as a literal character', () => {
+    expect(parseCsv('a,b\n5" nail polish,x')).toEqual([
+      ['a', 'b'],
+      ['5" nail polish', 'x'],
     ]);
   });
 });

@@ -67,7 +67,9 @@ export default function ProductsPage() {
     anchor.href = url;
     anchor.download = 'waos-products-template.csv';
     anchor.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 0);
   };
 
   const runImport = async (file: File): Promise<void> => {
@@ -102,6 +104,15 @@ export default function ProductsPage() {
       router.replace('/home');
     }
   }, [router, shopOrg]);
+
+  useEffect(() => {
+    const url = pendingPhotoUrl;
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [pendingPhotoUrl]);
 
   if (!shopOrg) {
     return null;
@@ -428,7 +439,7 @@ export default function ProductsPage() {
               <div className="flex flex-wrap items-center gap-3">
                 {(products?.find((p) => p.id === editingId)?.images ?? []).map((image) => (
                   <div key={image.id} className="flex flex-col items-center gap-1">
-                    <ThumbCell src={image.mediaUrl} alt={image.description} />
+                    <ThumbCell src={image.mediaUrl} alt={image.description || name} />
                     <button
                       type="button"
                       onClick={() => void removeImage(editingId, image.id)}
@@ -539,7 +550,11 @@ export default function ProductsPage() {
           <Skeleton className="h-24" />
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState title={t('emptyTitle')} hint={t('emptyHint')} />
+        products.length > 0 ? (
+          <EmptyState title={t('noResultsTitle')} hint={t('noResultsHint')} />
+        ) : (
+          <EmptyState title={t('emptyTitle')} hint={t('emptyHint')} />
+        )
       ) : (
         <>
           {actionError ? <div className="mb-3"><ErrorBox message={actionError} /></div> : null}
@@ -584,7 +599,7 @@ export default function ProductsPage() {
                   <Td className="text-right">
                     <div className="flex justify-end">
                       <RowActions
-                        label={t('colActions')}
+                        label={`${t('colActions')}: ${product.name}`}
                         actions={[
                           { key: 'edit', label: t('edit'), onSelect: () => { startEdit(product); } },
                           {
