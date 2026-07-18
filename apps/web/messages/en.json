@@ -259,7 +259,15 @@
     "colActions": "Actions",
     "photoLabel": "Photo (optional)",
     "photoHint": "Customers see this photo when the AI sells this product.",
-    "photoUploadFailed": "Product saved, but the photo failed to upload. Add it from the list."
+    "photoUploadFailed": "Product saved, but the photo failed to upload. Add it from the list.",
+    "downloadTemplate": "Download template",
+    "importCsv": "Import CSV",
+    "importing": "Importing...",
+    "importedCount": "{count} products imported.",
+    "importFailuresTitle": "Rows that failed (fix these in the file and re-upload only them):",
+    "importRow": "Row {row}",
+    "importError": "Import failed. Check the file and try again.",
+    "importDismiss": "Dismiss"
   },
   "onboardingProducts": {
     "title": "Add your first products",

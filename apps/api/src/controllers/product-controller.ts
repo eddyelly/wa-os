@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { createProductRequestSchema, updateProductRequestSchema } from '@waos/shared';
 import { ValidationError } from '../lib/errors.js';
 import { routeParam } from '../lib/http.js';
+import { importProductsCsv } from '../services/product-import.js';
 import { productService } from '../services/product-service.js';
 
 export const create = async (req: Request, res: Response): Promise<void> => {
@@ -46,4 +47,13 @@ export const removeImage = async (req: Request, res: Response): Promise<void> =>
     routeParam(req.params.imageId),
   );
   res.json({ product });
+};
+
+export const importCsv = async (req: Request, res: Response): Promise<void> => {
+  const file = req.file;
+  if (!file) {
+    throw new ValidationError('Attach a .csv file.');
+  }
+  const result = await importProductsCsv(file.buffer.toString('utf8'));
+  res.json(result);
 };

@@ -3,10 +3,12 @@ import {
   productSchema,
   orderSchema,
   notificationSchema,
+  importProductsResponseSchema,
   type ProductDto,
   type OrderDto,
   type NotificationDto,
   type OrderStatus,
+  type ImportProductsResponse,
 } from '@waos/shared';
 import { apiFetch, apiUpload } from './api';
 
@@ -69,6 +71,13 @@ export async function removeProductImage(id: string, imageId: string): Promise<P
     method: 'DELETE',
   });
   return productSchema.parse((raw as { product: unknown }).product);
+}
+
+export async function importProductsCsv(file: File): Promise<ImportProductsResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const raw = await apiUpload<unknown>('/api/v1/products/import', formData);
+  return importProductsResponseSchema.parse(raw);
 }
 
 export async function listOrders(

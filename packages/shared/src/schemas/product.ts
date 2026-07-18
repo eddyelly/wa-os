@@ -56,3 +56,14 @@ export const productSchema = z.object({
   updatedAt: z.string(),
 });
 export type ProductDto = z.infer<typeof productSchema>;
+
+export const importProductsResponseSchema = z.object({
+  created: z.number().int().min(0),
+  failures: z.array(
+    z.object({
+      row: z.number().int().min(1),
+      reason: z.string(),
+    }),
+  ),
+});
+export type ImportProductsResponse = z.infer<typeof importProductsResponseSchema>;

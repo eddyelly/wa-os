@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ProductDto } from '@waos/shared';
+import type { ImportProductsResponse, ProductDto } from '@waos/shared';
 import { useRouter } from '@/i18n/navigation';
 import { ApiError, getStoredUser } from '@/lib/api';
 import {
   createProduct,
   deleteProduct,
+  importProductsCsv,
   listProducts,
   removeProductImage,
   updateProduct,
@@ -49,6 +50,43 @@ export default function ProductsPage() {
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const formPhotoRef = useRef<HTMLInputElement | null>(null);
+
+  const [importBusy, setImportBusy] = useState(false);
+  const [importResult, setImportResult] = useState<ImportProductsResponse | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const importFileRef = useRef<HTMLInputElement | null>(null);
+
+  const TEMPLATE_CSV =
+    'name,description,price,minPrice,stockQty,lowStockThreshold,tags\r\n' +
+    '"Shea Hair Butter","Natural shea butter for dry hair",20000,17000,10,5,"hair|butter"\r\n';
+
+  const downloadTemplate = (): void => {
+    const blob = new Blob([TEMPLATE_CSV], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'waos-products-template.csv';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const runImport = async (file: File): Promise<void> => {
+    setImportBusy(true);
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const result = await importProductsCsv(file);
+      setImportResult(result);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.productsRoot });
+    } catch (err) {
+      setImportError(err instanceof ApiError ? err.message : t('importError'));
+    } finally {
+      setImportBusy(false);
+      if (importFileRef.current) {
+        importFileRef.current.value = '';
+      }
+    }
+  };
 
   const {
     data: products,
@@ -246,6 +284,69 @@ export default function ProductsPage() {
 
   return (
     <AppShell title={t('title')}>
+      <div className="mb-4 flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="secondary" onClick={downloadTemplate}>
+          {t('downloadTemplate')}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={importBusy}
+          onClick={() => {
+            importFileRef.current?.click();
+          }}
+        >
+          {importBusy ? t('importing') : t('importCsv')}
+        </Button>
+        <input
+          ref={importFileRef}
+          type="file"
+          accept=".csv,text/csv"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              void runImport(file);
+            }
+          }}
+        />
+      </div>
+      {importError ? (
+        <div className="mb-4">
+          <ErrorBox message={importError} />
+        </div>
+      ) : null}
+      {importResult ? (
+        <div className="mb-4 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold text-brand-950">
+              {t('importedCount', { count: importResult.created })}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setImportResult(null);
+              }}
+              className="text-xs font-medium text-brand-500 hover:text-brand-800"
+            >
+              {t('importDismiss')}
+            </button>
+          </div>
+          {importResult.failures.length > 0 ? (
+            <>
+              <p className="mt-2 text-sm text-brand-700">{t('importFailuresTitle')}</p>
+              <ul className="mt-1 space-y-1">
+                {importResult.failures.map((failure) => (
+                  <li key={failure.row} className="text-sm text-red-800">
+                    <span className="font-semibold">{t('importRow', { row: failure.row })}:</span>{' '}
+                    {failure.reason}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
+      ) : null}
       <Card className="mb-4">
         <h2 className="mb-3 text-base font-semibold text-brand-900">
           {editingId ? t('editTitle') : t('addTitle')}

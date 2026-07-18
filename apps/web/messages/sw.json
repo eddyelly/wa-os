@@ -259,7 +259,15 @@
     "colActions": "Vitendo",
     "photoLabel": "Picha (hiari)",
     "photoHint": "Wateja wataiona picha hii AI inapouza bidhaa hii.",
-    "photoUploadFailed": "Bidhaa imehifadhiwa, lakini picha imeshindwa kupakiwa. Iongeze kutoka kwenye orodha."
+    "photoUploadFailed": "Bidhaa imehifadhiwa, lakini picha imeshindwa kupakiwa. Iongeze kutoka kwenye orodha.",
+    "downloadTemplate": "Pakua kiolezo",
+    "importCsv": "Ingiza CSV",
+    "importing": "Inaingiza...",
+    "importedCount": "Bidhaa {count} zimeingizwa.",
+    "importFailuresTitle": "Safu zilizoshindwa (zirekebishe kwenye faili kisha upakie hizo tu):",
+    "importRow": "Safu {row}",
+    "importError": "Uingizaji umeshindwa. Angalia faili kisha ujaribu tena.",
+    "importDismiss": "Funga"
   },
   "onboardingProducts": {
     "title": "Ongeza bidhaa zako za kwanza",
