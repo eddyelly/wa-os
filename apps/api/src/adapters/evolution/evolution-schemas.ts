@@ -19,7 +19,11 @@ export const connectionStateResponseSchema = z
     instance: z
       .object({
         instanceName: z.string().optional(),
-        state: z.string(),
+        // Evolution omits `state` entirely while an instance exists in its
+        // database but is not loaded in memory (e.g. a stalled auto-connect
+        // after a container restart). Optional so the caller can treat that
+        // as disconnected instead of failing the reconcile.
+        state: z.string().optional(),
       })
       .passthrough(),
   })

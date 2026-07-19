@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { sendText } = vi.hoisted(() => ({ sendText: vi.fn() }));
+const { sendText, connectionState } = vi.hoisted(() => ({
+  sendText: vi.fn(),
+  connectionState: vi.fn(),
+}));
 
 vi.mock('./evolution-client.js', () => ({
-  evolutionClient: { sendText },
+  evolutionClient: { sendText, connectionState },
   toProviderNumber: (phone: string) => phone.replace(/[^0-9]/g, ''),
 }));
 
@@ -225,5 +228,19 @@ describe('evolution outbound quoted replies', () => {
       fromMe: false,
       text: 'q',
     });
+  });
+});
+
+describe('getSessionStatus', () => {
+  it('maps a normal state through', async () => {
+    connectionState.mockResolvedValueOnce('open');
+    await expect(evolutionAdapter.getSessionStatus('chan1')).resolves.toBe('CONNECTED');
+  });
+
+  it('treats a state-less response as DISCONNECTED', async () => {
+    // Evolution omits `state` while the instance is not loaded in memory
+    // (stalled auto-connect after a container restart).
+    connectionState.mockResolvedValueOnce(undefined);
+    await expect(evolutionAdapter.getSessionStatus('chan1')).resolves.toBe('DISCONNECTED');
   });
 });

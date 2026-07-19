@@ -108,8 +108,9 @@ export const evolutionClient = {
     return request('GET', `/instance/connect/${instanceName}`, qrPayloadSchema);
   },
 
-  // GET /instance/connectionState/:instanceName -> { instance: { state } }
-  async connectionState(instanceName: string): Promise<string> {
+  // GET /instance/connectionState/:instanceName -> { instance: { state? } }
+  // `state` is absent while the instance is not loaded in Evolution's memory.
+  async connectionState(instanceName: string): Promise<string | undefined> {
     const data = await request(
       'GET',
       `/instance/connectionState/${instanceName}`,

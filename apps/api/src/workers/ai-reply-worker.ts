@@ -206,9 +206,21 @@ export async function processAiReplyJob(
         });
       }
 
-      // Nothing to embed for an image-only turn with no caption text.
-      const [queryEmbedding] =
-        question.trim().length > 0 ? await ports.embeddings.embed([question], 'query') : [];
+      // Nothing to embed for a media-only turn with no caption text. A failed
+      // embedding (provider outage or denial) degrades to no retrieval instead
+      // of killing the job: the shop tool loop can still answer product
+      // questions, and the grounding rules hand anything else to a human.
+      let queryEmbedding: number[] | undefined;
+      if (question.trim().length > 0) {
+        try {
+          [queryEmbedding] = await ports.embeddings.embed([question], 'query');
+        } catch (error) {
+          logger.warn(
+            { err: error, conversationId: conversation.id },
+            'query embedding failed, continuing without retrieval',
+          );
+        }
+      }
       const chunks = queryEmbedding ? await knowledgeRepository.searchChunks(queryEmbedding) : [];
 
       const shopEnabled = organization.modules.includes('shop');
@@ -376,6 +388,28 @@ export function startAiReplyWorker(): Worker<AiReplyJob> {
       { err: error, jobId: job?.id, conversationId: job?.data.conversationId },
       'ai reply job failed',
     );
+    // Final attempt: the AI is not going to answer this message (e.g. the LLM
+    // provider is down or the key was revoked). Flip the conversation to
+    // PENDING so a human sees it in the inbox instead of eternal silence.
+    // Best effort: a failure here is logged by the catch and never rethrown.
+    const attempts = typeof job?.opts.attempts === 'number' ? job.opts.attempts : 1;
+    if (!job || job.attemptsMade < attempts) {
+      return;
+    }
+    void runWithRequestContext(
+      { organizationId: job.data.organizationId, userId: 'worker:ai', role: 'OWNER' },
+      async () => {
+        await conversationRepository.updateStatus(job.data.conversationId, 'PENDING');
+        emitToOrg(job.data.organizationId, 'conversation.updated', {
+          conversationId: job.data.conversationId,
+        });
+      },
+    ).catch((flipError: unknown) => {
+      logger.warn(
+        { err: flipError, conversationId: job.data.conversationId },
+        'final-attempt handoff flip failed',
+      );
+    });
   });
   return worker;
 }

@@ -115,7 +115,10 @@ export class EvolutionAdapter implements MessagingPort {
 
   async getSessionStatus(channelId: string): Promise<SessionStatus> {
     const state = await evolutionClient.connectionState(channelId);
-    return mapState(state);
+    // A state-less response means the instance is not loaded in Evolution's
+    // memory (stalled auto-connect): treat it as a closed session so boot
+    // reconcile marks the channel DISCONNECTED instead of erroring.
+    return mapState(state ?? 'close');
   }
 
   async connect(channelId: string): Promise<ConnectResult> {
