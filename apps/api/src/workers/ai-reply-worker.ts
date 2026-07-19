@@ -108,7 +108,16 @@ export async function processAiReplyJob(
       // the model directly, voice notes are transcribed first.
       const isImageTrigger = lastInbound?.type === 'IMAGE' && Boolean(lastInbound.mediaKey);
       const isVideoTrigger = lastInbound?.type === 'VIDEO' && Boolean(lastInbound.mediaKey);
-      const isAudioTrigger = lastInbound?.type === 'AUDIO' && Boolean(lastInbound.mediaKey);
+      // WhatsApp voice notes never carry caption text, so a non-empty body
+      // on an AUDIO trigger can only be a transcript from a prior attempt:
+      // require an empty body here so a BullMQ retry after `setBody` has
+      // already committed the transcript skips re-transcription instead of
+      // paying Gemini again and possibly overwriting it with a different
+      // transcript mid-thread.
+      const isAudioTrigger =
+        lastInbound?.type === 'AUDIO' &&
+        Boolean(lastInbound.mediaKey) &&
+        question.trim().length === 0;
       // An audio/video message whose media never downloaded has nothing the
       // AI can work with: hand it to a human instead of staying silent.
       const mediaLost =
@@ -167,7 +176,14 @@ export async function processAiReplyJob(
       // reads it in the thread and future turns carry it, then continue the
       // normal pipeline with the transcript as the question.
       if (isAudioTrigger && lastInbound.mediaKey) {
-        const media = await getMediaObject(lastInbound.mediaKey);
+        let media: Awaited<ReturnType<typeof getMediaObject>>;
+        try {
+          media = await getMediaObject(lastInbound.mediaKey);
+        } catch (error) {
+          logger.warn({ err: error, messageId: lastInbound.id }, 'ai media fetch failed');
+          await handOffUnprocessable();
+          return;
+        }
         if (isOversizeMedia(media.data.length)) {
           await handOffUnprocessable();
           return;
@@ -217,7 +233,14 @@ export async function processAiReplyJob(
 
       let finalMedia: FinalMedia | undefined;
       if ((isImageTrigger || isVideoTrigger) && lastInbound.mediaKey) {
-        const media = await getMediaObject(lastInbound.mediaKey);
+        let media: Awaited<ReturnType<typeof getMediaObject>>;
+        try {
+          media = await getMediaObject(lastInbound.mediaKey);
+        } catch (error) {
+          logger.warn({ err: error, messageId: lastInbound.id }, 'ai media fetch failed');
+          await handOffUnprocessable();
+          return;
+        }
         if (isOversizeMedia(media.data.length)) {
           await handOffUnprocessable();
           return;
