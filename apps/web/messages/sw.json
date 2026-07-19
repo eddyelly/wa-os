@@ -124,7 +124,9 @@
     "reply": "Jibu",
     "replyingTo": "Unajibu",
     "quotedUnavailable": "Amenukuu ujumbe",
-    "cancelReply": "Ghairi jibu"
+    "cancelReply": "Ghairi jibu",
+    "voiceUnavailable": "Ujumbe wa sauti haupatikani",
+    "mediaUnavailable": "Midia haipatikani"
   },
   "knowledge": {
     "title": "Ongeza taarifa za biashara yako",

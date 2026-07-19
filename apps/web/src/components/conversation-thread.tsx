@@ -383,6 +383,14 @@ export function ConversationThread({
                         </a>
                       )
                     ) : null}
+                    {!message.mediaUrl && !message.body && message.type !== 'TEXT' ? (
+                      // A media message whose download failed (e.g. the media
+                      // server was unreachable): label it instead of showing
+                      // an empty bubble.
+                      <p className="text-sm text-brand-400 italic">
+                        {message.type === 'AUDIO' ? t('voiceUnavailable') : t('mediaUnavailable')}
+                      </p>
+                    ) : null}
                     {message.body ? (
                       <p className="text-sm whitespace-pre-wrap">{message.body}</p>
                     ) : null}

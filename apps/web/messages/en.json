@@ -124,7 +124,9 @@
     "reply": "Reply",
     "replyingTo": "Replying to",
     "quotedUnavailable": "Quoted a message",
-    "cancelReply": "Cancel reply"
+    "cancelReply": "Cancel reply",
+    "voiceUnavailable": "Voice note unavailable",
+    "mediaUnavailable": "Media unavailable"
   },
   "knowledge": {
     "title": "Add your business info",
