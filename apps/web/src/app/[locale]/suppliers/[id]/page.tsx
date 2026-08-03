@@ -72,8 +72,8 @@ export default function SupplierDetailPage() {
   const importFileRef = useRef<HTMLInputElement | null>(null);
 
   const TEMPLATE_CSV =
-    'name,description,priceAmount,priceCurrency,unit,moq,notes\r\n' +
-    '"Leather handbag","Black, PU leather",4550,CNY,"per piece",50,"Ask for the 100pc price"\r\n';
+    'name,description,price,priceCurrency,unit,moq,notes\r\n' +
+    '"Leather handbag","Black, PU leather",45.50,CNY,"per piece",50,"Ask for the 100pc price"\r\n';
 
   const downloadTemplate = (): void => {
     const blob = new Blob([TEMPLATE_CSV], { type: 'text/csv;charset=utf-8' });

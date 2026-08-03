@@ -24,7 +24,7 @@ export const SUPPLIER_IMPORT_HEADER = [
 export const ITEM_IMPORT_HEADER = [
   'name',
   'description',
-  'priceAmount',
+  'price',
   'priceCurrency',
   'unit',
   'moq',
@@ -42,6 +42,21 @@ function text(cell: string | undefined): string | undefined {
 function count(cell: string | undefined): number | undefined {
   const trimmed = (cell ?? '').trim();
   return trimmed === '' ? undefined : Number(trimmed);
+}
+
+/**
+ * The CSV `price` column is in MAJOR units, exactly as a supplier quotes it
+ * and as the item form takes it (45.50), while the database stores minor
+ * units. Converting here keeps the spreadsheet honest: a dealer typing 4550
+ * would otherwise silently record 45.50 across every row of the file.
+ */
+function priceToMinorUnits(cell: string | undefined): number | undefined {
+  const trimmed = (cell ?? '').trim();
+  if (trimmed === '') {
+    return undefined;
+  }
+  const major = Number(trimmed);
+  return Number.isFinite(major) ? Math.round(major * 100) : Number.NaN;
 }
 
 interface ImportPlan {
@@ -121,17 +136,20 @@ export function importSuppliersCsv(csv: string): Promise<SourcingImportResponse>
   });
 }
 
-export function importSourcedItemsCsv(
+export async function importSourcedItemsCsv(
   supplierId: string,
   csv: string,
 ): Promise<SourcingImportResponse> {
+  // Fail the whole file once for a bad supplier instead of reporting the
+  // same NotFoundError on all 200 rows.
+  await supplierService.findById(supplierId);
   return runImport(csv, {
     header: ITEM_IMPORT_HEADER,
     schema: createSourcedItemRequestSchema,
     toPayload: (cells) => ({
       name: text(cells[0]),
       description: text(cells[1]),
-      priceAmount: count(cells[2]),
+      priceAmount: priceToMinorUnits(cells[2]),
       priceCurrency: text(cells[3]),
       unit: text(cells[4]),
       moq: count(cells[5]),

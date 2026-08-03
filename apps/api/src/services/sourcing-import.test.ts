@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { supplierServiceMock, sourcedItemServiceMock } = vi.hoisted(() => ({
-  supplierServiceMock: { create: vi.fn() },
+  supplierServiceMock: { create: vi.fn(), findById: vi.fn() },
   sourcedItemServiceMock: { create: vi.fn() },
 }));
 vi.mock('./supplier-service.js', () => ({ supplierService: supplierServiceMock }));
@@ -10,11 +10,12 @@ vi.mock('./sourced-item-service.js', () => ({ sourcedItemService: sourcedItemSer
 import { importSourcedItemsCsv, importSuppliersCsv } from './sourcing-import.js';
 
 const SUPPLIER_HEADER = 'name,country,city,market,address,contactName,contactPhone,contactNote,notes';
-const ITEM_HEADER = 'name,description,priceAmount,priceCurrency,unit,moq,notes';
+const ITEM_HEADER = 'name,description,price,priceCurrency,unit,moq,notes';
 
 beforeEach(() => {
   vi.clearAllMocks();
   supplierServiceMock.create.mockResolvedValue({ id: 's1' });
+  supplierServiceMock.findById.mockResolvedValue({ id: 's1' });
   sourcedItemServiceMock.create.mockResolvedValue({ id: 'i1' });
 });
 
@@ -55,7 +56,7 @@ describe('importSuppliersCsv', () => {
 
 describe('importSourcedItemsCsv', () => {
   it('creates each valid row against the given supplier', async () => {
-    const csv = `${ITEM_HEADER}\n"Leather handbag",,4550,CNY,"per piece",50,\n`;
+    const csv = `${ITEM_HEADER}\n"Leather handbag",,45.50,CNY,"per piece",50,\n`;
     const result = await importSourcedItemsCsv('s1', csv);
     expect(result).toEqual({ created: 1, failures: [] });
     expect(sourcedItemServiceMock.create).toHaveBeenCalledWith('s1', {
@@ -72,5 +73,12 @@ describe('importSourcedItemsCsv', () => {
     const result = await importSourcedItemsCsv('s1', csv);
     expect(result.created).toBe(1);
     expect(result.failures[0]?.row).toBe(2);
+  });
+
+  it('fails the whole file once when the supplier does not exist', async () => {
+    supplierServiceMock.findById.mockRejectedValueOnce(new Error('This supplier no longer exists.'));
+    const csv = `${ITEM_HEADER}\nGood,,100,CNY,,,\nAlso good,,100,CNY,,,\n`;
+    await expect(importSourcedItemsCsv('missing', csv)).rejects.toThrow(/no longer exists/);
+    expect(sourcedItemServiceMock.create).not.toHaveBeenCalled();
   });
 });
