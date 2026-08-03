@@ -451,6 +451,7 @@ model SourcedItemImage {
   mediaKey String
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([organizationId])
   @@index([sourcedItemId])
