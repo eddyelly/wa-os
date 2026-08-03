@@ -41,6 +41,9 @@ export const TENANT_MODELS = new Set<string>([
   'Order',
   'OrderItem',
   'Notification',
+  'Supplier',
+  'SourcedItem',
+  'SourcedItemImage',
 ]);
 
 // Relation fields per domain model, derived from schema.prisma. Their
@@ -69,6 +72,9 @@ export const TENANT_RELATION_FIELDS: Record<string, readonly string[]> = {
   Order: ['organization', 'conversation', 'contact', 'items'],
   OrderItem: ['organization', 'order', 'product'],
   Notification: ['organization'],
+  Supplier: ['organization', 'items'],
+  SourcedItem: ['organization', 'supplier', 'images'],
+  SourcedItemImage: ['organization', 'sourcedItem'],
 };
 
 type QueryArgs = Record<string, unknown>;

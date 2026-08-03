@@ -127,6 +127,9 @@ describe('scopeArgs (tenant query rewriting)', () => {
       'OrderItem',
       'Product',
       'ProductImage',
+      'SourcedItem',
+      'SourcedItemImage',
+      'Supplier',
       'User',
     ];
     expect([...TENANT_MODELS].sort()).toEqual(expected);

@@ -193,6 +193,14 @@ export default function SettingsPage() {
   const thresholdLabel =
     threshold <= 0.5 ? t('thresholdLow') : threshold <= 0.75 ? t('thresholdMedium') : t('thresholdHigh');
 
+  // Keyed by BusinessModule so a future module that forgets an entry here is
+  // a typecheck failure rather than a blank label in the toggle list.
+  const moduleLabels: Record<BusinessModule, string> = {
+    appointments: t('moduleAppointments'),
+    shop: t('moduleShop'),
+    sourcing: t('moduleSourcing'),
+  };
+
   return (
     <AppShell title={t('title')}>
       {displayError ? (
@@ -264,7 +272,7 @@ export default function SettingsPage() {
               <h2 className="text-base font-semibold text-brand-900">{t('modulesSection')}</h2>
               <p className="mt-1 text-sm text-brand-700">{t('modulesHint')}</p>
               <div className="mt-3 flex flex-col gap-2">
-                {(['appointments', 'shop'] as const).map((module) => (
+                {(['appointments', 'shop', 'sourcing'] as const).map((module) => (
                   <label key={module} className="flex items-center gap-2 text-sm text-brand-900">
                     <input
                       type="checkbox"
@@ -274,7 +282,7 @@ export default function SettingsPage() {
                       }}
                       disabled={modules.length === 1 && modules.includes(module)}
                     />
-                    {module === 'appointments' ? t('moduleAppointments') : t('moduleShop')}
+                    {moduleLabels[module]}
                   </label>
                 ))}
               </div>

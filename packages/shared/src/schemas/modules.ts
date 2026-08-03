@@ -4,5 +4,5 @@ import { z } from 'zod';
 // requests) and auth.ts (session payloads) to avoid a circular import
 // between the two (organization.ts already imports supportedLanguageSchema
 // from auth.ts).
-export const businessModuleSchema = z.enum(['appointments', 'shop']);
+export const businessModuleSchema = z.enum(['appointments', 'shop', 'sourcing']);
 export type BusinessModule = z.infer<typeof businessModuleSchema>;

@@ -111,20 +111,23 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users           User[]
-  channels        Channel[]
-  contacts        Contact[]
-  conversations   Conversation[]
-  messages        Message[]
-  knowledgeDocs   KnowledgeDoc[]
-  knowledgeChunks KnowledgeChunk[]
-  appointments    Appointment[]
-  aiReplyLogs     AiReplyLog[]
-  products        Product[]
-  productImages   ProductImage[]
-  orders          Order[]
-  orderItems      OrderItem[]
-  notifications   Notification[]
+  users             User[]
+  channels          Channel[]
+  contacts          Contact[]
+  conversations     Conversation[]
+  messages          Message[]
+  knowledgeDocs     KnowledgeDoc[]
+  knowledgeChunks   KnowledgeChunk[]
+  appointments      Appointment[]
+  aiReplyLogs       AiReplyLog[]
+  products          Product[]
+  productImages     ProductImage[]
+  orders            Order[]
+  orderItems        OrderItem[]
+  notifications     Notification[]
+  suppliers         Supplier[]
+  sourcedItems      SourcedItem[]
+  sourcedItemImages SourcedItemImage[]
 }
 
 model User {
@@ -373,6 +376,84 @@ model ProductImage {
 
   @@index([organizationId])
   @@index([productId])
+}
+
+/// A shop or dealer the business buys from (sourcing module). Private
+/// cost intelligence: never exposed to customers or the AI.
+model Supplier {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name         String
+  /// ISO-3166 alpha-2, uppercase (e.g. CN).
+  country      String
+  city         String?
+  /// Market or building name, e.g. "Guangzhou Bag City".
+  market       String?
+  address      String?
+  contactName  String?
+  contactPhone String?
+  /// WeChat/WhatsApp handles and similar.
+  contactNote  String?
+  notes        String?
+
+  items SourcedItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+/// A product found at a supplier, priced in the currency it was quoted in.
+/// Deliberately has no vector column: sourcing data must never be reachable
+/// through the similarity search the AI uses.
+model SourcedItem {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String?
+  /// Minor units of priceCurrency (45.50 CNY is 4550).
+  priceAmount   Int
+  /// ISO-4217, uppercase (e.g. CNY).
+  priceCurrency String
+  /// Free text: "per piece", "per carton of 50".
+  unit          String?
+  /// Minimum order quantity.
+  moq           Int?
+  notes         String?
+
+  images SourcedItemImage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([supplierId])
+}
+
+/// Reference photo for a sourced item (MinIO object key). No AI-written
+/// description: these are the owner's market photos, not sales material.
+model SourcedItemImage {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  sourcedItemId String
+  sourcedItem   SourcedItem @relation(fields: [sourcedItemId], references: [id], onDelete: Cascade)
+
+  mediaKey String
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([sourcedItemId])
 }
 
 model Order {

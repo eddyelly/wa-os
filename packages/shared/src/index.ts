@@ -15,3 +15,4 @@ export * from './schemas/notification.js';
 export * from './schemas/dashboard.js';
 export * from './schemas/team.js';
 export * from './schemas/contact.js';
+export * from './schemas/sourcing.js';

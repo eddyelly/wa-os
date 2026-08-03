@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { CalendarDays, ClipboardList, Home, MessageCircle, Package, Settings, Users } from 'lucide-react';
+import { Boxes, CalendarDays, ClipboardList, Home, MessageCircle, Package, Settings, Users } from 'lucide-react';
 import type { BusinessModule } from '@waos/shared';
 
 export type NavKey =
@@ -8,6 +8,7 @@ export type NavKey =
   | 'appointments'
   | 'products'
   | 'orders'
+  | 'sourcing'
   | 'contacts'
   | 'settings';
 
@@ -24,6 +25,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   { key: 'appointments', href: '/appointments', icon: CalendarDays, requiredModule: 'appointments' },
   { key: 'products', href: '/products', icon: Package, requiredModule: 'shop' },
   { key: 'orders', href: '/orders', icon: ClipboardList, requiredModule: 'shop' },
+  { key: 'sourcing', href: '/sourcing', icon: Boxes, requiredModule: 'sourcing' },
   { key: 'contacts', href: '/contacts', icon: Users },
   { key: 'settings', href: '/settings', icon: Settings },
 ];
