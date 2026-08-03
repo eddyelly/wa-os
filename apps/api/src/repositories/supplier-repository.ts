@@ -16,6 +16,14 @@ export interface CreateSupplierData {
   notes?: string;
 }
 
+/** Update accepts null on the optional fields to clear them. */
+export type UpdateSupplierData = {
+  name?: string;
+  country?: string;
+} & {
+  [K in Exclude<keyof CreateSupplierData, 'name' | 'country'>]?: string | null;
+};
+
 const withCount = { _count: { select: { items: true } } } satisfies Prisma.SupplierInclude;
 
 export const supplierRepository = {
@@ -45,7 +53,8 @@ export const supplierRepository = {
     return prisma.supplier.findMany({ include: withCount, orderBy: { createdAt: 'desc' } });
   },
 
-  update(id: string, data: Partial<CreateSupplierData>): Promise<SupplierWithCount> {
+  /** Optional fields accept null to clear a previously set value. */
+  update(id: string, data: UpdateSupplierData): Promise<SupplierWithCount> {
     return prisma.supplier.update({ where: { id }, data, include: withCount });
   },
 

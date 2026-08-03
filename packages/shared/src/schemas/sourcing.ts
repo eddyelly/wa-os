@@ -45,7 +45,20 @@ export const createSupplierRequestSchema = z.object({
 });
 export type CreateSupplierRequest = z.infer<typeof createSupplierRequestSchema>;
 
-export const updateSupplierRequestSchema = createSupplierRequestSchema.partial();
+/**
+ * Optional fields accept null so an edit can CLEAR a value that was set
+ * before (a supplier drops their phone number). `undefined` still means
+ * "leave unchanged", matching updateProductRequestSchema's convention.
+ */
+export const updateSupplierRequestSchema = createSupplierRequestSchema.partial().extend({
+  city: z.string().trim().max(120).nullable().optional(),
+  market: z.string().trim().max(160).nullable().optional(),
+  address: z.string().trim().max(300).nullable().optional(),
+  contactName: z.string().trim().max(120).nullable().optional(),
+  contactPhone: z.string().trim().max(40).nullable().optional(),
+  contactNote: z.string().trim().max(200).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+});
 export type UpdateSupplierRequest = z.infer<typeof updateSupplierRequestSchema>;
 
 export const sourcedItemImageSchema = z.object({

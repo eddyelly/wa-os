@@ -65,4 +65,12 @@ describe('supplierService', () => {
     await expect(supplierService.remove('missing')).rejects.toThrow();
     expect(repo.remove).not.toHaveBeenCalled();
   });
+
+  it('passes an explicit null through so an edit can clear an optional field', async () => {
+    repo.findById.mockResolvedValue(row);
+    repo.update.mockResolvedValue({ ...row, contactPhone: null });
+    const dto = await supplierService.update('s1', { contactPhone: null });
+    expect(repo.update).toHaveBeenCalledWith('s1', { contactPhone: null });
+    expect(dto.contactPhone).toBeNull();
+  });
 });

@@ -109,11 +109,23 @@ export default function SuppliersPage() {
       contactNote: contactNote.trim() || undefined,
       notes: notes.trim() || undefined,
     };
+    // On edit, a blank field means "clear this", which needs an explicit
+    // null: an omitted key tells Prisma to leave the column untouched.
+    const updatePayload = {
+      ...payload,
+      city: city.trim() || null,
+      market: market.trim() || null,
+      address: address.trim() || null,
+      contactName: contactName.trim() || null,
+      contactPhone: contactPhone.trim() || null,
+      contactNote: contactNote.trim() || null,
+      notes: notes.trim() || null,
+    };
 
     setBusy(true);
     try {
       if (editingId) {
-        await updateSupplier(editingId, payload);
+        await updateSupplier(editingId, updatePayload);
       } else {
         await createSupplier(payload);
       }
