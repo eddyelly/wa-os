@@ -65,7 +65,21 @@ export default function SourcingSearchPage() {
       </div>
 
       {trimmedQuery.length === 0 ? (
-        <EmptyState title={t('startTitle')} hint={t('startHint')} />
+        <EmptyState
+          title={t('startTitle')}
+          hint={t('startHint')}
+          action={
+            // The way in for a first-time user: with nothing recorded yet,
+            // search can only ever come back empty, so point at the screen
+            // where suppliers and their items are added.
+            <Link
+              href="/suppliers"
+              className="text-sm font-semibold text-brand-700 underline underline-offset-2"
+            >
+              {t('manageSuppliers')}
+            </Link>
+          }
+        />
       ) : isError ? (
         <ErrorBox message={t('loadError')} onRetry={() => void refetch()} retryLabel={t('retry')} />
       ) : results === undefined ? (

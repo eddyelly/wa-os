@@ -15,7 +15,8 @@
     "settings": "Settings",
     "logout": "Log out",
     "home": "Home",
-    "more": "More"
+    "more": "More",
+    "suppliers": "Suppliers"
   },
   "auth": {
     "loginTitle": "Log in",
@@ -407,7 +408,8 @@
     "atSupplier": "at {supplier}",
     "viewSupplier": "View supplier",
     "loadError": "Could not search. Check your connection.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "manageSuppliers": "Manage suppliers"
   },
   "notifications": {
     "label": "Notifications",

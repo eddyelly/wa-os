@@ -15,7 +15,8 @@
     "settings": "Mipangilio",
     "logout": "Toka",
     "home": "Mwanzo",
-    "more": "Zaidi"
+    "more": "Zaidi",
+    "suppliers": "Wauzaji"
   },
   "auth": {
     "loginTitle": "Ingia",
@@ -407,7 +408,8 @@
     "atSupplier": "kwa {supplier}",
     "viewSupplier": "Ona muuzaji",
     "loadError": "Imeshindwa kutafuta. Angalia muunganisho wako.",
-    "retry": "Jaribu tena"
+    "retry": "Jaribu tena",
+    "manageSuppliers": "Simamia wauzaji"
   },
   "notifications": {
     "label": "Arifa",
