@@ -22,4 +22,6 @@ export const queryKeys = {
   ordersRoot: ['orders'] as const,
   notifications: (unreadOnly: boolean) => ['notifications', unreadOnly] as const,
   notificationsRoot: ['notifications'] as const,
+  suppliers: ['suppliers'] as const,
+  suppliersRoot: ['suppliers'] as const,
 };
