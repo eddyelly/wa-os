@@ -94,7 +94,17 @@ export const createSourcedItemRequestSchema = z.object({
 });
 export type CreateSourcedItemRequest = z.infer<typeof createSourcedItemRequestSchema>;
 
-export const updateSourcedItemRequestSchema = createSourcedItemRequestSchema.partial();
+/**
+ * Optional fields accept null so an edit can CLEAR a value that was set
+ * before (a listing loses its unit note). `undefined` still means "leave
+ * unchanged", matching updateSupplierRequestSchema's convention.
+ */
+export const updateSourcedItemRequestSchema = createSourcedItemRequestSchema.partial().extend({
+  description: z.string().trim().max(2000).nullable().optional(),
+  unit: z.string().trim().max(60).nullable().optional(),
+  moq: z.number().int().min(1).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+});
 export type UpdateSourcedItemRequest = z.infer<typeof updateSourcedItemRequestSchema>;
 
 /** A global-search hit: the item plus where it came from. */

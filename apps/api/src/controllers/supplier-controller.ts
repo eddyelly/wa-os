@@ -1,6 +1,13 @@
 import type { Request, Response } from 'express';
-import { createSupplierRequestSchema, updateSupplierRequestSchema } from '@waos/shared';
+import {
+  createSourcedItemRequestSchema,
+  createSupplierRequestSchema,
+  updateSourcedItemRequestSchema,
+  updateSupplierRequestSchema,
+} from '@waos/shared';
+import { ValidationError } from '../lib/errors.js';
 import { routeParam } from '../lib/http.js';
+import { sourcedItemService } from '../services/sourced-item-service.js';
 import { supplierService } from '../services/supplier-service.js';
 
 export const create = async (req: Request, res: Response): Promise<void> => {
@@ -23,4 +30,52 @@ export const update = async (req: Request, res: Response): Promise<void> => {
 export const remove = async (req: Request, res: Response): Promise<void> => {
   await supplierService.remove(routeParam(req.params.id));
   res.json({ ok: true });
+};
+
+export const listItems = async (req: Request, res: Response): Promise<void> => {
+  const items = await sourcedItemService.listBySupplier(routeParam(req.params.supplierId));
+  res.json({ items });
+};
+
+export const createItem = async (req: Request, res: Response): Promise<void> => {
+  const input = createSourcedItemRequestSchema.parse(req.body);
+  const item = await sourcedItemService.create(routeParam(req.params.supplierId), input);
+  res.status(201).json({ item });
+};
+
+export const updateItem = async (req: Request, res: Response): Promise<void> => {
+  const input = updateSourcedItemRequestSchema.parse(req.body);
+  const item = await sourcedItemService.update(
+    routeParam(req.params.supplierId),
+    routeParam(req.params.itemId),
+    input,
+  );
+  res.json({ item });
+};
+
+export const removeItem = async (req: Request, res: Response): Promise<void> => {
+  await sourcedItemService.remove(routeParam(req.params.supplierId), routeParam(req.params.itemId));
+  res.json({ ok: true });
+};
+
+export const addItemImage = async (req: Request, res: Response): Promise<void> => {
+  const file = req.file;
+  if (!file) {
+    throw new ValidationError('Attach an image file.');
+  }
+  const item = await sourcedItemService.addImage(
+    routeParam(req.params.supplierId),
+    routeParam(req.params.itemId),
+    { buffer: file.buffer, mimeType: file.mimetype },
+  );
+  res.json({ item });
+};
+
+export const removeItemImage = async (req: Request, res: Response): Promise<void> => {
+  const item = await sourcedItemService.removeImage(
+    routeParam(req.params.supplierId),
+    routeParam(req.params.itemId),
+    routeParam(req.params.imageId),
+  );
+  res.json({ item });
 };

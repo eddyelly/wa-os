@@ -24,4 +24,6 @@ export const queryKeys = {
   notificationsRoot: ['notifications'] as const,
   suppliers: ['suppliers'] as const,
   suppliersRoot: ['suppliers'] as const,
+  sourcedItems: (supplierId: string) => ['sourced-items', supplierId] as const,
+  sourcedItemsRoot: ['sourced-items'] as const,
 };
