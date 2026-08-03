@@ -2,11 +2,13 @@ import { z } from 'zod';
 import {
   sourcedItemSchema,
   sourcedItemSearchResultSchema,
+  sourcingImportResponseSchema,
   supplierSchema,
   type CreateSourcedItemRequest,
   type CreateSupplierRequest,
   type SourcedItemDto,
   type SourcedItemSearchResult,
+  type SourcingImportResponse,
   type SupplierDto,
   type UpdateSourcedItemRequest,
   type UpdateSupplierRequest,
@@ -98,4 +100,21 @@ export async function searchSourcedItems(query: string): Promise<SourcedItemSear
     `/api/v1/sourced-items?q=${encodeURIComponent(query)}`,
   );
   return z.array(sourcedItemSearchResultSchema).parse((raw as { items: unknown }).items);
+}
+
+export async function importSuppliersCsv(file: File): Promise<SourcingImportResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const raw = await apiUpload<unknown>('/api/v1/suppliers/import', formData);
+  return sourcingImportResponseSchema.parse(raw);
+}
+
+export async function importSourcedItemsCsv(
+  supplierId: string,
+  file: File,
+): Promise<SourcingImportResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const raw = await apiUpload<unknown>(`/api/v1/suppliers/${supplierId}/items/import`, formData);
+  return sourcingImportResponseSchema.parse(raw);
 }

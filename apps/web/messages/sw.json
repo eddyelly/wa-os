@@ -354,7 +354,15 @@
     "loadError": "Imeshindwa kupakia wauzaji. Angalia muunganisho wako.",
     "saveError": "Imeshindwa kuhifadhi. Jaribu tena.",
     "retry": "Jaribu tena",
-    "invalidCountry": "Tumia msimbo wa nchi wa herufi mbili, mfano CN."
+    "invalidCountry": "Tumia msimbo wa nchi wa herufi mbili, mfano CN.",
+    "downloadTemplate": "Pakua kiolezo",
+    "importCsv": "Ingiza CSV",
+    "importing": "Inaingiza...",
+    "importedCount": "Wauzaji {count} wameingizwa.",
+    "importFailuresTitle": "Safu zilizoshindwa (zirekebishe kwenye faili kisha upakie hizo tu):",
+    "importRow": "Safu {row}",
+    "importError": "Uingizaji umeshindwa. Angalia faili kisha ujaribu tena.",
+    "importDismiss": "Funga"
   },
   "sourcedItems": {
     "title": "Bidhaa",
@@ -395,7 +403,15 @@
     "loadError": "Imeshindwa kupakia bidhaa. Angalia muunganisho wako.",
     "saveError": "Imeshindwa kuhifadhi. Jaribu tena.",
     "retry": "Jaribu tena",
-    "invalidPrice": "Weka bei kubwa kuliko sifuri."
+    "invalidPrice": "Weka bei kubwa kuliko sifuri.",
+    "downloadTemplate": "Pakua kiolezo",
+    "importCsv": "Ingiza CSV",
+    "importing": "Inaingiza...",
+    "importedCount": "Bidhaa {count} zimeingizwa.",
+    "importFailuresTitle": "Safu zilizoshindwa (zirekebishe kwenye faili kisha upakie hizo tu):",
+    "importRow": "Safu {row}",
+    "importError": "Uingizaji umeshindwa. Angalia faili kisha ujaribu tena.",
+    "importDismiss": "Funga"
   },
   "sourcing": {
     "title": "Ununuzi",

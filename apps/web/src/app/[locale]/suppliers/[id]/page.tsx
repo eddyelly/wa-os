@@ -4,12 +4,18 @@ import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { SOURCING_CURRENCIES, type SourcedItemDto, type SupplierDto } from '@waos/shared';
+import {
+  SOURCING_CURRENCIES,
+  type SourcedItemDto,
+  type SourcingImportResponse,
+  type SupplierDto,
+} from '@waos/shared';
 import { Link, useRouter } from '@/i18n/navigation';
 import { ApiError, getStoredUser } from '@/lib/api';
 import {
   createSourcedItem,
   deleteSourcedItem,
+  importSourcedItemsCsv,
   listSourcedItems,
   listSuppliers,
   removeSourcedItemImage,
@@ -59,6 +65,45 @@ export default function SupplierDetailPage() {
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const formPhotoRef = useRef<HTMLInputElement | null>(null);
+
+  const [importBusy, setImportBusy] = useState(false);
+  const [importResult, setImportResult] = useState<SourcingImportResponse | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const importFileRef = useRef<HTMLInputElement | null>(null);
+
+  const TEMPLATE_CSV =
+    'name,description,priceAmount,priceCurrency,unit,moq,notes\r\n' +
+    '"Leather handbag","Black, PU leather",4550,CNY,"per piece",50,"Ask for the 100pc price"\r\n';
+
+  const downloadTemplate = (): void => {
+    const blob = new Blob([TEMPLATE_CSV], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'waos-sourced-items-template.csv';
+    anchor.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 0);
+  };
+
+  const runImport = async (file: File): Promise<void> => {
+    setImportBusy(true);
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const result = await importSourcedItemsCsv(supplierId, file);
+      setImportResult(result);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.sourcedItemsRoot });
+    } catch (err) {
+      setImportError(err instanceof ApiError ? err.message : t('importError'));
+    } finally {
+      setImportBusy(false);
+      if (importFileRef.current) {
+        importFileRef.current.value = '';
+      }
+    }
+  };
 
   const { data: suppliers } = useQuery({
     queryKey: queryKeys.suppliers,
@@ -258,6 +303,69 @@ export default function SupplierDetailPage() {
 
   return (
     <AppShell title={supplier?.name ?? t('title')}>
+      <div className="mb-4 flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="secondary" onClick={downloadTemplate}>
+          {t('downloadTemplate')}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={importBusy}
+          onClick={() => {
+            importFileRef.current?.click();
+          }}
+        >
+          {importBusy ? t('importing') : t('importCsv')}
+        </Button>
+        <input
+          ref={importFileRef}
+          type="file"
+          accept=".csv,text/csv"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              void runImport(file);
+            }
+          }}
+        />
+      </div>
+      {importError ? (
+        <div className="mb-4">
+          <ErrorBox message={importError} />
+        </div>
+      ) : null}
+      {importResult ? (
+        <div className="mb-4 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold text-brand-950">
+              {t('importedCount', { count: importResult.created })}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setImportResult(null);
+              }}
+              className="text-xs font-medium text-brand-500 hover:text-brand-800"
+            >
+              {t('importDismiss')}
+            </button>
+          </div>
+          {importResult.failures.length > 0 ? (
+            <>
+              <p className="mt-2 text-sm text-brand-700">{t('importFailuresTitle')}</p>
+              <ul className="mt-1 space-y-1">
+                {importResult.failures.map((failure) => (
+                  <li key={failure.row} className="text-sm text-red-800">
+                    <span className="font-semibold">{t('importRow', { row: failure.row })}:</span>{' '}
+                    {failure.reason}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
+      ) : null}
       <Card className="mb-4">
         <Link
           href="/suppliers"

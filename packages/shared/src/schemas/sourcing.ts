@@ -114,3 +114,9 @@ export const sourcedItemSearchResultSchema = sourcedItemSchema.extend({
   supplierCountry: z.string(),
 });
 export type SourcedItemSearchResult = z.infer<typeof sourcedItemSearchResultSchema>;
+
+export const sourcingImportResponseSchema = z.object({
+  created: z.number().int().min(0),
+  failures: z.array(z.object({ row: z.number().int().min(1), reason: z.string() })),
+});
+export type SourcingImportResponse = z.infer<typeof sourcingImportResponseSchema>;

@@ -354,7 +354,15 @@
     "loadError": "Could not load suppliers. Check your connection.",
     "saveError": "Could not save. Try again.",
     "retry": "Try again",
-    "invalidCountry": "Use a two-letter country code, e.g. CN."
+    "invalidCountry": "Use a two-letter country code, e.g. CN.",
+    "downloadTemplate": "Download template",
+    "importCsv": "Import CSV",
+    "importing": "Importing...",
+    "importedCount": "{count} suppliers imported.",
+    "importFailuresTitle": "Rows that failed (fix these in the file and re-upload only them):",
+    "importRow": "Row {row}",
+    "importError": "Import failed. Check the file and try again.",
+    "importDismiss": "Dismiss"
   },
   "sourcedItems": {
     "title": "Items",
@@ -395,7 +403,15 @@
     "loadError": "Could not load items. Check your connection.",
     "saveError": "Could not save. Try again.",
     "retry": "Try again",
-    "invalidPrice": "Enter a price greater than zero."
+    "invalidPrice": "Enter a price greater than zero.",
+    "downloadTemplate": "Download template",
+    "importCsv": "Import CSV",
+    "importing": "Importing...",
+    "importedCount": "{count} items imported.",
+    "importFailuresTitle": "Rows that failed (fix these in the file and re-upload only them):",
+    "importRow": "Row {row}",
+    "importError": "Import failed. Check the file and try again.",
+    "importDismiss": "Dismiss"
   },
   "sourcing": {
     "title": "Sourcing",

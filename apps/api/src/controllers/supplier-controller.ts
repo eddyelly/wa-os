@@ -8,6 +8,7 @@ import {
 import { ValidationError } from '../lib/errors.js';
 import { routeParam } from '../lib/http.js';
 import { sourcedItemService } from '../services/sourced-item-service.js';
+import { importSourcedItemsCsv, importSuppliersCsv } from '../services/sourcing-import.js';
 import { supplierService } from '../services/supplier-service.js';
 
 export const create = async (req: Request, res: Response): Promise<void> => {
@@ -78,4 +79,22 @@ export const removeItemImage = async (req: Request, res: Response): Promise<void
     routeParam(req.params.imageId),
   );
   res.json({ item });
+};
+
+export const importSuppliers = async (req: Request, res: Response): Promise<void> => {
+  const file = req.file;
+  if (!file) {
+    throw new ValidationError('Attach a .csv file.');
+  }
+  res.json(await importSuppliersCsv(file.buffer.toString('utf8')));
+};
+
+export const importItems = async (req: Request, res: Response): Promise<void> => {
+  const file = req.file;
+  if (!file) {
+    throw new ValidationError('Attach a .csv file.');
+  }
+  res.json(
+    await importSourcedItemsCsv(routeParam(req.params.supplierId), file.buffer.toString('utf8')),
+  );
 };
