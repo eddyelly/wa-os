@@ -1,6 +1,7 @@
 import type {
   CreateSourcedItemRequest,
   SourcedItemDto,
+  SourcedItemSearchResult,
   UpdateSourcedItemRequest,
 } from '@waos/shared';
 import { NotFoundError } from '../lib/errors.js';
@@ -9,6 +10,7 @@ import { requireRequestContext } from '../lib/context.js';
 import {
   sourcedItemRepository,
   type SourcedItemWithImages,
+  type SourcedItemWithSupplier,
 } from '../repositories/sourced-item-repository.js';
 import { supplierRepository } from '../repositories/supplier-repository.js';
 
@@ -92,5 +94,26 @@ export const sourcedItemService = {
     await loadOwned(supplierId, itemId);
     await sourcedItemRepository.removeImage(itemId, imageId);
     return this.toDto(await loadOwned(supplierId, itemId));
+  },
+
+  /**
+   * The six-months-later question: "where did I get this, and what did it
+   * cost?" A blank query returns nothing rather than dumping the whole
+   * directory.
+   */
+  async search(query: string): Promise<SourcedItemSearchResult[]> {
+    const trimmed = query.trim();
+    if (trimmed.length === 0) {
+      return [];
+    }
+    const rows = await sourcedItemRepository.search(trimmed);
+    return Promise.all(
+      rows.map(async (row: SourcedItemWithSupplier) => ({
+        ...(await this.toDto(row)),
+        supplierName: row.supplier.name,
+        supplierCity: row.supplier.city,
+        supplierCountry: row.supplier.country,
+      })),
+    );
   },
 };

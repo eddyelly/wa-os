@@ -396,6 +396,19 @@
     "retry": "Jaribu tena",
     "invalidPrice": "Weka bei kubwa kuliko sifuri."
   },
+  "sourcing": {
+    "title": "Ununuzi",
+    "searchPlaceholder": "Tafuta kila ulichonunua",
+    "searchHint": "Tafuta ni muuzaji gani alikuwa na bidhaa na bei aliyotaja.",
+    "startTitle": "Tafuta kumbukumbu zako za ununuzi.",
+    "startHint": "Andika jina la bidhaa kuona kila muuzaji aliyekuwa nayo.",
+    "noResultsTitle": "Hakuna kinacholingana na utafutaji huo.",
+    "noResultsHint": "Jaribu jina lingine la bidhaa.",
+    "atSupplier": "kwa {supplier}",
+    "viewSupplier": "Ona muuzaji",
+    "loadError": "Imeshindwa kutafuta. Angalia muunganisho wako.",
+    "retry": "Jaribu tena"
+  },
   "notifications": {
     "label": "Arifa",
     "markAllRead": "Weka zote zimesomwa",

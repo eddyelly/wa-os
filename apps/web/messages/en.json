@@ -396,6 +396,19 @@
     "retry": "Try again",
     "invalidPrice": "Enter a price greater than zero."
   },
+  "sourcing": {
+    "title": "Sourcing",
+    "searchPlaceholder": "Search everything you have sourced",
+    "searchHint": "Find which supplier had an item and what they quoted.",
+    "startTitle": "Search your sourcing records.",
+    "startHint": "Type a product name to see every supplier that had it.",
+    "noResultsTitle": "Nothing matches that search.",
+    "noResultsHint": "Try another product name.",
+    "atSupplier": "at {supplier}",
+    "viewSupplier": "View supplier",
+    "loadError": "Could not search. Check your connection.",
+    "retry": "Try again"
+  },
   "notifications": {
     "label": "Notifications",
     "markAllRead": "Mark all read",

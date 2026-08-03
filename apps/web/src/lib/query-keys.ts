@@ -26,4 +26,5 @@ export const queryKeys = {
   suppliersRoot: ['suppliers'] as const,
   sourcedItems: (supplierId: string) => ['sourced-items', supplierId] as const,
   sourcedItemsRoot: ['sourced-items'] as const,
+  sourcedItemSearch: (query: string) => ['sourced-item-search', query] as const,
 };

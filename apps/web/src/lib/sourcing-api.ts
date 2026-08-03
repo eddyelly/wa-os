@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import {
   sourcedItemSchema,
+  sourcedItemSearchResultSchema,
   supplierSchema,
   type CreateSourcedItemRequest,
   type CreateSupplierRequest,
   type SourcedItemDto,
+  type SourcedItemSearchResult,
   type SupplierDto,
   type UpdateSourcedItemRequest,
   type UpdateSupplierRequest,
@@ -89,4 +91,11 @@ export async function removeSourcedItemImage(
     { method: 'DELETE' },
   );
   return sourcedItemSchema.parse((raw as { item: unknown }).item);
+}
+
+export async function searchSourcedItems(query: string): Promise<SourcedItemSearchResult[]> {
+  const raw = await apiFetch<unknown>(
+    `/api/v1/sourced-items?q=${encodeURIComponent(query)}`,
+  );
+  return z.array(sourcedItemSearchResultSchema).parse((raw as { items: unknown }).items);
 }

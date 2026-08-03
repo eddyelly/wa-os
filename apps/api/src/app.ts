@@ -18,6 +18,7 @@ import { notificationRoutes } from './routes/notifications.js';
 import { organizationRoutes } from './routes/organization.js';
 import { orderRoutes } from './routes/orders.js';
 import { productRoutes } from './routes/products.js';
+import { sourcedItemRoutes } from './routes/sourced-items.js';
 import { supplierRoutes } from './routes/suppliers.js';
 import { webhookRoutes } from './routes/webhooks.js';
 
@@ -51,6 +52,7 @@ export function createApp(): Express {
   app.use('/api/v1/appointments', appointmentRoutes);
   app.use('/api/v1/products', productRoutes);
   app.use('/api/v1/suppliers', supplierRoutes);
+  app.use('/api/v1/sourced-items', sourcedItemRoutes);
   app.use('/api/v1/orders', orderRoutes);
   app.use('/api/v1/notifications', notificationRoutes);
   app.use('/api/v1/contacts', contactRoutes);

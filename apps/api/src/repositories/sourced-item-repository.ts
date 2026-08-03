@@ -4,6 +4,10 @@ import { prisma } from '../lib/prisma.js';
 
 export type SourcedItemWithImages = SourcedItem & { images: SourcedItemImage[] };
 
+export type SourcedItemWithSupplier = SourcedItemWithImages & {
+  supplier: { name: string; city: string | null; country: string };
+};
+
 export interface CreateSourcedItemData {
   supplierId: string;
   name: string;
@@ -57,6 +61,24 @@ export const sourcedItemRepository = {
       where: { supplierId },
       include: withImages,
       orderBy: { createdAt: 'desc' },
+    });
+  },
+
+  /** Case-insensitive match on item name or description, newest first. */
+  search(query: string): Promise<SourcedItemWithSupplier[]> {
+    return prisma.sourcedItem.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        ...withImages,
+        supplier: { select: { name: true, city: true, country: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
     });
   },
 

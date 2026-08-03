@@ -9,6 +9,7 @@ const { repo, supplierRepo, getMediaUrl } = vi.hoisted(() => ({
     remove: vi.fn(),
     addImage: vi.fn(),
     removeImage: vi.fn(),
+    search: vi.fn(),
   },
   supplierRepo: { findById: vi.fn() },
   getMediaUrl: vi.fn((key: string) => Promise.resolve(`https://cdn.example/${key}`)),
@@ -76,5 +77,26 @@ describe('sourcedItemService', () => {
     repo.findById.mockResolvedValue({ ...row, supplierId: 'other' });
     await expect(sourcedItemService.update('s1', 'i1', { name: 'x' })).rejects.toThrow();
     expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it('maps search hits to results carrying the supplier name and city', async () => {
+    repo.search.mockResolvedValue([
+      { ...row, supplier: { name: 'Guangzhou Bag City', city: 'Guangzhou', country: 'CN' } },
+    ]);
+    const [hit] = await sourcedItemService.search('handbag');
+    expect(hit).toMatchObject({
+      id: 'i1',
+      name: 'Leather handbag',
+      priceAmount: 4550,
+      priceCurrency: 'CNY',
+      supplierName: 'Guangzhou Bag City',
+      supplierCity: 'Guangzhou',
+      supplierCountry: 'CN',
+    });
+  });
+
+  it('returns nothing for a blank query instead of listing everything', async () => {
+    await expect(sourcedItemService.search('   ')).resolves.toEqual([]);
+    expect(repo.search).not.toHaveBeenCalled();
   });
 });
