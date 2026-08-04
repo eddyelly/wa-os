@@ -3,6 +3,10 @@
 Operational guide for the single-VPS deployment. Keep this current: it is
 what you reach for at 2 a.m.
 
+Two supported deployments: **Railway** (see docs/RAILWAY.md) and the single
+VPS described below. The sections after deployment (key rotation, session
+recovery, everyday checks) apply to both.
+
 ## 1. Deploy on the VPS
 
 Target: one Ubuntu 22.04+ VPS behind Nginx, Docker Compose for infra, pnpm
