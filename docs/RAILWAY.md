@@ -126,7 +126,7 @@ and do not need to be set):
 | `EVOLUTION_API_KEY` | required | a strong generated key; must be identical to `AUTHENTICATION_API_KEY` on the evolution service |
 | `EVOLUTION_WEBHOOK_SECRET` | required | a strong generated secret |
 | `JWT_ACCESS_SECRET` | required, 32+ characters | a random string; the config rejects anything shorter |
-| `JWT_REFRESH_SECRET` | required, 32+ characters, distinct from `JWT_ACCESS_SECRET` | a random string |
+| `JWT_REFRESH_SECRET` | required, 32+ characters | a random string, and a different one from `JWT_ACCESS_SECRET`; `config.ts` does not check that they differ, but reusing one secret for both weakens the access/refresh token boundary |
 | `GEMINI_API_KEY` | required | your Gemini API key |
 | `LLM_MODEL_ID` | required | e.g. `gemini-2.5-flash` |
 | `EMBEDDING_PROVIDER` | required | `gemini` |
@@ -137,7 +137,7 @@ and do not need to be set):
 | `REMINDER_OFFSETS_MINUTES` | optional, defaults to `1440,120` | leave default |
 | `SEND_RATE_PER_MINUTE` | optional, defaults to `6` | leave default |
 | `WARMUP_DAILY_CAPS` | optional, has a 14-day default ramp | leave default |
-| `WEB_ORIGIN` | optional, but its `localhost` default is wrong here | the public web domain (section 7); drives CORS and the Socket.IO origin |
+| `WEB_ORIGIN` | optional, but its `localhost` default is wrong here | the public web domain, but that domain does not exist yet: the web service is not created until section 7. Set a placeholder for now and come back to it in section 9, step 6, once the web domain is generated; drives CORS (the entire API rejects cross-origin browser calls without it) and the Socket.IO origin |
 | `API_PUBLIC_URL` | optional, but its `localhost` default is wrong here | the **private** api URL, `http://api.railway.internal:4000` (its only consumer is the webhook URL registered with Evolution, so the callback never leaves Railway) |
 
 Generate a public domain for the api service, targeting **port 4000**.
@@ -170,7 +170,11 @@ Generate a public domain for the web service, targeting **port 3000**.
 ## 8. The Evolution service
 
 From the Docker image `evoapicloud/evolution-api:v2.3.7`. Pin this exact
-version: 2.4.x requires a paid license.
+version: it matches `infra/docker-compose.yml` and is what this deployment
+has actually been validated against. The reported reason the pin was chosen
+is that 2.4.x requires a paid license, but that is not something recorded
+or checked in this repository, so treat it as unverified and re-check
+Evolution's current licensing terms yourself before attempting any upgrade.
 
 - A volume mounted at `/evolution/instances`. This is where WhatsApp session
   credentials live; losing it logs the business out of WhatsApp and requires
@@ -220,8 +224,18 @@ Deploy in this order, since later services reference earlier ones:
    Evolution to be up yet.
 5. The web service and the evolution service (section 7 and 8), in either
    order.
+6. Once the web service has deployed and its public domain exists (the
+   domain generated at the end of section 7), return to the api service and
+   set `WEB_ORIGIN` to that domain, then restart the api service. This is a
+   variable change only: a restart is enough, you do not need to rebuild
+   (unlike `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_APP_NAME` in section 7,
+   which are build arguments and do need a rebuild). Skip this step and
+   login will fail: every browser call from the dashboard to the api is
+   blocked with a CORS error, since the api still only allows the
+   `localhost` default as its origin.
 
-Once all six services are healthy:
+Once all six services are healthy and `WEB_ORIGIN` points at the web
+domain (step 6 above):
 
 1. Open the web service's public domain.
 2. Sign up as the owner and go through onboarding.
@@ -233,7 +247,10 @@ Once all six services are healthy:
 ## 10. Verification checklist
 
 - `curl https://<api-domain>/health` returns 200.
-- The dashboard loads and login works.
+- The dashboard loads and login works (this requires section 9, step 6 to
+  be done first: `WEB_ORIGIN` set to the web domain and the api service
+  restarted, otherwise login fails with a CORS error before the checklist
+  gets this far).
 - The browser's network tab shows requests going to the api domain, not
   `localhost`.
 - The QR scan connects, and after a page refresh the channel still shows
@@ -255,7 +272,8 @@ Once all six services are healthy:
 | Outbound media fails to send; log shows `sendMedia` with a 400 | `MINIO_PUBLIC_ENDPOINT` is not reachable from outside Railway | It must be the public MinIO domain, not the internal one; Evolution fetches media over the public internet, not Railway's private network |
 | Evolution reports an instance "does not exist", or `connectionState` returns no state | The instance stalled | Restart the evolution service; the session restores from its volume, no re-scan needed |
 | Boot fails with a config validation error naming a variable | A required variable is missing, or a JWT secret is under 32 characters | Set the named variable on the api service; the error names exactly which one |
-| Socket.IO does not connect; the inbox only updates on navigation, never live | `WEB_ORIGIN` does not exactly match the web domain, including scheme (`https://`) | Correct `WEB_ORIGIN` on the api service to match the web domain exactly, and restart |
+| Login fails, and every API call from the dashboard fails with a CORS error visible in the browser console | `WEB_ORIGIN` is still the `localhost` default, or otherwise does not match the web domain at all: the entire api rejects the browser's origin | Set `WEB_ORIGIN` on the api service to the web domain from section 7 and restart it (section 9, step 6) |
+| Milder variant: login and API calls work, but Socket.IO does not connect and the inbox only updates on navigation, never live | `WEB_ORIGIN` is close but not an exact match to the web domain (a trailing slash, or the wrong scheme, e.g. `http://` instead of `https://`) | Correct `WEB_ORIGIN` on the api service to match the web domain exactly, and restart |
 | Channel shows disconnected after the Evolution volume was deleted or recreated | The session was stored only on that volume | Reconnect from the dashboard (provisions a fresh instance) and rescan the QR; conversation history is unaffected, it lives in Postgres, not Evolution |
 
 ## 12. What this deployment does not cover
