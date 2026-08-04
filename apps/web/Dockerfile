@@ -28,6 +28,10 @@ COPY tsconfig.base.json ./
 COPY packages/ports packages/ports
 COPY packages/shared packages/shared
 COPY apps/web apps/web
+# An unset build arg becomes an empty string, which Next inlines into the
+# bundle and which defeats the code's localhost fallback ("" ?? x is ""), so
+# the dashboard would silently call itself. Fail the build instead.
+RUN test -n "$NEXT_PUBLIC_API_URL" || { echo "NEXT_PUBLIC_API_URL build arg is required"; exit 1; }
 RUN pnpm -F @waos/web build
 EXPOSE 3000
 CMD ["pnpm", "-F", "@waos/web", "start"]

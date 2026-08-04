@@ -9,6 +9,8 @@ docs
 *.log
 .env
 .env.*
+**/.env
+**/.env.*
 !.env.example
 coverage
 **/coverage

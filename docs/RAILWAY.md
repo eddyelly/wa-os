@@ -40,7 +40,12 @@ a missing Postgres feature.
   instead from the Docker image `pgvector/pgvector:pg16`, with:
   - A volume mounted at `/var/lib/postgresql/data`.
   - Variables `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` set to
-    values of your choice.
+    values of your choice, plus `PGDATA=/var/lib/postgresql/data/pgdata`.
+    Railway volumes are ext4-backed and typically already contain a
+    `lost+found` directory, and Postgres refuses to `initdb` directly into a
+    mount point that is not empty. Pointing `PGDATA` at a subdirectory of
+    the mount avoids this; it is harmless even if the volume turns out to be
+    empty.
 
   Wherever this guide says `${{Postgres.DATABASE_URL}}` below, use this
   service's connection string instead (built from the variables above and
@@ -137,7 +142,7 @@ and do not need to be set):
 | `REMINDER_OFFSETS_MINUTES` | optional, defaults to `1440,120` | leave default |
 | `SEND_RATE_PER_MINUTE` | optional, defaults to `6` | leave default |
 | `WARMUP_DAILY_CAPS` | optional, has a 14-day default ramp | leave default |
-| `WEB_ORIGIN` | optional, but its `localhost` default is wrong here | the public web domain, but that domain does not exist yet: the web service is not created until section 7. Set a placeholder for now and come back to it in section 9, step 6, once the web domain is generated; drives CORS (the entire API rejects cross-origin browser calls without it) and the Socket.IO origin |
+| `WEB_ORIGIN` | optional, but its `localhost` default is wrong here | the public web domain, but that domain does not exist yet: the web service is not created until section 7. Leave it unset for now: its default of `http://localhost:3000` is a valid URL, so the api still boots, and you come back to it in section 9, step 6, once the web domain is generated; drives CORS (the entire API rejects cross-origin browser calls without it) and the Socket.IO origin |
 | `API_PUBLIC_URL` | optional, but its `localhost` default is wrong here | the **private** api URL, `http://api.railway.internal:4000` (its only consumer is the webhook URL registered with Evolution, so the callback never leaves Railway) |
 
 Generate a public domain for the api service, targeting **port 4000**.
@@ -147,12 +152,15 @@ Generate a public domain for the api service, targeting **port 4000**.
 From the same repo, root directory `/`, Dockerfile path
 `apps/web/Dockerfile`.
 
+Health check path: `/`.
+
 Variables:
 
 | Variable | Scope | Value |
 | --- | --- | --- |
 | `NEXT_PUBLIC_API_URL` | build | the public api domain from section 6 |
 | `NEXT_PUBLIC_APP_NAME` | build | `WaOS` |
+| `PORT` | runtime | `3000` |
 
 These two are consumed as Docker **build arguments** and get inlined into
 the client JavaScript bundle by `next build`. Setting or changing them as
@@ -160,10 +168,15 @@ ordinary runtime variables does nothing: the bundle was already built with
 whatever value was present at build time. If you change either one, you
 must trigger a new build (redeploy), not just a restart.
 
-This is the single most common way this deployment breaks. The symptom is a
-dashboard that loads fine but every API call fails, because the browser's
-network tab shows requests going to `http://localhost:4000` instead of your
-api domain.
+This is the single most common way this deployment breaks. The build now
+fails outright if `NEXT_PUBLIC_API_URL` is missing (see the guard in
+`apps/web/Dockerfile`), so the empty-string case should never reach
+production. But a wrong value still builds successfully, and the symptom on
+Railway is a dashboard that loads fine but every API call 404s, because the
+browser's network tab shows requests going to the web service's own domain
+instead of your api domain, and Socket.IO never connects. `localhost:4000`
+only shows up this way in a local build where the build arg was genuinely
+absent at build time.
 
 Generate a public domain for the web service, targeting **port 3000**.
 
@@ -266,7 +279,7 @@ domain (step 6 above):
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| Dashboard requests go to `http://localhost:4000` | `NEXT_PUBLIC_API_URL` was set at runtime only, or changed without a rebuild | Set it as a build-time variable on the web service and redeploy (rebuild) the web service, not just restart it |
+| Dashboard loads but every API call 404s, and Socket.IO never connects (network tab shows requests going to the web service's own domain, not the api domain) | `NEXT_PUBLIC_API_URL` was set at runtime only, or changed without a rebuild, so the wrong value got baked into the bundle | Set it as a build-time variable on the web service and redeploy (rebuild) the web service, not just restart it. If the build arg is missing entirely, the build now fails outright instead of shipping this silently; this row is for a wrong value, not a missing one |
 | Pre-deploy fails on `CREATE EXTENSION "vector"` | The Postgres service has no pgvector available | Follow the section 2 fallback: `pgvector/pgvector:pg16` as a Docker service |
 | Inbound photos and voice notes never arrive; log shows `getBase64FromMediaMessage` with a 400 "Message not found" | Evolution's `DATABASE_SAVE_DATA_NEW_MESSAGE` is not `true` | Set `DATABASE_SAVE_DATA_NEW_MESSAGE=true` on the evolution service and restart it |
 | Outbound media fails to send; log shows `sendMedia` with a 400 | `MINIO_PUBLIC_ENDPOINT` is not reachable from outside Railway | It must be the public MinIO domain, not the internal one; Evolution fetches media over the public internet, not Railway's private network |
