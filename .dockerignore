@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+.next
+**/.next
+.git
+.github
+.superpowers
+docs
+*.log
+.env
+.env.*
+!.env.example
+coverage
+**/coverage
