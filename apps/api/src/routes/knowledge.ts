@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import * as knowledgeController from '../controllers/knowledge-controller.js';
 import { requireAuth } from '../middleware/auth.js';
+import { preserveRequestContext } from '../middleware/preserve-context.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -12,6 +13,10 @@ export const knowledgeRoutes: Router = Router();
 
 knowledgeRoutes.use(requireAuth);
 knowledgeRoutes.post('/', knowledgeController.create);
-knowledgeRoutes.post('/upload', upload.single('file'), knowledgeController.upload);
+knowledgeRoutes.post(
+  '/upload',
+  preserveRequestContext(upload.single('file')),
+  knowledgeController.upload,
+);
 knowledgeRoutes.get('/', knowledgeController.list);
 knowledgeRoutes.delete('/:id', knowledgeController.remove);

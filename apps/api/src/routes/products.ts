@@ -3,6 +3,7 @@ import multer, { type FileFilterCallback } from 'multer';
 import * as productController from '../controllers/product-controller.js';
 import { ValidationError } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
+import { preserveRequestContext } from '../middleware/preserve-context.js';
 import { requireModule } from '../middleware/require-module.js';
 
 const upload = multer({
@@ -39,8 +40,16 @@ productRoutes.use(requireAuth);
 productRoutes.use(requireModule('shop'));
 productRoutes.post('/', productController.create);
 productRoutes.get('/', productController.list);
-productRoutes.post('/import', csvUpload.single('file'), productController.importCsv);
+productRoutes.post(
+  '/import',
+  preserveRequestContext(csvUpload.single('file')),
+  productController.importCsv,
+);
 productRoutes.patch('/:id', productController.update);
 productRoutes.delete('/:id', productController.remove);
-productRoutes.post('/:id/images', upload.single('file'), productController.addImage);
+productRoutes.post(
+  '/:id/images',
+  preserveRequestContext(upload.single('file')),
+  productController.addImage,
+);
 productRoutes.delete('/:id/images/:imageId', productController.removeImage);

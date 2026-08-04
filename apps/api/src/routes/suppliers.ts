@@ -3,6 +3,7 @@ import multer, { type FileFilterCallback } from 'multer';
 import * as supplierController from '../controllers/supplier-controller.js';
 import { ValidationError } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
+import { preserveRequestContext } from '../middleware/preserve-context.js';
 import { requireModule } from '../middleware/require-module.js';
 
 const upload = multer({
@@ -39,21 +40,25 @@ supplierRoutes.use(requireAuth);
 supplierRoutes.use(requireModule('sourcing'));
 supplierRoutes.post('/', supplierController.create);
 supplierRoutes.get('/', supplierController.list);
-supplierRoutes.post('/import', csvUpload.single('file'), supplierController.importSuppliers);
+supplierRoutes.post(
+  '/import',
+  preserveRequestContext(csvUpload.single('file')),
+  supplierController.importSuppliers,
+);
 supplierRoutes.patch('/:id', supplierController.update);
 supplierRoutes.delete('/:id', supplierController.remove);
 supplierRoutes.get('/:supplierId/items', supplierController.listItems);
 supplierRoutes.post('/:supplierId/items', supplierController.createItem);
 supplierRoutes.post(
   '/:supplierId/items/import',
-  csvUpload.single('file'),
+  preserveRequestContext(csvUpload.single('file')),
   supplierController.importItems,
 );
 supplierRoutes.patch('/:supplierId/items/:itemId', supplierController.updateItem);
 supplierRoutes.delete('/:supplierId/items/:itemId', supplierController.removeItem);
 supplierRoutes.post(
   '/:supplierId/items/:itemId/images',
-  upload.single('file'),
+  preserveRequestContext(upload.single('file')),
   supplierController.addItemImage,
 );
 supplierRoutes.delete(
