@@ -19,6 +19,11 @@ RUN pnpm install --frozen-lockfile
 # put them, which is more reliable than copying those paths by hand.
 FROM deps AS runtime
 ENV NODE_ENV=production
+# apps/api/tsconfig.json extends the shared root config. tsx reads it at
+# startup, so a missing base leaves a broken extends chain inside the image:
+# harmless today, but it would break at runtime the moment a path alias is
+# added to the base config.
+COPY tsconfig.base.json ./
 COPY packages/ports packages/ports
 COPY packages/shared packages/shared
 COPY apps/api apps/api
