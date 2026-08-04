@@ -5,7 +5,7 @@ import type {
   UpdateSourcedItemRequest,
 } from '@waos/shared';
 import { NotFoundError } from '../lib/errors.js';
-import { getMediaUrl, putMediaObject } from '../lib/minio.js';
+import { deleteMediaObjects, getMediaUrl, putMediaObject } from '../lib/minio.js';
 import { requireRequestContext } from '../lib/context.js';
 import {
   sourcedItemRepository,
@@ -75,7 +75,8 @@ export const sourcedItemService = {
 
   async remove(supplierId: string, itemId: string): Promise<void> {
     await loadOwned(supplierId, itemId);
-    await sourcedItemRepository.remove(itemId);
+    const mediaKeys = await sourcedItemRepository.remove(itemId);
+    await deleteMediaObjects(mediaKeys);
   },
 
   async addImage(
@@ -92,7 +93,8 @@ export const sourcedItemService = {
 
   async removeImage(supplierId: string, itemId: string, imageId: string): Promise<SourcedItemDto> {
     await loadOwned(supplierId, itemId);
-    await sourcedItemRepository.removeImage(itemId, imageId);
+    const mediaKey = await sourcedItemRepository.removeImage(itemId, imageId);
+    await deleteMediaObjects(mediaKey ? [mediaKey] : []);
     return this.toDto(await loadOwned(supplierId, itemId));
   },
 

@@ -6,7 +6,7 @@ import { ValidationError } from '../lib/errors.js';
 // vi.mock factories below are hoisted above these consts; a plain top-level
 // const referenced from inside a factory would throw a temporal-dead-zone
 // ReferenceError otherwise.
-const { repo, embed, getMediaUrl, putMediaObject, llmComplete } = vi.hoisted(() => ({
+const { repo, embed, getMediaUrl, putMediaObject, llmComplete, deleteMediaObjects } = vi.hoisted(() => ({
   repo: {
     create: vi.fn(),
     findById: vi.fn(),
@@ -22,6 +22,7 @@ const { repo, embed, getMediaUrl, putMediaObject, llmComplete } = vi.hoisted(() 
   },
   embed: vi.fn(),
   getMediaUrl: vi.fn(),
+  deleteMediaObjects: vi.fn(() => Promise.resolve()),
   putMediaObject: vi.fn(),
   llmComplete: vi.fn(),
 }));
@@ -30,7 +31,7 @@ vi.mock('../repositories/product-repository.js', () => ({ productRepository: rep
 vi.mock('../adapters/embeddings/embedding-adapter.js', () => ({
   embeddingPort: { embed },
 }));
-vi.mock('../lib/minio.js', () => ({ getMediaUrl, putMediaObject }));
+vi.mock('../lib/minio.js', () => ({ getMediaUrl, putMediaObject, deleteMediaObjects }));
 vi.mock('../adapters/llm/gemini-adapter.js', () => ({
   llmPort: { complete: llmComplete },
 }));
@@ -67,7 +68,7 @@ describe('productService.addImage', () => {
     repo.findById.mockResolvedValue(baseProduct);
     repo.setEmbedding.mockResolvedValue(undefined);
     repo.addImage.mockResolvedValue(undefined);
-    repo.removeImage.mockResolvedValue(undefined);
+    repo.removeImage.mockResolvedValue('org/products/p1/old.jpg');
     embed.mockResolvedValue([[0.1, 0.2, 0.3]]);
     putMediaObject.mockImplementation((key: string) => Promise.resolve(key));
     getMediaUrl.mockImplementation((key: string) => Promise.resolve(`https://cdn.example/${key}`));
@@ -141,6 +142,8 @@ describe('productService.addImage', () => {
     const dto = await runWithRequestContext(ctx, () => productService.removeImage('p1', 'img1'));
 
     expect(repo.removeImage).toHaveBeenCalledWith('p1', 'img1');
+    // The stored object goes with the row, otherwise every delete leaks disk.
+    expect(deleteMediaObjects).toHaveBeenCalledWith(['org/products/p1/old.jpg']);
     expect(embed).toHaveBeenCalledTimes(1);
     expect(repo.setEmbedding).toHaveBeenCalledTimes(1);
     expect(dto.id).toBe('p1');

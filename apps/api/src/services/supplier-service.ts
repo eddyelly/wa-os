@@ -1,5 +1,6 @@
 import type { CreateSupplierRequest, SupplierDto, UpdateSupplierRequest } from '@waos/shared';
 import { NotFoundError } from '../lib/errors.js';
+import { deleteMediaObjects } from '../lib/minio.js';
 import {
   supplierRepository,
   type SupplierWithCount,
@@ -54,6 +55,7 @@ export const supplierService = {
     if (!existing) {
       throw new NotFoundError('This supplier no longer exists.');
     }
-    await supplierRepository.remove(id);
+    const mediaKeys = await supplierRepository.remove(id);
+    await deleteMediaObjects(mediaKeys);
   },
 };

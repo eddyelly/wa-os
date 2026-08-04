@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { repo } = vi.hoisted(() => ({
+const { repo, deleteMediaObjects } = vi.hoisted(() => ({
   repo: {
     create: vi.fn(),
     findById: vi.fn(),
@@ -8,8 +8,10 @@ const { repo } = vi.hoisted(() => ({
     update: vi.fn(),
     remove: vi.fn(),
   },
+  deleteMediaObjects: vi.fn(() => Promise.resolve()),
 }));
 vi.mock('../repositories/supplier-repository.js', () => ({ supplierRepository: repo }));
+vi.mock('../lib/minio.js', () => ({ deleteMediaObjects }));
 
 import { supplierService } from './supplier-service.js';
 
@@ -72,5 +74,19 @@ describe('supplierService', () => {
     const dto = await supplierService.update('s1', { contactPhone: null });
     expect(repo.update).toHaveBeenCalledWith('s1', { contactPhone: null });
     expect(dto.contactPhone).toBeNull();
+  });
+
+  it('deleting a supplier deletes the photos of all its items, not just the rows', async () => {
+    repo.findById.mockResolvedValue(row);
+    // Deleting a supplier cascades supplier -> items -> photos, so every key
+    // the cascade removed has to be cleaned out of storage too.
+    repo.remove.mockResolvedValue(['org/sourcing/i1/a.jpg', 'org/sourcing/i2/b.jpg']);
+
+    await supplierService.remove('s1');
+
+    expect(deleteMediaObjects).toHaveBeenCalledWith([
+      'org/sourcing/i1/a.jpg',
+      'org/sourcing/i2/b.jpg',
+    ]);
   });
 });

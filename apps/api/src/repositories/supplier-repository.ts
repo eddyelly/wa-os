@@ -58,7 +58,18 @@ export const supplierRepository = {
     return prisma.supplier.update({ where: { id }, data, include: withCount });
   },
 
-  async remove(id: string): Promise<void> {
+  /**
+   * Deleting a supplier cascades through its items to their photos, so this
+   * returns every media key the cascade removed for the caller to delete
+   * from storage. Read them first: after the delete the rows are gone and
+   * the keys are unrecoverable.
+   */
+  async remove(id: string): Promise<string[]> {
+    const images = await prisma.sourcedItemImage.findMany({
+      where: { sourcedItem: { supplierId: id } },
+      select: { mediaKey: true },
+    });
     await prisma.supplier.delete({ where: { id } });
+    return images.map((image) => image.mediaKey);
   },
 };

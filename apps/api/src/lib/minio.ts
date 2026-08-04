@@ -67,6 +67,25 @@ export async function putMediaObject(
   return key;
 }
 
+/**
+ * Removes stored objects whose owning rows are gone.
+ *
+ * Called after the database delete has already committed, so a storage
+ * failure must not fail the request: the user's delete did happen. A failure
+ * here leaves an orphaned object, which is logged and costs disk, never
+ * correctness.
+ */
+export async function deleteMediaObjects(keys: string[]): Promise<void> {
+  if (keys.length === 0) {
+    return;
+  }
+  try {
+    await minioClient.removeObjects(config.MINIO_BUCKET, keys);
+  } catch (error) {
+    logger.warn({ err: error, count: keys.length }, 'could not delete media objects');
+  }
+}
+
 /** Short-lived download URL the dashboard (host browser) can use directly. */
 export function getMediaUrl(key: string): Promise<string> {
   return minioClient.presignedGetObject(config.MINIO_BUCKET, key, 60 * 60);

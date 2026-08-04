@@ -6,7 +6,7 @@ import { llmPort } from '../adapters/llm/gemini-adapter.js';
 import { requireRequestContext } from '../lib/context.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
-import { getMediaUrl, putMediaObject } from '../lib/minio.js';
+import { deleteMediaObjects, getMediaUrl, putMediaObject } from '../lib/minio.js';
 import { productRepository, type ProductWithImages } from '../repositories/product-repository.js';
 import { notificationService } from './notification-service.js';
 
@@ -182,7 +182,8 @@ export const productService = {
     if (!product) {
       throw new NotFoundError('This product no longer exists.');
     }
-    await productRepository.remove(id);
+    const mediaKeys = await productRepository.remove(id);
+    await deleteMediaObjects(mediaKeys);
   },
 
   /**
@@ -226,7 +227,8 @@ export const productService = {
   },
 
   async removeImage(id: string, imageId: string): Promise<ProductDto> {
-    await productRepository.removeImage(id, imageId);
+    const mediaKey = await productRepository.removeImage(id, imageId);
+    await deleteMediaObjects([mediaKey]);
     await this.refreshEmbedding(id);
 
     const updated = await productRepository.findById(id);

@@ -87,8 +87,18 @@ export const sourcedItemRepository = {
     return prisma.sourcedItem.update({ where: { id }, data, include: withImages });
   },
 
-  async remove(id: string): Promise<void> {
+  /**
+   * Returns the media keys of the photos the cascade removed, so the caller
+   * can delete the stored objects. Read them first: after the delete the
+   * rows are gone and the keys are unrecoverable.
+   */
+  async remove(id: string): Promise<string[]> {
+    const images = await prisma.sourcedItemImage.findMany({
+      where: { sourcedItemId: id },
+      select: { mediaKey: true },
+    });
     await prisma.sourcedItem.delete({ where: { id } });
+    return images.map((image) => image.mediaKey);
   },
 
   async addImage(sourcedItemId: string, mediaKey: string): Promise<void> {
@@ -101,8 +111,14 @@ export const sourcedItemRepository = {
     });
   },
 
-  async removeImage(sourcedItemId: string, imageId: string): Promise<void> {
+  /** Returns the removed photo's media key, or null if it was already gone. */
+  async removeImage(sourcedItemId: string, imageId: string): Promise<string | null> {
     // The id pair keeps a caller from deleting an image of another item.
+    const image = await prisma.sourcedItemImage.findFirst({
+      where: { id: imageId, sourcedItemId },
+      select: { mediaKey: true },
+    });
     await prisma.sourcedItemImage.deleteMany({ where: { id: imageId, sourcedItemId } });
+    return image?.mediaKey ?? null;
   },
 };

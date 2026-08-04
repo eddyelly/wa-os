@@ -28,7 +28,7 @@ interface FakeProduct {
 // vi.mock factories below are hoisted above these consts; a plain top-level
 // const referenced from inside a factory would throw a temporal-dead-zone
 // ReferenceError otherwise.
-const { store, repo, embed, getMediaUrl, notify } = vi.hoisted(() => {
+const { store, repo, embed, getMediaUrl, notify, deleteMediaObjects } = vi.hoisted(() => {
   const store = new Map<string, FakeProduct>();
   let nextId = 1;
 
@@ -74,8 +74,9 @@ const { store, repo, embed, getMediaUrl, notify } = vi.hoisted(() => {
       return Promise.resolve(updated);
     }),
     remove: vi.fn((id: string) => {
+      const removed = store.get(id);
       store.delete(id);
-      return Promise.resolve();
+      return Promise.resolve((removed?.images ?? []).map((image) => image.mediaKey));
     }),
     setEmbedding: vi.fn(() => Promise.resolve()),
     searchByEmbedding: vi.fn(() => Promise.resolve([])),
@@ -87,14 +88,15 @@ const { store, repo, embed, getMediaUrl, notify } = vi.hoisted(() => {
   const getMediaUrl = vi.fn((key: string) => Promise.resolve(`https://cdn.example/${key}`));
   const notify = vi.fn((_type: string, _payload: Record<string, unknown>) => Promise.resolve());
 
-  return { store, repo, embed, getMediaUrl, notify };
+  const deleteMediaObjects = vi.fn(() => Promise.resolve());
+  return { store, repo, embed, getMediaUrl, notify, deleteMediaObjects };
 });
 
 vi.mock('../repositories/product-repository.js', () => ({ productRepository: repo }));
 vi.mock('../adapters/embeddings/embedding-adapter.js', () => ({
   embeddingPort: { embed },
 }));
-vi.mock('../lib/minio.js', () => ({ getMediaUrl }));
+vi.mock('../lib/minio.js', () => ({ getMediaUrl, deleteMediaObjects }));
 vi.mock('./notification-service.js', () => ({ notificationService: { notify } }));
 
 import { productService } from './product-service.js';
@@ -296,4 +298,24 @@ describe('productService', () => {
     await expect(productService.remove('missing')).rejects.toBeInstanceOf(NotFoundError);
     expect(repo.remove).not.toHaveBeenCalled();
   });
+
+  it('deleting a product also deletes its stored photos, so nothing is orphaned', async () => {
+    const created = await productService.create({
+      name: 'Kettle',
+      price: 20000,
+      stockQty: 3,
+      lowStockThreshold: 5,
+      tags: [],
+    });
+    const stored = store.get(created.id);
+    stored?.images.push(
+      { id: 'i1', mediaKey: 'org/products/a.jpg', description: '' },
+      { id: 'i2', mediaKey: 'org/products/b.jpg', description: '' },
+    );
+
+    await productService.remove(created.id);
+
+    expect(deleteMediaObjects).toHaveBeenCalledWith(['org/products/a.jpg', 'org/products/b.jpg']);
+  });
+
 });

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { repo, supplierRepo, getMediaUrl } = vi.hoisted(() => ({
+const { repo, supplierRepo, getMediaUrl, deleteMediaObjects } = vi.hoisted(() => ({
   repo: {
     create: vi.fn(),
     findById: vi.fn(),
@@ -13,10 +13,11 @@ const { repo, supplierRepo, getMediaUrl } = vi.hoisted(() => ({
   },
   supplierRepo: { findById: vi.fn() },
   getMediaUrl: vi.fn((key: string) => Promise.resolve(`https://cdn.example/${key}`)),
+  deleteMediaObjects: vi.fn(() => Promise.resolve()),
 }));
 vi.mock('../repositories/sourced-item-repository.js', () => ({ sourcedItemRepository: repo }));
 vi.mock('../repositories/supplier-repository.js', () => ({ supplierRepository: supplierRepo }));
-vi.mock('../lib/minio.js', () => ({ getMediaUrl, putMediaObject: vi.fn() }));
+vi.mock('../lib/minio.js', () => ({ getMediaUrl, putMediaObject: vi.fn(), deleteMediaObjects }));
 
 import { sourcedItemService } from './sourced-item-service.js';
 
@@ -98,5 +99,35 @@ describe('sourcedItemService', () => {
   it('returns nothing for a blank query instead of listing everything', async () => {
     await expect(sourcedItemService.search('   ')).resolves.toEqual([]);
     expect(repo.search).not.toHaveBeenCalled();
+  });
+
+  it('deleting an item deletes its stored photos, so nothing is orphaned', async () => {
+    repo.findById.mockResolvedValue(row);
+    repo.remove.mockResolvedValue(['org/sourcing/i1/a.jpg', 'org/sourcing/i1/b.jpg']);
+
+    await sourcedItemService.remove('s1', 'i1');
+
+    expect(deleteMediaObjects).toHaveBeenCalledWith([
+      'org/sourcing/i1/a.jpg',
+      'org/sourcing/i1/b.jpg',
+    ]);
+  });
+
+  it('removing a photo deletes that stored object', async () => {
+    repo.findById.mockResolvedValue(row);
+    repo.removeImage.mockResolvedValue('org/sourcing/i1/a.jpg');
+
+    await sourcedItemService.removeImage('s1', 'i1', 'img1');
+
+    expect(deleteMediaObjects).toHaveBeenCalledWith(['org/sourcing/i1/a.jpg']);
+  });
+
+  it('deletes nothing from storage when the photo row was already gone', async () => {
+    repo.findById.mockResolvedValue(row);
+    repo.removeImage.mockResolvedValue(null);
+
+    await sourcedItemService.removeImage('s1', 'i1', 'gone');
+
+    expect(deleteMediaObjects).toHaveBeenCalledWith([]);
   });
 });

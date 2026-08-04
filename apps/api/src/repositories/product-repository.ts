@@ -94,8 +94,18 @@ export const productRepository = {
     });
   },
 
-  async remove(id: string): Promise<void> {
+  /**
+   * Returns the media keys of the images the cascade removed, so the caller
+   * can delete the stored objects. Read them first: after the delete the
+   * rows are gone and the keys are unrecoverable.
+   */
+  async remove(id: string): Promise<string[]> {
+    const images = await prisma.productImage.findMany({
+      where: { productId: id },
+      select: { mediaKey: true },
+    });
     await prisma.product.delete({ where: { id } });
+    return images.map((image) => image.mediaKey);
   },
 
   /**
@@ -182,12 +192,13 @@ export const productRepository = {
    * Verifies the image belongs to this product before deleting it, so a
    * caller cannot remove another product's photo by guessing its id.
    */
-  async removeImage(productId: string, imageId: string): Promise<void> {
+  async removeImage(productId: string, imageId: string): Promise<string> {
     const image = await prisma.productImage.findUnique({ where: { id: imageId } });
     if (!image || image.productId !== productId) {
       throw new NotFoundError('This product photo no longer exists.');
     }
     await prisma.productImage.delete({ where: { id: imageId } });
+    return image.mediaKey;
   },
 
   /**
