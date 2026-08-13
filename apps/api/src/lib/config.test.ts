@@ -41,6 +41,28 @@ describe('env config schema', () => {
     expect(() => envSchema.parse({ ...minimalEnv, WARMUP_DAILY_CAPS: '5,ten,15' })).toThrow();
   });
 
+  it('defaults WEB_ORIGIN to a single-entry list', () => {
+    expect(envSchema.parse(minimalEnv).WEB_ORIGIN).toEqual(['http://localhost:3000']);
+  });
+
+  it('parses WEB_ORIGIN into a list so several origins can be allowed at once', () => {
+    const parsed = envSchema.parse({
+      ...minimalEnv,
+      WEB_ORIGIN: 'http://localhost:3000, http://192.168.1.50:3000',
+    });
+    expect(parsed.WEB_ORIGIN).toEqual(['http://localhost:3000', 'http://192.168.1.50:3000']);
+  });
+
+  it('rejects a WEB_ORIGIN entry that is not a full origin', () => {
+    expect(() =>
+      envSchema.parse({ ...minimalEnv, WEB_ORIGIN: 'http://localhost:3000,192.168.1.50:3000' }),
+    ).toThrow();
+  });
+
+  it('rejects an empty WEB_ORIGIN, which would allow no browser at all', () => {
+    expect(() => envSchema.parse({ ...minimalEnv, WEB_ORIGIN: ' , ' })).toThrow();
+  });
+
   it('rejects a missing required variable with a pointable path', () => {
     const { DATABASE_URL: _omitted, ...withoutDb } = minimalEnv;
     const result = envSchema.safeParse(withoutDb);

@@ -142,7 +142,7 @@ and do not need to be set):
 | `REMINDER_OFFSETS_MINUTES` | optional, defaults to `1440,120` | leave default |
 | `SEND_RATE_PER_MINUTE` | optional, defaults to `6` | leave default |
 | `WARMUP_DAILY_CAPS` | optional, has a 14-day default ramp | leave default |
-| `WEB_ORIGIN` | optional, but its `localhost` default is wrong here | the public web domain, but that domain does not exist yet: the web service is not created until section 7. Leave it unset for now: its default of `http://localhost:3000` is a valid URL, so the api still boots, and you come back to it in section 9, step 6, once the web domain is generated; drives CORS (the entire API rejects cross-origin browser calls without it) and the Socket.IO origin |
+| `WEB_ORIGIN` | optional, but its `localhost` default is wrong here | the public web domain, but that domain does not exist yet: the web service is not created until section 7. Leave it unset for now: its default of `http://localhost:3000` is a valid URL, so the api still boots, and you come back to it in section 9, step 6, once the web domain is generated; drives CORS (the entire API rejects cross-origin browser calls without it) and the Socket.IO origin. Accepts a comma-separated list, so a custom domain and the Railway-generated one can both be allowed |
 | `API_PUBLIC_URL` | optional, but its `localhost` default is wrong here | the **private** api URL, `http://api.railway.internal:4000` (its only consumer is the webhook URL registered with Evolution, so the callback never leaves Railway) |
 
 Generate a public domain for the api service, targeting **port 4000**.

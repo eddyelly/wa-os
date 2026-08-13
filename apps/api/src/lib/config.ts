@@ -61,8 +61,22 @@ const envSchema = z.object({
   SEND_RATE_PER_MINUTE: z.coerce.number().int().positive().default(6),
   WARMUP_DAILY_CAPS: warmupCapsSchema.default('20,40,60,80,120,160,200,250,300,350,400,450,500,600'),
 
-  // Dashboard origin allowed by CORS and used to build absolute links.
-  WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
+  // Dashboard origins allowed by CORS. Comma-separated so the dashboard can
+  // be reached by more than one address at once, which a single value cannot
+  // express: in dev, localhost plus the machine's LAN address when driving
+  // the app from a phone; in production, a custom domain alongside the
+  // platform-generated one. Every entry must be a full origin (scheme and
+  // host, no trailing path), since that is what a browser sends in Origin.
+  WEB_ORIGIN: z
+    .string()
+    .default('http://localhost:3000')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.string().url()).min(1)),
   // Public base URL of this API, used for provider webhook registration.
   API_PUBLIC_URL: z.string().url().default('http://localhost:4000'),
 });
