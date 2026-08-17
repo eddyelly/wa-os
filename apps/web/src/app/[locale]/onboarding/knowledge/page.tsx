@@ -133,7 +133,7 @@ export default function KnowledgePage() {
             <input
               ref={fileRef}
               type="file"
-              accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
+              accept=".txt,.md,.pdf,.jpg,.jpeg,.png,.webp,text/plain,text/markdown,application/pdf,image/jpeg,image/png,image/webp"
               hidden
               onChange={(e) => {
                 const file = e.target.files?.[0];
