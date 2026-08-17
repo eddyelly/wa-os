@@ -16,7 +16,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-waos_dev}
     ports:
       # Host port is overridable (infra/.env) for machines where 5432 is taken.
-      - '${POSTGRES_HOST_PORT:-5432}:5432'
+      - '127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -32,7 +32,7 @@ services:
     command: ['redis-server', '--appendonly', 'yes']
     ports:
       # Host port is overridable (infra/.env) for machines where 6379 is taken.
-      - '${REDIS_HOST_PORT:-6379}:6379'
+      - '127.0.0.1:${REDIS_HOST_PORT:-6379}:6379'
     volumes:
       - redis-data:/data
     healthcheck:
@@ -49,8 +49,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-waos}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-waos-secret}
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
     volumes:
       - minio-data:/data
     healthcheck:
@@ -112,7 +112,7 @@ services:
       LOG_LEVEL: ERROR,WARN,INFO
       DEL_INSTANCE: 'false'
     ports:
-      - '8080:8080'
+      - '127.0.0.1:8080:8080'
     volumes:
       - evolution-instances:/evolution/instances
     healthcheck:

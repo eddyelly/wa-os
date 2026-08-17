@@ -97,8 +97,11 @@ say "Writing $APP_DIR/.env"
 cat > "$APP_DIR/.env" <<ENV
 DATABASE_URL=postgresql://waos:${PG_PASSWORD}@localhost:5432/waos
 REDIS_URL=redis://localhost:6379
-MINIO_ENDPOINT=localhost:9000
-MINIO_PUBLIC_ENDPOINT=host.docker.internal:9000
+# Browser-facing media URLs are presigned against this endpoint, so it must
+# be publicly reachable: nginx proxies media.${DOMAIN} to the local MinIO.
+MINIO_ENDPOINT=https://media.${DOMAIN}
+# The WhatsApp provider container fetches media over the compose network.
+MINIO_PUBLIC_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=waos
 MINIO_SECRET_KEY=${MINIO_SECRET}
 MINIO_BUCKET=waos-media
@@ -219,6 +222,31 @@ NGINX
   ln -sf /etc/nginx/sites-available/waos /etc/nginx/sites-enabled/waos
   rm -f /etc/nginx/sites-enabled/default
 fi
+
+# Media subdomain: presigned MinIO URLs for the dashboard. Separate file so
+# certbot manages its TLS independently of the main vhost.
+if [ -f /etc/nginx/sites-available/waos-media ] && grep -q "listen 443" /etc/nginx/sites-available/waos-media; then
+  say "media vhost already TLS-managed by certbot; leaving it untouched"
+else
+  say "Configuring nginx for media.$DOMAIN"
+  cat > /etc/nginx/sites-available/waos-media <<NGINX
+server {
+    listen 80;
+    server_name media.${DOMAIN};
+    client_max_body_size 25m;
+    location / {
+        proxy_pass http://127.0.0.1:9000;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 120s;
+    }
+}
+NGINX
+  ln -sf /etc/nginx/sites-available/waos-media /etc/nginx/sites-enabled/waos-media
+fi
 nginx -t && systemctl reload nginx
 
 # ----- firewall -------------------------------------------------------------
@@ -227,16 +255,15 @@ if ufw status | grep -q "Status: active"; then
 fi
 
 # ----- tls (needs DNS pointing here first) ----------------------------------
-if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
-  say "TLS certificates already present"
+CERTBOT_CMD="certbot --nginx --expand -d $DOMAIN -d www.$DOMAIN -d $API_DOMAIN -d media.$DOMAIN --non-interactive --agree-tos -m $CERTBOT_EMAIL --redirect"
+if grep -q "listen 443" /etc/nginx/sites-available/waos-media 2>/dev/null; then
+  say "TLS certificates already cover the media vhost"
 elif getent hosts "$DOMAIN" | grep -q "$(curl -s ifconfig.me || echo NONE)"; then
   say "DNS resolves here; requesting TLS certificates"
-  certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" -d "$API_DOMAIN" \
-    --non-interactive --agree-tos -m "$CERTBOT_EMAIL" --redirect || \
-    echo "certbot failed; re-run later: sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN -d $API_DOMAIN --redirect"
+  $CERTBOT_CMD || echo "certbot failed; re-run later: sudo $CERTBOT_CMD"
 else
-  say "DNS does not point here yet (or is behind the Cloudflare proxy). If TLS is not set up yet, run:"
-  echo "  sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN -d $API_DOMAIN --non-interactive --agree-tos -m $CERTBOT_EMAIL --redirect"
+  say "DNS is behind the Cloudflare proxy or not set. Ensure the media.$DOMAIN A record exists, then run:"
+  echo "  sudo $CERTBOT_CMD"
 fi
 
 say "Done. Checks:"
