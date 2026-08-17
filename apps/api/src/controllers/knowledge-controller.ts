@@ -13,7 +13,7 @@ export const create = async (req: Request, res: Response): Promise<void> => {
 export const upload = async (req: Request, res: Response): Promise<void> => {
   const file = req.file;
   if (!file) {
-    throw new ValidationError('Attach a .txt, .md, or .pdf file.');
+    throw new ValidationError('Attach a .txt, .md, .pdf, or photo file.');
   }
   const doc = await knowledgeService.createFromUpload({
     originalname: file.originalname,
